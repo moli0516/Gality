@@ -1,0 +1,11 @@
+{
+  "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg-configuration.schema.json",
+  "name": "Gality",
+  "version-string": "0.1.0",
+  "dependencies": [
+    "sfml",
+    "nlohmann-json",
+    "imgui",
+    "imgui-sfml"
+  ]
+}

@@ -1,0 +1,7 @@
+build/
+vcpkg/
+code_packer.py
+.packerignore
+*.png
+*.jpg
+*.ttf
