@@ -1,6 +1,4 @@
-Here is a refreshed, professional `README.md` for your **Gality** repository. It highlights your architecture, tech stack, features, and setup instructions in a clean, showcase-ready format for GitHub and recruiters.
 
----
 
 # Gality Engine
 
