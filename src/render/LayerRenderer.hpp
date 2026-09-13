@@ -1,82 +1,142 @@
 #pragma once
 #include <SFML/Graphics.hpp>
 #include <string>
-#include <unordered_map>
+#include <memory>
 #include <iostream>
-#include <optional> // 💡 引入 optional 用於延遲初始化 Sprite
+#include "../core/LRUCache.hpp"
+#include "../core/Easing.hpp"
 
 class LayerRenderer {
 private:
-    std::unordered_map<std::string, sf::Texture> textureCache;
+    LRUCache<std::string, std::shared_ptr<sf::Texture>> textureCache;
     
-    // 💡 SFML 3.x：使用 std::optional 延遲 Sprite 的初始化
-    std::optional<sf::Sprite> bgSprite;
-    std::optional<sf::Sprite> characterSprite;
+    std::string currentBgPath;
+    std::string currentCharacterPath;
 
-    const sf::Texture* getOrLoadTexture(const std::string& path) {
+    // 💡 SFML 3.x：使用 unique_ptr 避開 sf::Sprite 缺乏預設建構函式的限制
+    std::unique_ptr<sf::Sprite> bgSpriteCurrent;
+    std::unique_ptr<sf::Sprite> bgSpriteOld;
+    std::unique_ptr<sf::Sprite> characterSpriteCurrent;
+    std::unique_ptr<sf::Sprite> characterSpriteOld;
+
+    float bgFadeTimer = 0.0f;
+    float charFadeTimer = 0.0f;
+    float fadeDuration = 0.5f; // 0.5秒漸變過渡
+
+    bool isBgFading = false;
+    bool isCharFading = false;
+
+    std::shared_ptr<sf::Texture> getOrLoadTexture(const std::string& path) {
         if (path.empty()) return nullptr;
-        auto it = textureCache.find(path);
-        if (it != textureCache.end()) return &it->second;
 
-        sf::Texture texture;
-        if (!texture.loadFromFile(path)) {
+        if (textureCache.contains(path)) {
+            return textureCache.get(path);
+        }
+
+        auto texture = std::make_shared<sf::Texture>();
+        if (!texture->loadFromFile(path)) {
             std::cerr << "[LayerRenderer] Failed to load texture: " << path << std::endl;
             return nullptr;
         }
 
-        textureCache[path] = std::move(texture);
-        return &textureCache[path];
+        textureCache.put(path, texture);
+        return texture;
     }
 
 public:
-    LayerRenderer() = default;
+    LayerRenderer() : textureCache(10) {}
 
-    void setBackground(const std::string& path) {
-        if (path.empty()) {
-            bgSprite.reset(); // 清空圖層
-            return;
-        }
-        
-        const sf::Texture* tex = getOrLoadTexture(path);
-        if (tex) {
-            // 💡 使用 emplace 直接在 optional 內部建構 sf::Sprite(*tex)
-            bgSprite.emplace(*tex);
-            bgSprite->setTextureRect(sf::IntRect(sf::Vector2i(0, 0), sf::Vector2i(tex->getSize().x, tex->getSize().y)));
-            
-            sf::Vector2u size = tex->getSize();
-            float scaleX = 1280.f / static_cast<float>(size.x);
-            float scaleY = 720.f / static_cast<float>(size.y);
-            bgSprite->setScale(sf::Vector2f(scaleX, scaleY));
+    void setBackground(const std::string& imagePath) {
+        if (imagePath == currentBgPath) return;
+
+        bgSpriteOld = std::move(bgSpriteCurrent);
+        currentBgPath = imagePath;
+
+        if (!imagePath.empty()) {
+            auto tex = getOrLoadTexture(imagePath);
+            if (tex) {
+                // SFML 3.x 建構 sf::Sprite 時傳入 sf::Texture 引用
+                bgSpriteCurrent = std::make_unique<sf::Sprite>(*tex);
+                isBgFading = true;
+                bgFadeTimer = 0.0f;
+            }
+        } else {
+            bgSpriteCurrent.reset();
         }
     }
 
-    void setCharacter(const std::string& path) {
-        if (path.empty()) {
-            characterSprite.reset(); // 清空圖層
-            return;
-        }
-        
-        const sf::Texture* tex = getOrLoadTexture(path);
-        if (tex) {
-            // 💡 使用 emplace 綁定紋理
-            characterSprite.emplace(*tex);
-            characterSprite->setTextureRect(sf::IntRect(sf::Vector2i(0, 0), sf::Vector2i(tex->getSize().x, tex->getSize().y)));
-            
-            sf::Vector2u size = tex->getSize();
-            float targetHeight = 600.f;
-            float scale = targetHeight / static_cast<float>(size.y);
-            characterSprite->setScale(sf::Vector2f(scale, scale));
+    void setCharacter(const std::string& imagePath) {
+        if (imagePath == currentCharacterPath) return;
 
-            float scaledWidth = static_cast<float>(size.x) * scale;
-            float posX = (1280.f - scaledWidth) / 2.f;
-            float posY = 720.f - targetHeight;
-            characterSprite->setPosition(sf::Vector2f(posX, posY));
+        characterSpriteOld = std::move(characterSpriteCurrent);
+        currentCharacterPath = imagePath;
+
+        if (!imagePath.empty()) {
+            auto tex = getOrLoadTexture(imagePath);
+            if (tex) {
+                // SFML 3.x 建構 sf::Sprite 時傳入 sf::Texture 引用
+                characterSpriteCurrent = std::make_unique<sf::Sprite>(*tex);
+                isCharFading = true;
+                charFadeTimer = 0.0f;
+            }
+        } else {
+            characterSpriteCurrent.reset();
+            isCharFading = true;
+            charFadeTimer = 0.0f;
+        }
+    }
+
+    void update(float deltaTime) {
+        // 背景漸變更新
+        if (isBgFading) {
+            bgFadeTimer += deltaTime;
+            float progress = bgFadeTimer / fadeDuration;
+            if (progress >= 1.0f) {
+                progress = 1.0f;
+                isBgFading = false;
+                bgSpriteOld.reset(); // 結束過渡，釋放舊 Sprite
+            }
+            float alpha = Easing::easeOutQuad(progress) * 255.0f;
+            if (bgSpriteCurrent) {
+                bgSpriteCurrent->setColor(sf::Color(255, 255, 255, static_cast<std::uint8_t>(alpha)));
+            }
+            if (bgSpriteOld) {
+                bgSpriteOld->setColor(sf::Color(255, 255, 255, static_cast<std::uint8_t>(255.0f - alpha)));
+            }
+        }
+
+        // 立繪漸變更新
+        if (isCharFading) {
+            charFadeTimer += deltaTime;
+            float progress = charFadeTimer / fadeDuration;
+            if (progress >= 1.0f) {
+                progress = 1.0f;
+                isCharFading = false;
+                characterSpriteOld.reset(); // 結束過渡，釋放舊 Sprite
+            }
+            float alpha = Easing::easeOutQuad(progress) * 255.0f;
+            if (characterSpriteCurrent) {
+                characterSpriteCurrent->setColor(sf::Color(255, 255, 255, static_cast<std::uint8_t>(alpha)));
+            }
+            if (characterSpriteOld) {
+                characterSpriteOld->setColor(sf::Color(255, 255, 255, static_cast<std::uint8_t>(255.0f - alpha)));
+            }
         }
     }
 
     void draw(sf::RenderWindow& window) {
-        // 💡 透過 optional 自動檢查是否有值 (取代舊版的 hasBg)
-        if (bgSprite) window.draw(*bgSprite);
-        if (characterSprite) window.draw(*characterSprite);
+        if (isBgFading && bgSpriteOld) {
+            window.draw(*bgSpriteOld);
+        }
+        if (bgSpriteCurrent) {
+            window.draw(*bgSpriteCurrent);
+        }
+
+        if (isCharFading && characterSpriteOld) {
+            window.draw(*characterSpriteOld);
+        }
+        if (characterSpriteCurrent) {
+            window.draw(*characterSpriteCurrent);
+        }
     }
 };

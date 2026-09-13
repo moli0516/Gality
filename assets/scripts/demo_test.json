@@ -1,4 +1,4 @@
-﻿{
+{
   "startNode": "node_01",
   "nodes": [
     {
@@ -39,24 +39,47 @@
       "type": "choice",
       "speaker": "",
       "text": "",
+      "bg": "",
+      "character": "",
+      "bgm": "",
+      "cv": "",
+      "next": "",
       "choices": [
-        { "text": "包在我身上吧！今晚就能搞定！", "next": "act_favor_up" },
-        { "text": "感覺好麻煩啊... 可以交給別人嗎？", "next": "act_favor_down" }
+        {
+          "text": "包在我身上吧！今晚就能搞定！",
+          "next": "act_favor_up"
+        },
+        {
+          "text": "感覺好麻煩啊... 可以交給別人嗎？",
+          "next": "act_favor_down"
+        }
       ]
     },
     {
       "id": "act_favor_up",
       "type": "action",
+      "speaker": "",
+      "text": "",
+      "bg": "",
+      "character": "",
+      "bgm": "",
+      "cv": "",
+      "next": "node_04_a",
       "flag": "favorability",
-      "value": 10,
-      "next": "node_04_a"
+      "value": 10
     },
     {
       "id": "act_favor_down",
       "type": "action",
+      "speaker": "",
+      "text": "",
+      "bg": "",
+      "character": "",
+      "bgm": "",
+      "cv": "",
+      "next": "node_04_b",
       "flag": "favorability",
-      "value": -5,
-      "next": "node_04_b"
+      "value": -5
     },
     {
       "id": "node_04_a",
@@ -206,24 +229,47 @@
       "type": "choice",
       "speaker": "",
       "text": "",
+      "bg": "",
+      "character": "",
+      "bgm": "",
+      "cv": "",
+      "next": "",
       "choices": [
-        { "text": "邀請學姐一起去 Cafe 喝杯咖啡", "next": "act_cafe" },
-        { "text": "直接搭電車回家", "next": "act_home" }
+        {
+          "text": "邀請學姐一起去 Cafe 喝杯咖啡",
+          "next": "act_cafe"
+        },
+        {
+          "text": "直接搭電車回家",
+          "next": "act_home"
+        }
       ]
     },
     {
       "id": "act_cafe",
       "type": "action",
+      "speaker": "",
+      "text": "",
+      "bg": "",
+      "character": "",
+      "bgm": "",
+      "cv": "",
+      "next": "node_16_a",
       "flag": "favorability",
-      "value": 15,
-      "next": "node_16_a"
+      "value": 15
     },
     {
       "id": "act_home",
       "type": "action",
+      "speaker": "",
+      "text": "",
+      "bg": "",
+      "character": "",
+      "bgm": "",
+      "cv": "",
+      "next": "node_16_b",
       "flag": "favorability",
-      "value": 0,
-      "next": "node_16_b"
+      "value": 0
     },
     {
       "id": "node_16_a",
@@ -503,6 +549,13 @@
     {
       "id": "cond_check_ending",
       "type": "condition",
+      "speaker": "",
+      "text": "",
+      "bg": "",
+      "character": "",
+      "bgm": "",
+      "cv": "",
+      "next": "",
       "condition": {
         "flag": "favorability",
         "value": 10,
@@ -537,9 +590,20 @@
       "type": "choice",
       "speaker": "",
       "text": "",
+      "bg": "",
+      "character": "",
+      "bgm": "",
+      "cv": "",
+      "next": "",
       "choices": [
-        { "text": "重新開始遊戲 (Restart)", "next": "node_01" },
-        { "text": "退出遊戲 (Exit)", "next": "node_01" }
+        {
+          "text": "重新開始遊戲 (Restart)",
+          "next": "node_01"
+        },
+        {
+          "text": "退出遊戲 (Exit)",
+          "next": "node_01"
+        }
       ]
     }
   ]

@@ -1,93 +1,93 @@
-Here is a refreshed, professional `README.md` for your **Gality** repository. It highlights your architecture, tech stack, features, and setup instructions in a clean, showcase-ready format for GitHub and recruiters.
 
----
+# Gality Visual Novel Engine
 
-# Gality Engine
-
-A lightweight, data-driven Visual Novel (Galgame) engine built from scratch in **C++17** using **SFML 3.x**.
-
-Designed with modern systems architecture in mind, Gality bypasses heavy commercial engines to explore low-level engine integration, finite state machines, dynamic layer rendering, and custom state serialization.
+**Gality** is a lightweight, high-performance, custom C++17 visual novel engine built on **SFML 3.x**. Designed with a clear modular architecture, memory efficiency, and state-machine-driven narrative flow, Gality provides a seamless pipeline from human-readable narrative scripts to execution.
 
 ---
 
 ## Key Features
 
-* **Data-Driven Narrative FSM:** Write complex branching storylines, conditional routing, and global variable updates entirely in plain JSON scripts.
-* **Blackboard State Management:** A centralized key-value store managing player choices, favorability scores, and global flags to dynamically trigger multi-ending routes.
-* **Layer-Based Renderer & Asset Cache:** Automated z-indexed rendering for backgrounds, character sprites, and UI elements with built-in texture caching.
-* **Audio Pipeline:** Stream persistent BGM across scene transitions and trigger low-latency single-shot voice acting (CV) audio.
-* **State Serialization (Save/Load):** Fully serializable game snapshots allowing full runtime restoration of node execution pointers and Blackboard state via JSON.
-* **Authentic Visual Novel UI:** Smooth frame-independent typewriter text effect, CJK UTF-8/UTF-32 text rendering, and interactive choice menus with hover state detection.
-
----
-
-## Tech Stack
-
-* **Core Language:** C++17 (`std::optional`, `std::shared_ptr`, `std::function`)
-* **Graphics & Audio:** SFML 3.0.2
-* **Serialization & Scripting:** `nlohmann/json`
-* **Build System:** CMake (3.20+)
-* **Package Management:** `vcpkg` (Manifest Mode)
+* **C++17 & SFML 3.x Native**: Ultra-fast startup, high rendering efficiency, and minimal CPU/RAM overhead.
+* **FSM-Based Execution**: Core story logic driven by a Finite State Machine supporting Dialogue, Choice Branching, Action Execution, and Condition Evaluation[cite: 1, 2].
+* **LRU Asset Cache**: Custom Least Recently Used (LRU) cache for textures and audio buffers to prevent memory leaks and manage RAM/VRAM usage efficiently[cite: 1, 2].
+* **State Snapshot & Backlog System**: Supports real-time dialogue history tracking and state rollback[cite: 1].
+* **Smooth Transitions (Week 7)**:
+  * **Visual Crossfade**: Alpha transparency transitions powered by custom `Easing` interpolation algorithms[cite: 1].
+  * **BGM Crossfade**: Dual-track background music smooth fade-in / fade-out transitions[cite: 1].
+* **Proprietary DSL & Compiler (Week 8)**: Custom `.gality` domain-specific language for rapid scriptwriting, complete with a Python-based compiler to output JSON ASTs[cite: 1, 2].
 
 ---
 
 ## Project Structure
 
-```text
+
+```
+
 Gality/
 ├── assets/
-│   ├── audio/        # BGM (.ogg) and Voice Acting (.ogg/.wav)
-│   ├── bg/           # Background textures (.jpg/.png)
-│   ├── characters/   # Transparent character sprites (.png)
-│   ├── fonts/        # CJK TrueType fonts (e.g., font.ttf)
-│   └── scripts/      # Narrative JSON scripts (demo_long.json)
-├── saves/            # Generated JSON save state snapshots
+│   ├── audio/          # Background music (.ogg) and voice clips (.ogg)
+│   ├── bg/             # Scene background images (.jpg / .png)
+│   ├── characters/     # Character sprites (.png)
+│   ├── fonts/          # TrueType fonts (.ttf)
+│   └── scripts/        # DSL (.gality) and compiled JSON (.json) scripts
+├── saves/              # Save slot JSON files
 ├── src/
-│   ├── core/         # Blackboard, AudioManager, SaveManager
-│   ├── render/       # DialogueBox, ChoiceUI, LayerRenderer
-│   ├── story/        # StoryNode, StoryExecutor, ScriptLoader
-│   └── main.cpp      # Event loop & subsystem coordination
-├── vcpkg.json        # Dependencies manifest
-└── CMakeLists.txt    # Modern CMake configuration
+│   ├── core/           # AudioManager, Blackboard, LRUCache, SaveManager, Easing
+│   ├── render/         # DialogueBox, ChoiceUI, LayerRenderer, BacklogUI
+│   ├── story/          # ScriptLoader, StoryExecutor, StoryNode
+│   └── main.cpp        # Application entry point & main loop
+├── CMakeLists.txt
+├── gality_compiler.py  # Python compiler translating .gality to .json
+├── vcpkg.json          # Dependency management
+└── README.md
 
 ```
 
 ---
 
-## Quick Start (Build & Run)
+## Tech Stack & Dependencies
+
+* **Language**: C++17
+* **Graphics & Audio**: SFML 3.x
+* **Data Interchange**: `nlohmann/json`
+* **Build System**: CMake (3.15+) & vcpkg
+* **Script Compiler**: Python 3.x
+
+---
+
+## Getting Started
 
 ### Prerequisites
 
-* **Compiler:** MSVC (Visual Studio 2022 recommended with C++17 support)
-* **Build Tools:** CMake (3.20+)
-* **Package Manager:** `vcpkg`
+* C++17 compatible compiler (MSVC 2019+, GCC 9+, or Clang 10+)
+* CMake (v3.15 or higher)
+* Python 3.x (for script compilation)[cite: 1, 2]
+* vcpkg package manager
 
-### Build Instructions
+### Building the Engine
 
-1. **Clone the repository:**
+1. **Clone the Repository**:
+   ```powershell
+   git clone [https://github.com/your-username/Gality.git](https://github.com/your-username/Gality.git)
+   cd Gality
+
+```
+
+2. **Configure with CMake**:
 ```powershell
-git clone https://github.com/your-username/Gality.git
-cd Gality
+cmake -B build -S . -DCMAKE_TOOLCHAIN_FILE="[path-to-vcpkg]/scripts/buildsystems/vcpkg.cmake"
 
 ```
 
 
-2. **Configure CMake with vcpkg integration:**
-```powershell
-cmake -B build -S . -DCMAKE_TOOLCHAIN_FILE="<path-to-vcpkg>/scripts/buildsystems/vcpkg.cmake"
-
-```
-
-
-3. **Compile the engine:**
+3. **Build the Project**:
 ```powershell
 cmake --build build --config Debug
 
 ```
 
 
-4. **Ensure Assets & Run:**
-Make sure a CJK-compatible TrueType font is placed at `assets/fonts/font.ttf`, then run:
+4. **Run Gality**:
 ```powershell
 .\build\Debug\Gality.exe
 
@@ -97,41 +97,84 @@ Make sure a CJK-compatible TrueType font is placed at `assets/fonts/font.ttf`, t
 
 ---
 
-## Controls
+## Authoring Scripts (.gality DSL)
 
-| Key / Mouse Action | Function |
-| --- | --- |
-| **Left Click / Space / Enter** | Advance Dialogue / Complete Typewriter Effect |
-| **Mouse Hover + Click** | Select Branching Choice Options |
-| **`S` Key** | Save Snapshot to `saves/save1.json` |
-| **`L` Key** | Load Snapshot from `saves/save1.json` |
+Gality allows writers to author stories using a simple, human-readable DSL syntax instead of writing JSON manually.
 
----
-
-## Architecture Overview
-
-Detailed system flow and decoupling strategies are documented in [ARCHITECTURE.md](ARCHITECTURE.md).
+### DSL Syntax Example (`assets/scripts/demo.gality`)
 
 ```text
-[ ScriptLoader ] ---> [ StoryNode Graph ] 
-                             |
-[ Input Events ] ---> [ StoryExecutor ] <---> [ Blackboard State ]
-                             |
-                             v
-                 +-----------------------+
-                 |  syncCurrentNodeState |
-                 +-----------------------+
-                   /         |         \
-                  v          v          v
-          [LayerRenderer] [DialogueBox] [AudioManager]
+@start node_01
+
+[node_01]
+bg: assets/bg/classroom.jpg
+bgm: assets/audio/bgm_daily.ogg
+Narrator: The sun shines through the classroom window after school.
+-> node_02
+
+[node_02]
+char: assets/characters/senior_normal.png
+cv: assets/audio/cv_01.ogg
+Senior: Are you ready to finalize our game engine architecture today?
+-> choice_01
+
+[choice_01]
+? [Leave it to me! I'll finish it tonight.] -> act_favor_up
+? [Sounds troublesome... Can someone else do it?] -> act_favor_down
+
+[act_favor_up]
+$ favorability += 10
+-> node_03
+
+[act_favor_down]
+$ favorability += -5
+-> node_03
+
+[node_03]
+IF favorability >= 10 THEN node_good ELSE node_norm
+
+[node_good]
+Senior: Reliable as always!
+-> END
+
+[node_norm]
+Senior: Sigh, stop being so lazy...
+-> END
+
+```
+
+### Compiling Scripts to JSON
+
+To compile a `.gality` file into an engine-readable `.json` file:
+
+```powershell
+python gality_compiler.py assets/scripts/demo.gality assets/scripts/demo_long.json
 
 ```
 
 ---
 
-## Roadmap
+## Controls
 
-* [x] **Phase 1:** Core Logic (FSM Graph, Blackboard State, JSON Script Loader)
-* [x] **Phase 2:** Visuals & UI (SFML 3.x Window, Typewriter Text Engine, Layered Renderer, Interactive Choice Buttons)
-* [x] **Phase 3:** Audio Engine (SFML Audio BGM Looping & Single-shot Voice Stream Control)
-* [x] **Phase 4:** State Persistence (JSON Serialization, Save/Load Snapshot Restoration)
+* **Left Click / Enter / Space**: Advance dialogue / Confirm choice.
+
+
+* **Mouse Wheel Up / Tab / H**: Open Dialogue History (Backlog).
+
+
+* **Mouse Wheel Down / Right Click / Esc**: Close Backlog.
+
+
+* **S Key**: Quick Save game state to `saves/save1.json`.
+
+
+* **L Key**: Quick Load game state from `saves/save1.json`.
+
+
+
+---
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+

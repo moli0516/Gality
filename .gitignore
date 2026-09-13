@@ -6,3 +6,4 @@ code_packer.py
 *.jpg
 *.ttf
 *.ogg
+devtools/

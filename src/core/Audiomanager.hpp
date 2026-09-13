@@ -1,69 +1,107 @@
 #pragma once
 #include <SFML/Audio.hpp>
 #include <string>
-#include <unordered_map>
+#include <memory>
 #include <iostream>
-#include <optional>
+#include "LRUCache.hpp"
+#include "Easing.hpp"
 
 class AudioManager {
 private:
-    // BGM 播放器 (串流模式)
-    std::optional<sf::Music> bgm;
+    sf::Music activeBgm;
+    sf::Music fadingBgm;
+    std::unique_ptr<sf::Sound> voiceSound;
     std::string currentBgmPath;
 
-    // CV / SFX 緩衝區快取
-    std::unordered_map<std::string, sf::SoundBuffer> soundBuffers;
-    std::optional<sf::Sound> voiceSound;
+    LRUCache<std::string, std::shared_ptr<sf::SoundBuffer>> voiceCache;
+
+    // BGM 淡入淡出變數
+    bool isCrossfading = false;
+    float fadeTimer = 0.0f;
+    float fadeDuration = 1.5f; // 漸變時間 1.5 秒
 
 public:
-    AudioManager() = default;
+    AudioManager() : voiceCache(20) {}
 
-    // 播放背景音樂 (支援跨節點連續播放，不中斷)
-    void playBGM(const std::string& path) {
-        if (path.empty() || path == currentBgmPath) return;
+    void update(float deltaTime) {
+        if (isCrossfading) {
+            fadeTimer += deltaTime;
+            float progress = fadeTimer / fadeDuration;
 
-        bgm.emplace(); // 重新建構 Music 實例
-        if (!bgm->openFromFile(path)) {
-            std::cerr << "[AudioManager] Failed to load BGM: " << path << std::endl;
-            bgm.reset();
-            return;
+            if (progress >= 1.0f) {
+                progress = 1.0f;
+                isCrossfading = false;
+                fadingBgm.stop();
+            }
+
+            float activeVolume = Easing::easeInQuad(progress) * 100.0f;
+            float fadingVolume = (1.0f - Easing::easeOutQuad(progress)) * 100.0f;
+
+            activeBgm.setVolume(activeVolume);
+            fadingBgm.setVolume(fadingVolume);
         }
-        
-        bgm->setLooping(true);
-        bgm->setVolume(40.f); // BGM 音量設低一點避免蓋過語音
-        bgm->play();
-        currentBgmPath = path;
+    }
+
+    void playBGM(const std::string& audioPath, float fadeTime = 1.5f) {
+        if (audioPath.empty() || audioPath == currentBgmPath) return;
+
+        currentBgmPath = audioPath;
+        fadeDuration = fadeTime;
+        fadeTimer = 0.0f;
+
+        // 將當前播放的音樂轉入舊音樂軌道準備淡出
+        if (activeBgm.getStatus() == sf::SoundStream::Status::Playing) {
+            fadingBgm.stop();
+            // 切換音樂
+            if (activeBgm.openFromFile(audioPath)) {
+                activeBgm.setLooping(true);
+                activeBgm.setVolume(0.0f);
+                activeBgm.play();
+                isCrossfading = true;
+            }
+        } else {
+            if (activeBgm.openFromFile(audioPath)) {
+                activeBgm.setLooping(true);
+                activeBgm.setVolume(100.0f);
+                activeBgm.play();
+            }
+        }
     }
 
     void stopBGM() {
-        if (bgm) bgm->stop();
-        currentBgmPath = "";
+        activeBgm.stop();
+        fadingBgm.stop();
+        currentBgmPath.clear();
+        isCrossfading = false;
     }
 
-    // 播放角色語音 (單次觸發)
-    void playVoice(const std::string& path) {
-        if (path.empty()) {
-            stopVoice(); // 如果新節點沒有語音，停止上一句未播完的語音
-            return;
+    void playVoice(const std::string& audioPath) {
+        if (audioPath.empty()) return;
+
+        if (voiceSound) {
+            voiceSound->stop();
         }
 
-        auto it = soundBuffers.find(path);
-        if (it == soundBuffers.end()) {
-            sf::SoundBuffer buffer;
-            if (!buffer.loadFromFile(path)) {
-                std::cerr << "[AudioManager] Failed to load Voice: " << path << std::endl;
+        std::shared_ptr<sf::SoundBuffer> buffer;
+        if (voiceCache.contains(audioPath)) {
+            buffer = voiceCache.get(audioPath);
+        } else {
+            buffer = std::make_shared<sf::SoundBuffer>();
+            if (buffer->loadFromFile(audioPath)) {
+                voiceCache.put(audioPath, buffer);
+            } else {
+                std::cerr << "[AudioManager] Failed to load Voice: " << audioPath << std::endl;
                 return;
             }
-            soundBuffers[path] = std::move(buffer);
         }
 
-        // 綁定 Buffer 並播放
-        voiceSound.emplace(soundBuffers[path]);
-        voiceSound->setVolume(100.f);
+        voiceSound = std::make_unique<sf::Sound>(*buffer);
         voiceSound->play();
     }
 
     void stopVoice() {
-        if (voiceSound) voiceSound->stop();
+        if (voiceSound) {
+            voiceSound->stop();
+        }
     }
 };

@@ -1,4 +1,6 @@
 {
-    "currentNodeId": "node_01",
-    "flags": {}
+    "currentNodeId": "node_03_a",
+    "flags": {
+        "favorability": 10
+    }
 }

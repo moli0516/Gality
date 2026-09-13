@@ -1,0 +1,306 @@
+@start node_01
+
+[node_01]
+bg: assets/bg/classroom.jpg
+bgm: assets/audio/bgm_daily.ogg
+旁白: 放學後的陽光透過窗戶灑在課桌上，教室裡只剩下我和學姐兩個人。
+-> node_02
+
+[node_02]
+bg: assets/bg/classroom.jpg
+char: assets/characters/senior_normal.png
+cv: assets/audio/cv_01.ogg
+學姐: 你終於準備好了嗎？我們等的遊戲引擎開發計劃，今天必須確定下來。
+-> node_03
+
+[node_03]
+bg: assets/bg/classroom.jpg
+char: assets/characters/senior_normal.png
+我: 抱歉學姐，剛剛在確認 C++17 的 SFML 3.x 資產快取邏輯，耽誤了一點時間。
+-> choice_01
+
+[choice_01]
+? [包在我身上吧！今晚就能搞定！] -> act_favor_up
+? [感覺好麻煩啊... 可以交給別人嗎？] -> act_favor_down
+
+[act_favor_up]
+$ favorability += 10
+-> node_04_a
+
+[act_favor_down]
+$ favorability += -5
+-> node_04_b
+
+[node_04_a]
+bg: assets/bg/classroom.jpg
+char: assets/characters/senior_happy.png
+cv: assets/audio/cv_happy.ogg
+學姐: 真可靠呢！我就知道沒有看錯你。
+-> node_05
+
+[node_04_b]
+bg: assets/bg/classroom.jpg
+char: assets/characters/senior_pout.png
+cv: assets/audio/cv_pout.ogg
+學姐: 真是的，又在說這種懶散的話了...
+-> node_05
+
+[node_05]
+bg: assets/bg/hallway.jpg
+char: assets/characters/senior_normal.png
+bgm: assets/audio/bgm_club.ogg
+cv: assets/audio/cv_05.ogg
+學姐: 那麼，我們去社團教室討論具體的系統架構吧。
+-> node_06
+
+[node_06]
+bg: assets/bg/hallway.jpg
+旁白: 我們沿著走廊走向資研社的社團教室。
+-> node_07
+
+[node_07]
+bg: assets/bg/clubroom.jpg
+我: 對了學姐，關於存讀檔與 Backlog 歷史回溯，我已經寫好框架了。
+-> node_08
+
+[node_08]
+bg: assets/bg/clubroom.jpg
+char: assets/characters/senior_surprised.png
+cv: assets/audio/cv_08.ogg
+學姐: 真的嗎？那向上滾動滾輪就能看到剛才的對話歷史囉？
+-> node_09
+
+[node_09]
+bg: assets/bg/clubroom.jpg
+char: assets/characters/senior_smile.png
+我: 沒錯，而且使用了 Command 模式與狀態堆疊，隨時支援 Rollback。
+-> node_10
+
+[node_10]
+bg: assets/bg/clubroom.jpg
+char: assets/characters/senior_normal.png
+cv: assets/audio/cv_10.ogg
+學姐: 聽起來好厲害！那記憶體管理部分呢？
+-> node_11
+
+[node_11]
+bg: assets/bg/clubroom.jpg
+char: assets/characters/senior_normal.png
+我: 我實作了 LRU (Least Recently Used) Cache 快取，自動釋放久未使用的紋理。
+-> node_12
+
+[node_12]
+bg: assets/bg/clubroom.jpg
+char: assets/characters/senior_happy.png
+cv: assets/audio/cv_12.ogg
+學姐: 這下即使圖片再多，RAM 也不會爆掉了呢！讚喔！
+-> node_13
+
+[node_13]
+bg: assets/bg/sunset.jpg
+bgm: assets/audio/bgm_quiet.ogg
+旁白: 不知不覺中，天色漸漸暗了下來。
+-> node_14
+
+[node_14]
+bg: assets/bg/sunset.jpg
+char: assets/characters/senior_normal.png
+cv: assets/audio/cv_14.ogg
+學姐: 天黑了呢... 今天的討論就先到這裡吧？
+-> node_15
+
+[node_15]
+bg: assets/bg/sunset.jpg
+char: assets/characters/senior_normal.png
+我: 好的學姐，要一起走去車站嗎？
+-> choice_02
+
+[choice_02]
+? [邀請學姐一起去 Cafe 喝杯咖啡] -> act_cafe
+? [直接搭電車回家] -> act_home
+
+[act_cafe]
+$ favorability += 15
+-> node_16_a
+
+[act_home]
+$ favorability += 0
+-> node_16_b
+
+[node_16_a]
+bg: assets/bg/sunset.jpg
+char: assets/characters/senior_happy.png
+cv: assets/audio/cv_16_a.ogg
+學姐: 好啊！我知道車站附近有一家很安靜的 Cafe。
+-> node_17
+
+[node_16_b]
+bg: assets/bg/sunset.jpg
+char: assets/characters/senior_smile.png
+cv: assets/audio/cv_16_b.ogg
+學姐: 好吧，那今天就早點休息吧，明天見囉！
+-> node_17
+
+[node_17]
+bg: assets/bg/station.jpg
+bgm: assets/audio/bgm_daily.ogg
+旁白: 離開學校後，我們來到了車站前。
+-> node_18
+
+[node_18]
+bg: assets/bg/station.jpg
+我: 對了，這款 Gality 引擎之後還打算加入音效漸變 Fade-in/out。
+-> node_19
+
+[node_19]
+bg: assets/bg/station.jpg
+char: assets/characters/senior_happy.png
+cv: assets/audio/cv_19.ogg
+學姐: 還有畫面淡出與溶解對吧？那演出效果一定超棒！
+-> node_20
+
+[node_20]
+bg: assets/bg/station.jpg
+char: assets/characters/senior_normal.png
+我: 嗯，Week 7 規劃了 Easing 插值函式庫。
+-> node_21
+
+[node_21]
+bg: assets/bg/station.jpg
+char: assets/characters/senior_normal.png
+cv: assets/audio/cv_21.ogg
+學姐: 那 Week 8 的劇本 DSL 工具鏈呢？
+-> node_22
+
+[node_22]
+bg: assets/bg/station.jpg
+char: assets/characters/senior_smile.png
+我: 到時候只要用純文字寫劇本，轉換器就會自動輸出 JSON 囉！
+-> node_23
+
+[node_23]
+bg: assets/bg/station.jpg
+char: assets/characters/senior_happy.png
+cv: assets/audio/cv_23.ogg
+學姐: 太好了！這樣非工程師也能輕鬆創作故事了呢！
+-> node_24
+
+[node_24]
+bg: assets/bg/night_street.jpg
+bgm: assets/audio/bgm_quiet.ogg
+旁白: 夜幕低垂，街燈陸續亮起。
+-> node_25
+
+[node_25]
+bg: assets/bg/night_street.jpg
+char: assets/characters/senior_smile.png
+cv: assets/audio/cv_25.ogg
+學姐: 謝謝你今天陪我討論這麼久。
+-> node_26
+
+[node_26]
+bg: assets/bg/night_street.jpg
+char: assets/characters/senior_smile.png
+我: 哪裡，這是我應該做的。
+-> node_27
+
+[node_27]
+bg: assets/bg/night_street.jpg
+char: assets/characters/senior_normal.png
+cv: assets/audio/cv_27.ogg
+學姐: 對了，你有沒有想過將這個專案放進 CV？
+-> node_28
+
+[node_28]
+bg: assets/bg/night_street.jpg
+char: assets/characters/senior_normal.png
+我: 有啊，這展示了 C++17 記憶體與架構設計能力，面試 Quant/Backend 很加分。
+-> node_29
+
+[node_29]
+bg: assets/bg/night_street.jpg
+char: assets/characters/senior_happy.png
+cv: assets/audio/cv_29.ogg
+學姐: 相信你一定能拿到心儀的 Offer 的！
+-> node_30
+
+[node_30]
+bg: assets/bg/night_street.jpg
+char: assets/characters/senior_happy.png
+我: 謝謝學姐的祝福！
+-> node_31
+
+[node_31]
+bg: assets/bg/station.jpg
+bgm: assets/audio/bgm_daily.ogg
+旁白: 電車進站的廣播聲響起。
+-> node_32
+
+[node_32]
+bg: assets/bg/station.jpg
+char: assets/characters/senior_normal.png
+cv: assets/audio/cv_32.ogg
+學姐: 啊，我的車來了。
+-> node_33
+
+[node_33]
+bg: assets/bg/station.jpg
+char: assets/characters/senior_normal.png
+我: 回去路上請小心喔。
+-> node_34
+
+[node_34]
+bg: assets/bg/station.jpg
+char: assets/characters/senior_smile.png
+cv: assets/audio/cv_34.ogg
+學姐: 恩！明天學校見！
+-> node_35
+
+[node_35]
+bg: assets/bg/station.jpg
+旁白: 看著學姐登上電車的身影，心中充滿了成就感。
+-> node_36
+
+[node_36]
+bg: assets/bg/room.jpg
+bgm: assets/audio/bgm_quiet.ogg
+我: 回家後繼續優化引擎的渲染管線吧。
+-> node_37
+
+[node_37]
+bg: assets/bg/room.jpg
+旁白: 回到家裡，打開房間的燈。
+-> node_38
+
+[node_38]
+bg: assets/bg/room.jpg
+我: 抱著 Kuromi 娃娃休息一下，接著準備程式碼重構。
+-> node_39
+
+[node_39]
+bg: assets/bg/room.jpg
+旁白: 引擎狀態機正在評估最終的結局條件...
+-> cond_check_ending
+
+[cond_check_ending]
+IF favorability >= 10 THEN node_good_ending ELSE node_normal_ending
+
+[node_good_ending]
+bg: assets/bg/classroom.jpg
+char: assets/characters/senior_happy.png
+bgm: assets/audio/bgm_daily.ogg
+cv: assets/audio/cv_good_end.ogg
+系統通知: 恭喜！學姐好感度達標！解鎖 【True Developer Ending】！
+-> end_choice
+
+[node_normal_ending]
+bg: assets/bg/classroom.jpg
+char: assets/characters/senior_normal.png
+bgm: assets/audio/bgm_quiet.ogg
+cv: assets/audio/cv_norm_end.ogg
+系統通知: 解鎖 【Normal Developer Ending】！請繼續努力提升好感度！
+-> end_choice
+
+[end_choice]
+? [重新開始遊戲 (Restart)] -> node_01
+? [退出遊戲 (Exit)] -> node_01
