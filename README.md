@@ -1,8 +1,4 @@
-
-<<<<<<< HEAD
 # Gality Visual Novel Engine
-=======
->>>>>>> b2c207217165407d1266423bc8cbf6092856c22e
 
 **Gality** is a lightweight, high-performance, custom C++17 visual novel engine built on **SFML 3.x**. Designed with a clear modular architecture, memory efficiency, and state-machine-driven narrative flow, Gality provides a seamless pipeline from human-readable narrative scripts to execution.
 
@@ -22,7 +18,6 @@
 ---
 
 ## Project Structure
-
 
 ```
 
@@ -71,37 +66,32 @@ Gality/
 
 1. **Clone the Repository**:
    ```powershell
-   git clone [https://github.com/your-username/Gality.git](https://github.com/your-username/Gality.git)
+   git clone https://github.com/moli0516/Gality.git
    cd Gality
+
+   ```
 
 ```
 
 2. **Configure with CMake**:
 ```powershell
-<<<<<<< HEAD
 cmake -B build -S . -DCMAKE_TOOLCHAIN_FILE="[path-to-vcpkg]/scripts/buildsystems/vcpkg.cmake"
-=======
-git clone https://github.com/moli0516/Gality.git
-cd Gality
->>>>>>> b2c207217165407d1266423bc8cbf6092856c22e
 
 ```
 
-
 3. **Build the Project**:
+
 ```powershell
 cmake --build build --config Debug
 
 ```
 
-
 4. **Run Gality**:
+
 ```powershell
 .\build\Debug\Gality.exe
 
 ```
-
-
 
 ---
 
@@ -165,24 +155,13 @@ python gality_compiler.py assets/scripts/demo.gality assets/scripts/demo_long.js
 ## Controls
 
 * **Left Click / Enter / Space**: Advance dialogue / Confirm choice.
-
-
 * **Mouse Wheel Up / Tab / H**: Open Dialogue History (Backlog).
-
-
 * **Mouse Wheel Down / Right Click / Esc**: Close Backlog.
-
-
 * **S Key**: Quick Save game state to `saves/save1.json`.
-
-
 * **L Key**: Quick Load game state from `saves/save1.json`.
-
-
 
 ---
 
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
-
