@@ -8,6 +8,8 @@
       "text": "放學後的陽光透過窗戶灑在課桌上，空氣中彌漫著舊書與茶香。這是程式開發社團的午後。",
       "bg": "assets/bg/clubroom.jpg",
       "character": "",
+      "bgm": "assets/audio/bgm_club.ogg",
+      "cv": "",
       "next": "node_02"
     },
     {
@@ -17,6 +19,8 @@
       "text": "你終於來了！社團的 Galgame 引擎專案剛好遇到了瓶頸，我正需要你的幫忙。",
       "bg": "assets/bg/clubroom.jpg",
       "character": "assets/characters/senior.png",
+      "bgm": "assets/audio/bgm_club.ogg",
+      "cv": "assets/audio/cv_senior_01.ogg",
       "next": "choice_01"
     },
     {
@@ -48,6 +52,8 @@
       "text": "我就知道你最靠得住！那我們現在就來看核心渲染器 (LayerRenderer) 的 Bug 吧。",
       "bg": "assets/bg/clubroom.jpg",
       "character": "assets/characters/senior_happy.png",
+      "bgm": "assets/audio/bgm_club.ogg",
+      "cv": "assets/audio/cv_senior_02.ogg",
       "next": "node_04"
     },
     {
@@ -57,6 +63,8 @@
       "text": "真是的，總是這麼提不起勁... 不過紅茶我剛好泡好了，先喝一杯再開始工作吧。",
       "bg": "assets/bg/clubroom.jpg",
       "character": "assets/characters/senior.png",
+      "bgm": "assets/audio/bgm_club.ogg",
+      "cv": "assets/audio/cv_senior_03.ogg",
       "next": "node_04"
     },
     {
@@ -66,6 +74,8 @@
       "text": "幾小時過去了，夜幕逐漸降臨。螢幕上的代碼終於成功通過了編譯，視窗裡流暢地顯示出了打字機效果。",
       "bg": "assets/bg/clubroom.jpg",
       "character": "assets/characters/senior.png",
+      "bgm": "assets/audio/bgm_club.ogg",
+      "cv": "",
       "next": "node_05"
     },
     {
@@ -75,6 +85,8 @@
       "text": "太棒了！Gality 引擎居然真的跑起來了！為了慶祝專案里程碑，今晚要不要一起去吃個宵夜？",
       "bg": "assets/bg/clubroom.jpg",
       "character": "assets/characters/senior_happy.png",
+      "bgm": "assets/audio/bgm_club.ogg",
+      "cv": "assets/audio/cv_senior_04.ogg",
       "next": "choice_02"
     },
     {
@@ -82,7 +94,7 @@
       "type": "choice",
       "choices": [
         { "text": "「好啊！我知道附近有一家超讚的拉麵店。」 (+10 好感度)", "next": "act_dinner" },
-        { "text": "「太晚了，我想早點回去抱著娃娃休息。」 (好感度不變)", "next": "act_go_home" }
+        { "text": "「太晚了，我想早點回去休息。」 (好感度不變)", "next": "act_go_home" }
       ]
     },
     {
@@ -113,9 +125,11 @@
       "id": "true_ending",
       "type": "dialogue",
       "speaker": "學姐",
-      "text": "太好了！謝謝你一直陪著我。未來的 Week 3 音效系統與 Save/Load 模組，我們也一起加油吧！(True Ending)",
+      "text": "太好了！謝謝你一直陪著我。未來的 Week 4 Save/Load 模組，我們也一起加油吧！(True Ending)",
       "bg": "assets/bg/clubroom.jpg",
       "character": "assets/characters/senior_happy.png",
+      "bgm": "assets/audio/bgm_club.ogg",
+      "cv": "assets/audio/cv_senior_05.ogg",
       "next": "end_game"
     },
     {
@@ -125,6 +139,8 @@
       "text": "今天辛苦你啦，回去好好休息吧！明天社課見囉。(Normal Ending)",
       "bg": "assets/bg/clubroom.jpg",
       "character": "assets/characters/senior.png",
+      "bgm": "assets/audio/bgm_club.ogg",
+      "cv": "assets/audio/cv_senior_06.ogg",
       "next": "end_game"
     },
     {
@@ -133,7 +149,18 @@
       "speaker": "系統",
       "text": "--- 示範劇本結束 ---",
       "bg": "assets/bg/clubroom.jpg",
-      "character": ""
+      "character": "",
+      "bgm": "",
+      "next": "end_choice",
+      "cv": ""
+    },
+    {
+        "id": "end_choice",
+        "type": "choice",
+        "choices": [
+          { "text": "重新開始遊戲 (Restart)", "next": "" },
+          { "text": "結束遊戲 (Exit)", "next": "" }
+        ]
     }
   ]
 }

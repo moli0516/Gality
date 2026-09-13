@@ -26,6 +26,8 @@ struct StoryNode {
     std::string text;
     std::string bgImagePath;
     std::string characterSpritePath;
+    std::string bgmPath;
+    std::string voicePath;
 
     // Choice / Branch 下一步連接
     std::vector<ChoiceOption> choices;

@@ -39,6 +39,8 @@ public:
                 node->text = item.value("text", "");
                 node->bgImagePath = item.value("bg", "");
                 node->characterSpritePath = item.value("character", "");
+                node->bgmPath = item.value("bgm", "");
+                node->voicePath = item.value("cv", "");
             } else if (type == NodeType::Action) {
                 std::string flag = item["flag"];
                 int val = item["value"];

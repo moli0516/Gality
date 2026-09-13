@@ -1,49 +1,53 @@
 ﻿#include "StoryExecutor.hpp"
 
+StoryExecutor::StoryExecutor(Blackboard& bb) : blackboard(bb) {}
+
 void StoryExecutor::start(std::shared_ptr<StoryNode> rootNode) {
     currentNode = rootNode;
-    processCurrentNode();
+    evaluateCurrentNode();
 }
 
-void StoryExecutor::processCurrentNode() {
+void StoryExecutor::jumpToNode(std::shared_ptr<StoryNode> node) {
+    currentNode = node;
+}
+
+void StoryExecutor::advance(int choiceIndex) {
     if (!currentNode) return;
 
-    switch (currentNode->type) {
-        case NodeType::Action:
+    if (currentNode->type == NodeType::Dialogue) {
+        currentNode = currentNode->defaultNext;
+    } else if (currentNode->type == NodeType::Choice) {
+        if (choiceIndex >= 0 && choiceIndex < static_cast<int>(currentNode->choices.size())) {
+            currentNode = currentNode->choices[choiceIndex].nextNode;
+        }
+    }
+
+    evaluateCurrentNode();
+}
+
+void StoryExecutor::evaluateCurrentNode() {
+    while (currentNode) {
+        if (currentNode->type == NodeType::Action) {
             if (currentNode->actionFunc) {
                 currentNode->actionFunc(blackboard);
             }
-            // 執行完動作後自動流轉到下一個節點
             currentNode = currentNode->defaultNext;
-            processCurrentNode();
-            break;
-
-        case NodeType::Condition:
+        } else if (currentNode->type == NodeType::Condition) {
             if (currentNode->conditionFunc) {
                 currentNode = currentNode->conditionFunc(blackboard);
             } else {
                 currentNode = currentNode->defaultNext;
             }
-            processCurrentNode();
-            break;
-
-        case NodeType::Dialogue:
-        case NodeType::Choice:
-            // 暫停流轉，等待玩家操作
-            break;
+        } else {
+            break; // Dialogue 或 Choice 節點，停下等待渲染與玩家操作
+        }
     }
 }
 
-void StoryExecutor::advance(size_t choiceIndex) {
-    if (!currentNode) return;
+std::shared_ptr<StoryNode> StoryExecutor::getCurrentNode() const {
+    return currentNode;
+}
 
-    if (currentNode->type == NodeType::Dialogue) {
-        currentNode = currentNode->defaultNext;
-        processCurrentNode();
-    } else if (currentNode->type == NodeType::Choice) {
-        if (choiceIndex < currentNode->choices.size()) {
-            currentNode = currentNode->choices[choiceIndex].nextNode;
-            processCurrentNode();
-        }
-    }
+bool StoryExecutor::isFinished() const {
+    return currentNode == nullptr;
 }

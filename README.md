@@ -1,111 +1,137 @@
+Here is a refreshed, professional `README.md` for your **Gality** repository. It highlights your architecture, tech stack, features, and setup instructions in a clean, showcase-ready format for GitHub and recruiters.
+
+---
+
 # Gality Engine
 
-A lightweight, data-driven Visual Novel (Galgame) engine built from scratch in C++17. Designed as a deep-dive into system architecture, Gality bypasses heavy commercial engines in favor of low-level integration, finite state machines, and dynamic asset rendering.
+A lightweight, data-driven Visual Novel (Galgame) engine built from scratch in **C++17** using **SFML 3.x**.
 
-## Core Features
+Designed with modern systems architecture in mind, Gality bypasses heavy commercial engines to explore low-level engine integration, finite state machines, dynamic layer rendering, and custom state serialization.
 
-* **JSON-Driven Narrative FSM:** Write branching storylines, conditional logic, and action triggers entirely in plain JSON. No hardcoded logic required.
-* **Blackboard State Management:** A centralized variable manager that tracks player choices, favorability scores, and global flags to trigger multi-ending routes.
-* **Dynamic Layer Rendering:** Automated z-indexing and asset caching for backgrounds, character sprites, and UI elements using SFML 3.x.
-* **Authentic Visual Novel UI:** Features a smooth typewriter text effect, UTF-8 text parsing, and interactive branching choice menus with hover state detection.
-* **Modern C++ Architecture:** Header-heavy, modular design utilizing C++17 features (`std::optional`, `std::shared_ptr`, `std::function`).
+---
+
+## Key Features
+
+* **Data-Driven Narrative FSM:** Write complex branching storylines, conditional routing, and global variable updates entirely in plain JSON scripts.
+* **Blackboard State Management:** A centralized key-value store managing player choices, favorability scores, and global flags to dynamically trigger multi-ending routes.
+* **Layer-Based Renderer & Asset Cache:** Automated z-indexed rendering for backgrounds, character sprites, and UI elements with built-in texture caching.
+* **Audio Pipeline:** Stream persistent BGM across scene transitions and trigger low-latency single-shot voice acting (CV) audio.
+* **State Serialization (Save/Load):** Fully serializable game snapshots allowing full runtime restoration of node execution pointers and Blackboard state via JSON.
+* **Authentic Visual Novel UI:** Smooth frame-independent typewriter text effect, CJK UTF-8/UTF-32 text rendering, and interactive choice menus with hover state detection.
+
+---
 
 ## Tech Stack
 
-* **Language:** C++17
-* **Graphics & Windowing:** SFML 3.0.2
-* **Serialization:** nlohmann/json
-* **Build System:** CMake
-* **Package Manager:** vcpkg
+* **Core Language:** C++17 (`std::optional`, `std::shared_ptr`, `std::function`)
+* **Graphics & Audio:** SFML 3.0.2
+* **Serialization & Scripting:** `nlohmann/json`
+* **Build System:** CMake (3.20+)
+* **Package Management:** `vcpkg` (Manifest Mode)
+
+---
 
 ## Project Structure
 
-**Plaintext**
-
-```
+```text
 Gality/
 ├── assets/
-│   ├── bg/           # Background images (.jpg/.png)
+│   ├── audio/        # BGM (.ogg) and Voice Acting (.ogg/.wav)
+│   ├── bg/           # Background textures (.jpg/.png)
 │   ├── characters/   # Transparent character sprites (.png)
 │   ├── fonts/        # CJK TrueType fonts (e.g., font.ttf)
-│   └── scripts/      # JSON story scripts
+│   └── scripts/      # Narrative JSON scripts (demo_long.json)
+├── saves/            # Generated JSON save state snapshots
 ├── src/
-│   ├── core/         # Core engine logic (Blackboard.hpp)
-│   ├── render/       # UI & Graphics (DialogueBox.hpp, ChoiceUI.hpp, LayerRenderer.hpp)
-│   ├── story/        # Narrative FSM (StoryNode.hpp, StoryExecutor.hpp, ScriptLoader.hpp)
-│   └── main.cpp      # Engine entry point and main loop
-├── vcpkg.json        # vcpkg manifest for dependencies
-└── CMakeLists.txt    # Build configuration
+│   ├── core/         # Blackboard, AudioManager, SaveManager
+│   ├── render/       # DialogueBox, ChoiceUI, LayerRenderer
+│   ├── story/        # StoryNode, StoryExecutor, ScriptLoader
+│   └── main.cpp      # Event loop & subsystem coordination
+├── vcpkg.json        # Dependencies manifest
+└── CMakeLists.txt    # Modern CMake configuration
+
 ```
 
-## Build Instructions (Windows / MSVC)
+---
 
-Gality uses `vcpkg` in manifest mode to automatically download and build dependencies (SFML 3.x, nlohmann\_json).
+## Quick Start (Build & Run)
 
 ### Prerequisites
 
-* Visual Studio 2022 (with Desktop development with C++)
-* CMake (3.20+)
-* vcpkg
+* **Compiler:** MSVC (Visual Studio 2022 recommended with C++17 support)
+* **Build Tools:** CMake (3.20+)
+* **Package Manager:** `vcpkg`
 
-### Compilation
+### Build Instructions
 
-1. Clone the repository and ensure your `vcpkg` path is correct.
-2. Open PowerShell in the project root directory and configure the project:
-
-**PowerShell**
+1. **Clone the repository:**
+```powershell
+git clone https://github.com/your-username/Gality.git
+cd Gality
 
 ```
-# Replace the path with your actual vcpkg installation path
+
+
+2. **Configure CMake with vcpkg integration:**
+```powershell
 cmake -B build -S . -DCMAKE_TOOLCHAIN_FILE="<path-to-vcpkg>/scripts/buildsystems/vcpkg.cmake"
-```
-
-3. Build the executable:
-
-**PowerShell**
 
 ```
-cmake --build build
+
+
+3. **Compile the engine:**
+```powershell
+cmake --build build --config Debug
+
 ```
 
-4. Run the engine:
 
-**PowerShell**
-
-```
+4. **Ensure Assets & Run:**
+Make sure a CJK-compatible TrueType font is placed at `assets/fonts/font.ttf`, then run:
+```powershell
 .\build\Debug\Gality.exe
-```
-
-*Note: Ensure a valid CJK font is placed at `assets/fonts/font.ttf` before running, otherwise the UI will fail to initialize.*
-
-## Scripting Guide
-
-Story progression is controlled via `assets/scripts/demo.json`. The engine parses four types of nodes:
-
-* `dialogue`: Renders text, speaker names, backgrounds, and character sprites.
-* `choice`: Halts execution and presents clickable branching options.
-* `action`: Modifies integer or boolean flags in the Blackboard (e.g., adding favorability).
-* `condition`: Evaluates Blackboard flags to route the story to different next nodes (e.g., Good End vs. Normal End).
-
-**Example Node:**
-
-**JSON**
 
 ```
-{
-  "id": "node_01",
-  "type": "dialogue",
-  "speaker": "Senpai",
-  "text": "Welcome to the programming club!",
-  "bg": "assets/bg/clubroom.jpg",
-  "character": "assets/characters/senior.png",
-  "next": "choice_01"
-}
+
+
+
+---
+
+## Controls
+
+| Key / Mouse Action | Function |
+| --- | --- |
+| **Left Click / Space / Enter** | Advance Dialogue / Complete Typewriter Effect |
+| **Mouse Hover + Click** | Select Branching Choice Options |
+| **`S` Key** | Save Snapshot to `saves/save1.json` |
+| **`L` Key** | Load Snapshot from `saves/save1.json` |
+
+---
+
+## Architecture Overview
+
+Detailed system flow and decoupling strategies are documented in [ARCHITECTURE.md](ARCHITECTURE.md).
+
+```text
+[ ScriptLoader ] ---> [ StoryNode Graph ] 
+                             |
+[ Input Events ] ---> [ StoryExecutor ] <---> [ Blackboard State ]
+                             |
+                             v
+                 +-----------------------+
+                 |  syncCurrentNodeState |
+                 +-----------------------+
+                   /         |         \
+                  v          v          v
+          [LayerRenderer] [DialogueBox] [AudioManager]
+
 ```
+
+---
 
 ## Roadmap
 
-* [X]  **Week 1:** Core Logic (FSM, Blackboard, JSON Parsing)
-* [X]  **Week 2:** Visuals & UI (SFML 3.x Window, Typewriter Effect, Layer Rendering, Choice UI)
-* [ ]  **Week 3:** Audio System (BGM loop, Voice Acting integration via SFML Audio or SoLoud)
-* [ ]  **Week 4:** Save/Load System (JSON state serialization and snapshot restoration)
+* [x] **Phase 1:** Core Logic (FSM Graph, Blackboard State, JSON Script Loader)
+* [x] **Phase 2:** Visuals & UI (SFML 3.x Window, Typewriter Text Engine, Layered Renderer, Interactive Choice Buttons)
+* [x] **Phase 3:** Audio Engine (SFML Audio BGM Looping & Single-shot Voice Stream Control)
+* [x] **Phase 4:** State Persistence (JSON Serialization, Save/Load Snapshot Restoration)
