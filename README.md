@@ -66,7 +66,7 @@ Gality/
 
 1. **Clone the repository:**
 ```powershell
-git clone https://github.com/your-username/Gality.git
+git clone https://github.com/moli0516/Gality.git
 cd Gality
 
 ```
