@@ -1,5 +1,8 @@
 
+<<<<<<< HEAD
 # Gality Visual Novel Engine
+=======
+>>>>>>> b2c207217165407d1266423bc8cbf6092856c22e
 
 **Gality** is a lightweight, high-performance, custom C++17 visual novel engine built on **SFML 3.x**. Designed with a clear modular architecture, memory efficiency, and state-machine-driven narrative flow, Gality provides a seamless pipeline from human-readable narrative scripts to execution.
 
@@ -75,7 +78,12 @@ Gality/
 
 2. **Configure with CMake**:
 ```powershell
+<<<<<<< HEAD
 cmake -B build -S . -DCMAKE_TOOLCHAIN_FILE="[path-to-vcpkg]/scripts/buildsystems/vcpkg.cmake"
+=======
+git clone https://github.com/moli0516/Gality.git
+cd Gality
+>>>>>>> b2c207217165407d1266423bc8cbf6092856c22e
 
 ```
 
