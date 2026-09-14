@@ -1,6 +1,8 @@
 ﻿#pragma once
 #include <memory>
 #include <vector>
+#include <string>
+#include <functional>
 #include "StoryNode.hpp"
 #include "../core/Blackboard.hpp"
 #include "../core/SaveManager.hpp"
@@ -9,9 +11,13 @@ class StoryExecutor {
 private:
     std::shared_ptr<StoryNode> currentNode;
     Blackboard& blackboard;
-    
-    // 🔙 Week 5: 狀態快照堆疊 (用於 Rollback)
+
+    // 狀態快照堆疊 (最高保留 128 步歷史)
     std::vector<SaveSnapshot> historyStack;
+    const size_t maxHistoryCapacity = 128;
+
+    // 用於記錄當前演出狀態快照
+    SaveSnapshot currentPresentationState;
 
 public:
     explicit StoryExecutor(Blackboard& bb) : blackboard(bb) {}
@@ -24,13 +30,29 @@ public:
 
     void jumpToNode(std::shared_ptr<StoryNode> node) {
         currentNode = node;
+        evaluateCurrentNode();
+    }
+
+    // 更新當前舞台外觀狀態，以確保 push 時能截取最新幀
+    void updatePresentationState(const std::string& bg, 
+                                const std::map<CharSlot, std::string>& slots, 
+                                std::optional<CharSlot> activeSlot, 
+                                const std::string& weather, 
+                                const std::string& bgm) {
+        currentPresentationState.bgImagePath = bg;
+        currentPresentationState.slotTextures = slots;
+        currentPresentationState.activeSlot = activeSlot;
+        currentPresentationState.weather = weather;
+        currentPresentationState.bgmPath = bgm;
     }
 
     void advance(int choiceIndex = -1) {
         if (!currentNode) return;
 
-        // 推進前記錄當前快照
-        recordSnapshot();
+        // 僅對具備呈現性質的 Dialogue 節點建立可回滾快照
+        if (currentNode->type == NodeType::Dialogue) {
+            recordSnapshot();
+        }
 
         if (currentNode->type == NodeType::Dialogue) {
             currentNode = currentNode->defaultNext;
@@ -45,17 +67,31 @@ public:
 
     void recordSnapshot() {
         if (currentNode) {
-            historyStack.push_back({currentNode->id, blackboard.getAllInts()});
+            SaveSnapshot snap = currentPresentationState;
+            snap.currentNodeId = currentNode->id;
+            snap.intFlags = blackboard.getAllInts();
+
+            if (historyStack.size() >= maxHistoryCapacity) {
+                historyStack.erase(historyStack.begin());
+            }
+            historyStack.push_back(std::move(snap));
         }
     }
 
-    // 🔙 倒退回上一個 Dialogue/Choice 節點
+    // 倒退回上一個有效對話節點
     bool rollback(SaveSnapshot& outSnapshot) {
         if (historyStack.empty()) return false;
 
         outSnapshot = historyStack.back();
         historyStack.pop_back();
+
+        // 還原變數
+        blackboard.setAllInts(outSnapshot.intFlags);
         return true;
+    }
+
+    bool canRollback() const {
+        return !historyStack.empty();
     }
 
     void evaluateCurrentNode() {
@@ -83,5 +119,9 @@ public:
 
     bool isFinished() const {
         return currentNode == nullptr;
+    }
+
+    const SaveSnapshot& getCurrentPresentationState() const {
+        return currentPresentationState;
     }
 };

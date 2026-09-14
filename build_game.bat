@@ -7,7 +7,7 @@ echo ===================================================
 
 :: 1. 編譯 DSL 劇本為 JSON[cite: 1]
 echo [1/4] Compiling .gality DSL script...
-python gality_compiler.py assets/scripts/demo_long.gality assets/scripts/demo_long.json
+python -m devtools.scripts.gality_compiler assets/scripts/main_story_multi.gality assets/scripts/demo_long.json
 if %ERRORLEVEL% NEQ 0 (
     echo [ERROR] Failed to compile DSL script!
     pause
@@ -16,7 +16,7 @@ if %ERRORLEVEL% NEQ 0 (
 
 :: 2. 打包加密 assets 為 data.pak[cite: 1]
 echo [2/4] Packing assets into data.pak...
-python gality_packer.py assets data.pak
+python -m devtools.scripts.gality_packer assets data.pak
 if %ERRORLEVEL% NEQ 0 (
     echo [ERROR] Failed to pack assets!
     pause
@@ -37,6 +37,11 @@ if %ERRORLEVEL% NEQ 0 (
 echo [4/4] Generating Standalone Release Package...
 if not exist dist mkdir dist
 
+:: 複製加密資源包，讓發布版可以直接從 data.pak 讀取資源
+if exist data.pak (
+    copy /Y data.pak dist\
+)
+
 :: 複製執行檔與 DLL[cite: 1]
 if exist build\Release\Gality.exe (
     copy /Y build\Release\Gality.exe dist\
@@ -48,8 +53,8 @@ if exist build\vcpkg_installed\x64-windows\bin (
     copy /Y build\vcpkg_installed\x64-windows\bin\*.dll dist\
 )
 
-:: 💡 直接複製完整的 assets 資料夾至 dist\
-xcopy /E /I /Y assets dist\assets
+:: Strict archive-only package: do not copy the raw assets directory.
+:: The game reads from data.pak instead.
 
 :: 💡 自動尋找並複製 vcpkg 下所有的第三方需求 DLL (SFML 等)[cite: 1]
 if exist build\vcpkg_installed\x64-windows\bin (
@@ -58,12 +63,6 @@ if exist build\vcpkg_installed\x64-windows\bin (
 ) else if exist build\vcpkg_installed\x64-windows\debug\bin (
     echo Copying debug runtime DLLs from vcpkg...
     copy /Y build\vcpkg_installed\x64-windows\debug\bin\*.dll dist\
-)
-
-:: 複製外置 UI Theme 配置檔[cite: 1]
-if exist assets\config\ui_theme.json (
-    if not exist dist\assets\config mkdir dist\assets\config
-    copy /Y assets\config\ui_theme.json dist\assets\config\
 )
 
 echo ===================================================

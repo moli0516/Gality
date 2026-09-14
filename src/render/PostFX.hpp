@@ -3,6 +3,7 @@
 #include <cmath>
 #include <cstdlib>
 #include <iostream>
+#include "../core/AssetPack.hpp"
 
 class PostFX {
 private:
@@ -20,7 +21,13 @@ private:
 public:
     PostFX() {
         if (sf::Shader::isAvailable()) {
-            if (blurShader.loadFromFile("assets/shaders/blur.frag", sf::Shader::Type::Fragment)) {
+            std::string shaderSource;
+            if (AssetPack::readTextFile("shaders/blur.frag", shaderSource, "data.pak")) {
+                if (blurShader.loadFromMemory(shaderSource, sf::Shader::Type::Fragment)) {
+                    shaderLoaded = true;
+                    std::cout << "[PostFX] Blur shader loaded successfully from archive." << std::endl;
+                }
+            } else if (blurShader.loadFromFile("assets/shaders/blur.frag", sf::Shader::Type::Fragment)) {
                 shaderLoaded = true;
                 std::cout << "[PostFX] Blur shader loaded successfully." << std::endl;
             }

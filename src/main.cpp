@@ -1,110 +1,154 @@
 ﻿#include <SFML/Graphics.hpp>
 #include <SFML/Audio.hpp>
-#include <imgui.h>
-#include <imgui-SFML.h>
 #include <iostream>
 #include <memory>
 #include <filesystem>
 #include <unordered_map>
 #include <functional>
 
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
+#include "core/ConfigManager.hpp"
+#include "core/AssetPack.hpp"
 #include "story/ScriptLoader.hpp" 
 #include "core/Blackboard.hpp"
+#include "core/LRUCache.hpp"
+#include "core/HotReloader.hpp"
 #include "story/StoryExecutor.hpp"
 #include "render/DialogueBox.hpp"
 #include "render/ChoiceUI.hpp"
 #include "render/LayerRenderer.hpp"
 #include "render/BacklogUI.hpp"
 #include "render/DebugOverlay.hpp"
+#include "render/NodeGraphViewer.hpp"
 #include "render/WeatherSystem.hpp"
 #include "render/PostFX.hpp"
+#include "render/TransitionSystem.hpp"
 #include "render/UITheme.hpp"
-#include "render/TitleMenu.hpp" // 💡 Week 11 TitleMenu
+#include "render/TitleMenu.hpp"
+#include "render/SettingsUI.hpp"
+#include "render/SaveLoadUI.hpp"
 #include "core/AudioManager.hpp"
 #include "core/SaveManager.hpp"
 
 namespace fs = std::filesystem;
 
+// 1080p 邏輯視窗解析度基準
+constexpr unsigned int LOGICAL_WIDTH = 1920;
+constexpr unsigned int LOGICAL_HEIGHT = 1080;
+
+// Letterbox 視口計算工具函式 (防超寬/非 16:9 螢幕畫面拉伸)
+sf::View calculateLetterboxView(sf::Vector2u windowSize) {
+    float windowRatio = static_cast<float>(windowSize.x) / static_cast<float>(windowSize.y);
+    float targetRatio = static_cast<float>(LOGICAL_WIDTH) / static_cast<float>(LOGICAL_HEIGHT);
+
+    sf::View view(sf::FloatRect(sf::Vector2f(0.f, 0.f), sf::Vector2f(static_cast<float>(LOGICAL_WIDTH), static_cast<float>(LOGICAL_HEIGHT))));
+
+    if (windowRatio >= targetRatio) {
+        // 螢幕更寬 (Pillarbox: 左右黑邊)
+        float viewportWidth = targetRatio / windowRatio;
+        float viewportX = (1.0f - viewportWidth) * 0.5f;
+        view.setViewport(sf::FloatRect(sf::Vector2f(viewportX, 0.0f), sf::Vector2f(viewportWidth, 1.0f)));
+    } else {
+        // 螢幕更高 (Letterbox: 上下黑邊)
+        float viewportHeight = windowRatio / targetRatio;
+        float viewportY = (1.0f - viewportHeight) * 0.5f;
+        view.setViewport(sf::FloatRect(sf::Vector2f(0.0f, viewportY), sf::Vector2f(1.0f, viewportHeight)));
+    }
+
+    return view;
+}
+
 int main() {
-    // 1. 初始化 SFML 視窗
-    sf::RenderWindow window(sf::VideoMode(sf::Vector2u(1280, 720)), "Gality Galgame Engine MVP");
+    // 1. 初始化 1080p 全螢幕視窗與 Letterbox 視圖
+    auto videoMode = sf::VideoMode::getDesktopMode();
+    sf::RenderWindow window(videoMode, "Gality Engine", sf::State::Fullscreen);
     window.setFramerateLimit(60);
 
-    // 離屏渲染緩衝區 (SFML 3.x 建構子語法)
-    sf::RenderTexture sceneBuffer(sf::Vector2u(1280, 720));
+    sf::View letterboxView = calculateLetterboxView(window.getSize());
 
-    // 2. 初始化 ImGui-SFML
-    if (!ImGui::SFML::Init(window)) {
-        std::cerr << "Failed to initialize ImGui-SFML!" << std::endl;
-        return -1;
-    }
+    // 離屏緩衝區維持 1920x1080 原始畫質
+    sf::RenderTexture sceneBuffer(sf::Vector2u(LOGICAL_WIDTH, LOGICAL_HEIGHT));
+    sf::RenderTexture compositeBuffer(sf::Vector2u(LOGICAL_WIDTH, LOGICAL_HEIGHT));
 
-    // 3. 載入中文字型至 ImGui Font Atlas
-    ImGuiIO& io = ImGui::GetIO();
-    io.Fonts->AddFontFromFileTTF(
-        "assets/fonts/font.ttf",
-        16.0f,
-        nullptr,
-        io.Fonts->GetGlyphRangesChineseSimplifiedCommon()
-    );
-    ImGui::StyleColorsDark();
-
-    // 4. 確保 saves 與 config 資料夾存在
+    // 2. 建立目錄與載入配置
     fs::create_directories("saves");
     fs::create_directories("assets/config");
+    fs::create_directories("assets/masks");
 
-    // 5. 初始化數據與腳本
+    ConfigManager::load();
+
+    // 3. 初始化黑板與快取
     Blackboard blackboard;
+    LRUCache<std::string, std::shared_ptr<sf::Texture>> textureCache(50); 
+
     auto rootNode = ScriptLoader::loadFromFile("assets/scripts/demo_long.json");
     if (!rootNode) {
-        std::cerr << "Failed to load script!" << std::endl;
+#ifdef _WIN32
+        MessageBoxW(NULL, L"Cannot open script file: assets/scripts/demo_long.json", L"Gality Engine Error", MB_ICONERROR | MB_OK);
+#else
+        std::cerr << "Failed to load script: assets/scripts/demo_long.json" << std::endl;
+#endif
         return -1;
     }
 
-    // 建立 Node ID 索引表
     std::unordered_map<std::string, std::shared_ptr<StoryNode>> nodeIndexMap;
-    std::function<void(std::shared_ptr<StoryNode>)> buildIndex = [&](std::shared_ptr<StoryNode> node) {
-        if (!node || nodeIndexMap.count(node->id)) return;
-        nodeIndexMap[node->id] = node;
-        if (node->defaultNext) buildIndex(node->defaultNext);
-        for (auto& choice : node->choices) {
-            if (choice.nextNode) buildIndex(choice.nextNode);
-        }
-    };
-    buildIndex(rootNode);
+    for (const auto& [id, nodePtr] : ScriptLoader::nodeRegistry) {
+        nodeIndexMap[id] = nodePtr;
+    }
 
     StoryExecutor executor(blackboard);
 
-    // 6. 初始化 UI、音效、TitleMenu、Weather 與 PostFX 模組
+    // 4. 初始化子系統與原生 UI 模組 (純向量渲染，零 ImGui 依賴)
     DialogueBox dialogueBox;
     ChoiceUI choiceUI;
-    LayerRenderer layerRenderer;
+    LayerRenderer layerRenderer(textureCache); 
     AudioManager audioManager;
     BacklogUI backlogUI;
     DebugOverlay debugOverlay;
-    WeatherSystem weatherSystem(window.getSize());
+    NodeGraphViewer nodeGraphViewer;
+    SettingsUI settingsUI;
+    SaveLoadUI saveLoadUI;
+    WeatherSystem weatherSystem(sf::Vector2u(LOGICAL_WIDTH, LOGICAL_HEIGHT));
     PostFX postFX;
-    TitleMenu titleMenu; // 💡 Week 11 主選單
+    TransitionSystem transitionSystem(sf::Vector2u(LOGICAL_WIDTH, LOGICAL_HEIGHT));
+    TitleMenu titleMenu;
+
+    HotReloader hotReloader("assets/scripts/demo_long.json", "assets/shaders/blur.frag");
 
     if (!dialogueBox.loadFont("assets/fonts/font.ttf") || 
         !choiceUI.loadFont("assets/fonts/font.ttf") ||
         !backlogUI.loadFont("assets/fonts/font.ttf") ||
-        !titleMenu.loadFont("assets/fonts/font.ttf")) {
-        std::cerr << "Failed to load font. Please ensure assets/fonts/font.ttf exists." << std::endl;
+        !titleMenu.loadFont("assets/fonts/font.ttf") ||
+        !settingsUI.loadFont("assets/fonts/font.ttf") ||
+        !saveLoadUI.loadFont("assets/fonts/font.ttf") ||
+        !debugOverlay.loadFont("assets/fonts/font.ttf") ||
+        !nodeGraphViewer.loadFont("assets/fonts/font.ttf")) {
+#ifdef _WIN32
+        MessageBoxW(NULL, L"Failed to load required font: assets/fonts/font.ttf", L"Gality Engine Error", MB_ICONERROR | MB_OK);
+#else
+        std::cerr << "Failed to load font: assets/fonts/font.ttf" << std::endl;
+#endif
         return -1;
     }
 
-    // 💡 載入打字音效 (可選)
     dialogueBox.loadTypeSound("assets/audio/typewriter.wav");
 
-    // 💡 載入與套用 Data-Driven UI Theme 配置
     UITheme uiTheme;
     uiTheme.loadFromFile("assets/config/ui_theme.json");
     dialogueBox.applyTheme(uiTheme.dialogueStyle);
     choiceUI.applyTheme(uiTheme.choiceStyle);
 
-    // 7. 定義狀態同步 Lambda
-    auto syncCurrentNodeState = [&](bool recordHistory = true) {
+    std::string previousBgPath = "";
+    std::string currentPlayingBgm = "";
+    std::string currentWeatherStr = "none";
+    std::map<CharSlot, std::string> currentSlots;
+    std::optional<CharSlot> currentActiveSlot = CharSlot::Center;
+
+    // 5. 狀態同步 Lambda (適配 1080p 邏輯尺寸)
+    auto syncCurrentNodeState = [&](bool recordHistory = true, bool playTransition = true) {
         auto currentNode = executor.getCurrentNode();
         if (!currentNode) return;
 
@@ -115,15 +159,48 @@ int main() {
                 backlogUI.addEntry(currentNode->speaker, currentNode->text, currentNode->voicePath);
             }
             
-            if (!currentNode->bgImagePath.empty()) layerRenderer.setBackground(currentNode->bgImagePath);
-            else layerRenderer.setBackground("");
+            if (!currentNode->bgImagePath.empty() && currentNode->bgImagePath != previousBgPath) {
+                if (!previousBgPath.empty() && playTransition) {
+                    sceneBuffer.clear(sf::Color(20, 20, 30));
+                    layerRenderer.draw(sceneBuffer);
+                    sceneBuffer.display();
 
-            if (!currentNode->characterSpritePath.empty()) layerRenderer.setCharacter(currentNode->characterSpritePath);
-            else layerRenderer.setCharacter("");
+                    std::string maskName = currentNode->transitionMask.empty() ? "diamond" : currentNode->transitionMask;
+                    float dur = (currentNode->transitionDuration > 0.0f) ? currentNode->transitionDuration : 1.0f;
+                    transitionSystem.start(sceneBuffer, maskName, dur, 0.15f);
+                }
+                
+                layerRenderer.setBackground(currentNode->bgImagePath, sf::Vector2u(LOGICAL_WIDTH, LOGICAL_HEIGHT));
+                previousBgPath = currentNode->bgImagePath;
+            } else if (currentNode->bgImagePath.empty()) {
+                layerRenderer.setBackground("");
+                previousBgPath = "";
+            }
+
+            if (!currentNode->slotTextures.empty()) {
+                currentSlots = currentNode->slotTextures;
+                currentActiveSlot = currentNode->activeSlot;
+                layerRenderer.updateCharacters(currentSlots, currentActiveSlot);
+            } else if (!currentNode->characterSpritePath.empty()) {
+                currentSlots.clear();
+                currentSlots[CharSlot::Center] = currentNode->characterSpritePath;
+                currentActiveSlot = CharSlot::Center;
+                layerRenderer.setCharacter(currentNode->characterSpritePath);
+            } else {
+                currentSlots.clear();
+                currentActiveSlot = std::nullopt;
+                layerRenderer.setCharacter("");
+            }
             
-            if (!currentNode->bgmPath.empty()) audioManager.playBGM(currentNode->bgmPath);
-            audioManager.playVoice(currentNode->voicePath);
+            if (!currentNode->bgmPath.empty()) {
+                currentPlayingBgm = currentNode->bgmPath;
+                audioManager.playBGM(currentNode->bgmPath);
+            }
+            if (!currentNode->voicePath.empty()) {
+                audioManager.playVoice(currentNode->voicePath, currentActiveSlot);
+            }
 
+            currentWeatherStr = currentNode->weather;
             if (!currentNode->weather.empty()) {
                 if (currentNode->weather == "rain") weatherSystem.setWeather(WeatherType::Rain);
                 else if (currentNode->weather == "snow") weatherSystem.setWeather(WeatherType::Snow);
@@ -132,101 +209,299 @@ int main() {
             }
 
             if (currentNode->shake > 0.0f) {
-                postFX.triggerShake(currentNode->shake, 15.0f);
+                postFX.triggerShake(currentNode->shake, 20.0f);
             }
+
+            executor.updatePresentationState(previousBgPath, currentSlots, currentActiveSlot, currentWeatherStr, currentPlayingBgm);
             
         } else if (currentNode->type == NodeType::Choice) {
             choiceUI.setChoices(currentNode->choices);
         }
     };
 
-    // 💡 綁定 TitleMenu 按鈕動作
+    // 6. 時光機 Rollback
+    auto performRollback = [&]() {
+        SaveSnapshot snapshot;
+        if (executor.rollback(snapshot)) {
+            if (nodeIndexMap.count(snapshot.currentNodeId)) {
+                audioManager.stopVoice();
+                executor.jumpToNode(nodeIndexMap[snapshot.currentNodeId]);
+
+                previousBgPath = snapshot.bgImagePath;
+                layerRenderer.setBackground(snapshot.bgImagePath, sf::Vector2u(LOGICAL_WIDTH, LOGICAL_HEIGHT));
+                currentSlots = snapshot.slotTextures;
+                currentActiveSlot = snapshot.activeSlot;
+                layerRenderer.updateCharacters(currentSlots, currentActiveSlot);
+
+                currentWeatherStr = snapshot.weather;
+                if (currentWeatherStr == "rain") weatherSystem.setWeather(WeatherType::Rain);
+                else if (currentWeatherStr == "snow") weatherSystem.setWeather(WeatherType::Snow);
+                else if (currentWeatherStr == "sakura") weatherSystem.setWeather(WeatherType::Sakura);
+                else weatherSystem.setWeather(WeatherType::None);
+
+                if (!snapshot.bgmPath.empty() && snapshot.bgmPath != currentPlayingBgm) {
+                    currentPlayingBgm = snapshot.bgmPath;
+                    audioManager.playBGM(snapshot.bgmPath);
+                }
+
+                auto restoredNode = executor.getCurrentNode();
+                if (restoredNode) {
+                    dialogueBox.setText(restoredNode->speaker, restoredNode->text);
+                    dialogueBox.onInteract();
+                    if (!restoredNode->voicePath.empty()) {
+                        audioManager.playVoice(restoredNode->voicePath, currentActiveSlot);
+                    }
+                }
+
+                executor.updatePresentationState(previousBgPath, currentSlots, currentActiveSlot, currentWeatherStr, currentPlayingBgm);
+                return true;
+            }
+        }
+        return false;
+    };
+
+    auto saveToSlot = [&](int slotIndex) {
+        std::string filePath = "saves/save_slot_" + std::to_string(slotIndex) + ".json";
+        if (!executor.getCurrentNode()) return;
+
+        SaveSnapshot snapshot = executor.getCurrentPresentationState();
+        snapshot.currentNodeId = executor.getCurrentNode()->id;
+        snapshot.intFlags = blackboard.getAllInts();
+        SaveManager::saveGame(filePath, snapshot);
+    };
+
+    auto loadFromSlot = [&](int slotIndex) {
+        std::string filePath = "saves/save_slot_" + std::to_string(slotIndex) + ".json";
+        SaveSnapshot snapshot;
+        if (!SaveManager::loadGame(filePath, snapshot)) {
+            return;
+        }
+
+        if (!nodeIndexMap.count(snapshot.currentNodeId)) {
+            return;
+        }
+
+        blackboard.setAllInts(snapshot.intFlags);
+        executor.jumpToNode(nodeIndexMap[snapshot.currentNodeId]);
+        titleMenu.setVisible(false);
+
+        previousBgPath = snapshot.bgImagePath;
+        layerRenderer.setBackground(snapshot.bgImagePath, sf::Vector2u(LOGICAL_WIDTH, LOGICAL_HEIGHT));
+        currentSlots = snapshot.slotTextures;
+        currentActiveSlot = snapshot.activeSlot;
+        layerRenderer.updateCharacters(currentSlots, currentActiveSlot);
+
+        currentWeatherStr = snapshot.weather;
+        if (currentWeatherStr == "rain") weatherSystem.setWeather(WeatherType::Rain);
+        else if (currentWeatherStr == "snow") weatherSystem.setWeather(WeatherType::Snow);
+        else if (currentWeatherStr == "sakura") weatherSystem.setWeather(WeatherType::Sakura);
+        else weatherSystem.setWeather(WeatherType::None);
+
+        if (!snapshot.bgmPath.empty()) {
+            currentPlayingBgm = snapshot.bgmPath;
+            audioManager.playBGM(snapshot.bgmPath);
+        }
+
+        syncCurrentNodeState(false, false);
+        auto loadedNode = executor.getCurrentNode();
+        if (loadedNode && !loadedNode->voicePath.empty()) {
+            audioManager.playVoice(loadedNode->voicePath, currentActiveSlot);
+        }
+    };
+
     titleMenu.initButtons(
-        [&]() { // Start Game
+        [&]() {
             titleMenu.setVisible(false);
             blackboard = Blackboard();
             backlogUI.clear();
             executor.start(rootNode);
-            syncCurrentNodeState(true);
+            syncCurrentNodeState(true, false);
         },
-        [&]() { // Load Game
-            SaveSnapshot snapshot;
-            if (SaveManager::loadGame("saves/save1.json", snapshot)) {
-                if (nodeIndexMap.count(snapshot.currentNodeId)) {
-                    blackboard.setAllInts(snapshot.intFlags);
-                    executor.jumpToNode(nodeIndexMap[snapshot.currentNodeId]);
-                    titleMenu.setVisible(false);
-                    syncCurrentNodeState(false);
-                }
-            }
+        [&]() {
+            saveLoadUI.open(SaveLoadMode::Load, sf::Vector2u(LOGICAL_WIDTH, LOGICAL_HEIGHT), saveToSlot, loadFromSlot);
         },
-        [&]() { // Exit
+        [&]() {
             window.close();
         }
     );
 
     sf::Clock deltaClock;
+    float currentFps = 60.0f;
 
-    // 8. 主迴圈
+    // 7. 主遊戲迴圈
     while (window.isOpen()) {
         sf::Time dt = deltaClock.restart();
         float deltaTime = dt.asSeconds();
+        if (deltaTime > 0.0f) {
+            currentFps = 0.9f * currentFps + 0.1f * (1.0f / deltaTime);
+        }
 
-        // 更新 ImGui 與各模組
-        ImGui::SFML::Update(window, dt);
-        audioManager.update(deltaTime);
-        layerRenderer.update(deltaTime);
-        weatherSystem.update(deltaTime);
-        
-        bool shouldBlur = titleMenu.isVisible() || backlogUI.isVisible() || debugOverlay.getIsVisible();
-        postFX.setBlur(shouldBlur ? 3.5f : 0.0f);
-        postFX.update(deltaTime, window.getSize());
+        hotReloader.update(deltaTime,
+            [&]() {
+                auto newRoot = ScriptLoader::loadFromFile("assets/scripts/demo_long.json");
+                if (newRoot) {
+                    nodeIndexMap.clear();
+                    for (const auto& [id, nodePtr] : ScriptLoader::nodeRegistry) {
+                        nodeIndexMap[id] = nodePtr;
+                    }
+                    debugOverlay.log("[HotReloader] Script AST reloaded successfully.");
+                }
+            },
+            [&]() {
+                postFX = PostFX();
+                debugOverlay.log("[HotReloader] GLSL Shaders reloaded successfully.");
+            }
+        );
 
-        sf::Vector2i mousePos = sf::Mouse::getPosition(window);
+        // 💡 關鍵修復：將滑鼠物理座標無損映射到 1080p 邏輯空間
+        sf::Vector2i pixelMousePos = sf::Mouse::getPosition(window);
+        sf::Vector2f logicalMousePosF = window.mapPixelToCoords(pixelMousePos, letterboxView);
+        sf::Vector2i logicalMousePosI(static_cast<int>(logicalMousePosF.x), static_cast<int>(logicalMousePosF.y));
 
         while (const auto event = window.pollEvent()) {
-            ImGui::SFML::ProcessEvent(window, *event);
-
             if (event->is<sf::Event::Closed>()) {
                 window.close();
             }
 
-            // F1 / ~ 切換 Debugger
-            if (const auto* keyBtn = event->getIf<sf::Event::KeyPressed>()) {
-                if (keyBtn->code == sf::Keyboard::Key::Grave || keyBtn->code == sf::Keyboard::Key::F1) {
-                    debugOverlay.toggle();
-                }
+            if (const auto* resizeEvt = event->getIf<sf::Event::Resized>()) {
+                letterboxView = calculateLetterboxView(resizeEvt->size);
             }
 
-            if (ImGui::GetIO().WantCaptureKeyboard || ImGui::GetIO().WantCaptureMouse) {
-                continue;
+            if (const auto* textEvt = event->getIf<sf::Event::TextEntered>()) {
+                debugOverlay.handleTextEntered(textEvt->unicode, blackboard);
+                nodeGraphViewer.handleTextEntered(textEvt->unicode);
             }
 
-            // 💡 主選單開頭攔截事件
-            if (titleMenu.isVisible()) {
-                if (event->is<sf::Event::MouseMoved>()) {
-                    titleMenu.updateHover(mousePos);
+            if (nodeGraphViewer.getIsVisible()) {
+                nodeGraphViewer.handleEvent(*event, window);
+                if (const auto* keyBtn = event->getIf<sf::Event::KeyPressed>()) {
+                    if (keyBtn->code == sf::Keyboard::Key::Escape || keyBtn->code == sf::Keyboard::Key::F2) {
+                        nodeGraphViewer.toggle();
+                    }
                 }
                 if (const auto* mouseBtn = event->getIf<sf::Event::MouseButtonPressed>()) {
                     if (mouseBtn->button == sf::Mouse::Button::Left) {
-                        titleMenu.handleClick(mousePos);
+                        nodeGraphViewer.handleMouseClick(logicalMousePosI, nodeIndexMap, executor, [&]() {
+                            syncCurrentNodeState(false, false);
+                        });
                     }
                 }
                 continue;
             }
 
-            // Backlog 滾輪處理
+            if (const auto* keyBtn = event->getIf<sf::Event::KeyPressed>()) {
+                if (keyBtn->code == sf::Keyboard::Key::Grave || keyBtn->code == sf::Keyboard::Key::F1) {
+                    debugOverlay.toggle();
+                }
+
+                if (keyBtn->code == sf::Keyboard::Key::F2) {
+                    nodeGraphViewer.toggle();
+                }
+
+                if (debugOverlay.getIsVisible()) {
+                    if (debugOverlay.handleKeyPressed(keyBtn->code, executor, nodeIndexMap, [&]() {
+                        syncCurrentNodeState(false, false);
+                    }, blackboard)) {
+                        continue;
+                    }
+                }
+
+                if (keyBtn->code == sf::Keyboard::Key::Escape) {
+                    if (debugOverlay.getIsVisible()) {
+                        debugOverlay.toggle();
+                    } else if (backlogUI.isVisible()) {
+                        backlogUI.setVisible(false);
+                    } else {
+                        settingsUI.toggle();
+                    }
+                }
+
+                if (keyBtn->code == sf::Keyboard::Key::T) {
+                    transitionSystem.start(sceneBuffer, "diamond", 1.2f, 0.15f);
+                }
+
+                if (keyBtn->code == sf::Keyboard::Key::F5) {
+                    saveLoadUI.open(SaveLoadMode::Save, sf::Vector2u(LOGICAL_WIDTH, LOGICAL_HEIGHT), saveToSlot, loadFromSlot);
+                }
+
+                if (keyBtn->code == sf::Keyboard::Key::F9) {
+                    saveLoadUI.open(SaveLoadMode::Load, sf::Vector2u(LOGICAL_WIDTH, LOGICAL_HEIGHT), saveToSlot, loadFromSlot);
+                }
+            }
+
+            if (saveLoadUI.isVisible()) {
+                if (const auto* keyBtn = event->getIf<sf::Event::KeyPressed>()) {
+                    if (keyBtn->code == sf::Keyboard::Key::Escape) {
+                        saveLoadUI.close();
+                    }
+                }
+                if (event->is<sf::Event::MouseMoved>()) {
+                    saveLoadUI.updateHover(logicalMousePosF);
+                }
+                if (const auto* mouseBtn = event->getIf<sf::Event::MouseButtonPressed>()) {
+                    if (mouseBtn->button == sf::Mouse::Button::Left) {
+                        saveLoadUI.handleClick(logicalMousePosF);
+                    }
+                }
+                continue;
+            }
+
+            if (debugOverlay.getIsVisible()) {
+                if (const auto* mouseBtn = event->getIf<sf::Event::MouseButtonPressed>()) {
+                    if (mouseBtn->button == sf::Mouse::Button::Left) {
+                        debugOverlay.handleMouseClick(logicalMousePosI, executor, blackboard, [&]() {
+                            syncCurrentNodeState(false, false);
+                        });
+                    }
+                }
+                if (const auto* mouseRel = event->getIf<sf::Event::MouseButtonReleased>()) {
+                    if (mouseRel->button == sf::Mouse::Button::Left) {
+                        debugOverlay.handleMouseRelease();
+                    }
+                }
+                if (event->is<sf::Event::MouseMoved>()) {
+                    debugOverlay.handleMouseMove(logicalMousePosI);
+                }
+                if (const auto* wheelEvt = event->getIf<sf::Event::MouseWheelScrolled>()) {
+                    if (wheelEvt->wheel == sf::Mouse::Wheel::Vertical) {
+                        debugOverlay.handleScroll(wheelEvt->delta);
+                    }
+                }
+                continue;
+            }
+
+            if (settingsUI.getIsVisible()) {
+                if (const auto* mouseBtn = event->getIf<sf::Event::MouseButtonPressed>()) {
+                    settingsUI.handleMouseButtonPressed(mouseBtn->button, logicalMousePosI);
+                }
+                if (const auto* mouseRel = event->getIf<sf::Event::MouseButtonReleased>()) {
+                    settingsUI.handleMouseButtonReleased(mouseRel->button);
+                }
+                if (event->is<sf::Event::MouseMoved>()) {
+                    settingsUI.handleMouseMove(logicalMousePosI);
+                }
+                continue;
+            }
+
+            if (titleMenu.isVisible()) {
+                if (event->is<sf::Event::MouseMoved>()) {
+                    titleMenu.updateHover(logicalMousePosF);
+                }
+                if (const auto* mouseBtn = event->getIf<sf::Event::MouseButtonPressed>()) {
+                    if (mouseBtn->button == sf::Mouse::Button::Left) {
+                        titleMenu.handleClick(logicalMousePosF);
+                    }
+                }
+                continue;
+            }
+
             if (const auto* wheelEvt = event->getIf<sf::Event::MouseWheelScrolled>()) {
                 if (wheelEvt->wheel == sf::Mouse::Wheel::Vertical) {
-                    if (wheelEvt->delta > 0.0f) {
-                        if (!backlogUI.isVisible()) {
-                            backlogUI.setVisible(true);
-                        } else {
-                            backlogUI.handleScroll(wheelEvt->delta);
-                        }
-                    } else if (wheelEvt->delta < 0.0f) {
-                        if (backlogUI.isVisible()) {
-                            backlogUI.handleScroll(wheelEvt->delta);
+                    if (backlogUI.isVisible()) {
+                        backlogUI.handleScroll(wheelEvt->delta);
+                    } else {
+                        if (wheelEvt->delta > 0.0f) {
+                            performRollback();
                         }
                     }
                 }
@@ -234,7 +509,7 @@ int main() {
 
             if (backlogUI.isVisible()) {
                 if (const auto* keyBtn = event->getIf<sf::Event::KeyPressed>()) {
-                    if (keyBtn->code == sf::Keyboard::Key::Escape || keyBtn->code == sf::Keyboard::Key::Tab) {
+                    if (keyBtn->code == sf::Keyboard::Key::Tab || keyBtn->code == sf::Keyboard::Key::H) {
                         backlogUI.setVisible(false);
                     }
                     if (keyBtn->code == sf::Keyboard::Key::Up) backlogUI.handleScroll(1.0f);
@@ -248,7 +523,6 @@ int main() {
                 continue;
             }
 
-            // 快捷鍵處理
             auto currentNode = executor.getCurrentNode();
 
             if (const auto* keyBtn = event->getIf<sf::Event::KeyPressed>()) {
@@ -256,41 +530,29 @@ int main() {
                     backlogUI.toggle();
                 }
 
+                if (keyBtn->code == sf::Keyboard::Key::Backspace) {
+                    performRollback();
+                }
+
                 if (keyBtn->code == sf::Keyboard::Key::K) {
                     postFX.triggerShake(0.4f, 20.0f);
-                }
-
-                if (keyBtn->code == sf::Keyboard::Key::S && currentNode) {
-                    SaveManager::saveGame("saves/save1.json", currentNode->id, blackboard);
-                }
-
-                if (keyBtn->code == sf::Keyboard::Key::L) {
-                    SaveSnapshot snapshot;
-                    if (SaveManager::loadGame("saves/save1.json", snapshot)) {
-                        if (nodeIndexMap.count(snapshot.currentNodeId)) {
-                            blackboard.setAllInts(snapshot.intFlags);
-                            executor.jumpToNode(nodeIndexMap[snapshot.currentNodeId]);
-                            syncCurrentNodeState(false);
-                        }
-                    }
                 }
             }
 
             if (!currentNode) continue;
 
-            // 遊戲劇情推進
             if (currentNode->type == NodeType::Choice) {
                 if (event->is<sf::Event::MouseMoved>()) {
-                    choiceUI.updateHover(mousePos);
+                    choiceUI.updateHover(logicalMousePosF);
                 }
                 if (const auto* mouseBtn = event->getIf<sf::Event::MouseButtonPressed>()) {
                     if (mouseBtn->button == sf::Mouse::Button::Left) {
-                        int selectedOption = choiceUI.handleMouseClick(mousePos);
+                        int selectedOption = choiceUI.handleMouseClick(logicalMousePosF);
                         if (selectedOption != -1) {
                             if (currentNode->id == "end_choice") {
                                 if (selectedOption == 0) {
                                     audioManager.stopBGM();
-                                    titleMenu.setVisible(true); // 重新返回主選單
+                                    titleMenu.setVisible(true);
                                     continue;
                                 } else if (selectedOption == 1) {
                                     window.close();
@@ -299,12 +561,11 @@ int main() {
                             }
 
                             executor.advance(selectedOption);
-                            syncCurrentNodeState(true);
+                            syncCurrentNodeState(true, true);
                         }
                     }
                 }
-            } 
-            else if (currentNode->type == NodeType::Dialogue) {
+            } else if (currentNode->type == NodeType::Dialogue) {
                 bool triggerAdvance = false;
                 if (const auto* keyBtn = event->getIf<sf::Event::KeyPressed>()) {
                     if (keyBtn->code == sf::Keyboard::Key::Enter || keyBtn->code == sf::Keyboard::Key::Space) {
@@ -319,17 +580,25 @@ int main() {
 
                 if (triggerAdvance) {
                     if (dialogueBox.onInteract()) {
-                        audioManager.stopVoice(); 
+                        audioManager.stopVoice();
                         executor.advance();
-                        syncCurrentNodeState(true);
+                        syncCurrentNodeState(true, true);
                     }
                 }
             }
         }
 
-        // 9. 渲染流程
+        audioManager.update(deltaTime);
+        layerRenderer.update(deltaTime);
+        weatherSystem.update(deltaTime);
+        transitionSystem.update(deltaTime);
+
+        bool shouldBlur = titleMenu.isVisible() || backlogUI.isVisible() || debugOverlay.getIsVisible() || nodeGraphViewer.getIsVisible() || settingsUI.getIsVisible() || saveLoadUI.isVisible();
+        postFX.setBlur(shouldBlur ? 3.5f : 0.0f);
+        postFX.update(deltaTime, sf::Vector2u(LOGICAL_WIDTH, LOGICAL_HEIGHT));
         dialogueBox.update();
 
+        // 8. 繪製邏輯 1080p 場景至 sceneBuffer
         sceneBuffer.clear(sf::Color(20, 20, 30));
         layerRenderer.draw(sceneBuffer);
 
@@ -347,23 +616,30 @@ int main() {
         weatherSystem.draw(sceneBuffer);
         sceneBuffer.display();
 
-        window.clear();
-        postFX.applyAndDraw(window, sceneBuffer);
+        // 9. 透過 TransitionSystem 混色至 compositeBuffer
+        compositeBuffer.clear(sf::Color::Black);
+        transitionSystem.draw(compositeBuffer, sceneBuffer);
+        compositeBuffer.display();
 
-        // 最上層 UI 繪製
+        // 10. 螢幕 Letterbox 投影輸出
+        window.clear(sf::Color::Black);
+        window.setView(letterboxView);
+
+        // 繪製 PostFX 主場景
+        postFX.applyAndDraw(window, compositeBuffer);
+
+        // 11. 頂層 Native Vector UIs 繪製 (維持 1080p 邏輯視圖)
         titleMenu.draw(window);
+        saveLoadUI.draw(window);
         backlogUI.draw(window);
-
-        debugOverlay.draw(window, blackboard, executor, nodeIndexMap, [&]() {
-            syncCurrentNodeState(false);
+        settingsUI.draw(window);
+        debugOverlay.draw(window, blackboard, executor, nodeIndexMap, currentFps);
+        nodeGraphViewer.draw(window, nodeIndexMap, executor, [&]() {
+            syncCurrentNodeState(false, false);
         });
-
-        ImGui::SFML::Render(window);
 
         window.display();
     }
-
-    ImGui::SFML::Shutdown();
 
     return 0;
 }

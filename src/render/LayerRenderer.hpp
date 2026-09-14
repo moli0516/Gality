@@ -1,142 +1,170 @@
 #pragma once
 #include <SFML/Graphics.hpp>
+#include <map>
 #include <string>
 #include <memory>
+#include <optional>
 #include <iostream>
+#include "../story/StoryNode.hpp"
 #include "../core/LRUCache.hpp"
-#include "../core/Easing.hpp"
+#include "../core/AssetPack.hpp"
 
 class LayerRenderer {
 private:
-    LRUCache<std::string, std::shared_ptr<sf::Texture>> textureCache;
-    
+    LRUCache<std::string, std::shared_ptr<sf::Texture>>* textureCachePtr = nullptr;
+    sf::Texture emptyTexture; 
     std::string currentBgPath;
-    std::string currentCharacterPath;
+    
+    // sf::Sprite 在 SFML 3.x 沒有預設建構子，必須在建構時初始化
+    sf::Sprite bgSprite;
 
-    // 💡 SFML 3.x：使用 unique_ptr 避開 sf::Sprite 缺乏預設建構函式的限制
-    std::unique_ptr<sf::Sprite> bgSpriteCurrent;
-    std::unique_ptr<sf::Sprite> bgSpriteOld;
-    std::unique_ptr<sf::Sprite> characterSpriteCurrent;
-    std::unique_ptr<sf::Sprite> characterSpriteOld;
+    std::map<CharSlot, sf::Sprite> characterSprites;
+    std::map<CharSlot, std::string> currentSlotPaths;
 
-    float bgFadeTimer = 0.0f;
-    float charFadeTimer = 0.0f;
-    float fadeDuration = 0.5f; // 0.5秒漸變過渡
-
-    bool isBgFading = false;
-    bool isCharFading = false;
+    float getSlotCenterX(CharSlot slot, float windowWidth) {
+        switch (slot) {
+            case CharSlot::Left:   return windowWidth * 0.25f;
+            case CharSlot::Center: return windowWidth * 0.50f;
+            case CharSlot::Right:  return windowWidth * 0.75f;
+        }
+        return windowWidth * 0.5f;
+    }
 
     std::shared_ptr<sf::Texture> getOrLoadTexture(const std::string& path) {
-        if (path.empty()) return nullptr;
+        if (!textureCachePtr) return nullptr;
+        
+        if (textureCachePtr->contains(path)) {
+            return textureCachePtr->get(path);
+        } else {
+            auto tex = std::make_shared<sf::Texture>();
+            std::vector<std::uint8_t> bytes;
+            if (AssetPack::readFileFromPak(path, bytes, "data.pak") && !bytes.empty()) {
+                if (tex->loadFromMemory(bytes.data(), bytes.size())) {
+                    tex->setSmooth(true);
+                    textureCachePtr->put(path, tex);
+                    return tex;
+                }
+            } else if (tex->loadFromFile(path)) {
+                tex->setSmooth(true);
+                textureCachePtr->put(path, tex);
+                return tex;
+            }
 
-        if (textureCache.contains(path)) {
-            return textureCache.get(path);
-        }
-
-        auto texture = std::make_shared<sf::Texture>();
-        if (!texture->loadFromFile(path)) {
             std::cerr << "[LayerRenderer] Failed to load texture: " << path << std::endl;
             return nullptr;
         }
-
-        textureCache.put(path, texture);
-        return texture;
     }
 
 public:
-    LayerRenderer() : textureCache(10) {}
+    // 💡 修正 1：在初始化清單中明確綁定 emptyTexture 給 bgSprite
+    LayerRenderer() : emptyTexture(), bgSprite(emptyTexture) {
+        (void)emptyTexture.resize(sf::Vector2u(1, 1));
+    }
 
-    void setBackground(const std::string& imagePath) {
-        if (imagePath == currentBgPath) return;
+    LayerRenderer(LRUCache<std::string, std::shared_ptr<sf::Texture>>& cache) 
+        : textureCachePtr(&cache), emptyTexture(), bgSprite(emptyTexture) {
+        (void)emptyTexture.resize(sf::Vector2u(1, 1));
+    }
 
-        bgSpriteOld = std::move(bgSpriteCurrent);
-        currentBgPath = imagePath;
+    void setCache(LRUCache<std::string, std::shared_ptr<sf::Texture>>& cache) {
+        textureCachePtr = &cache;
+    }
 
-        if (!imagePath.empty()) {
-            auto tex = getOrLoadTexture(imagePath);
-            if (tex) {
-                // SFML 3.x 建構 sf::Sprite 時傳入 sf::Texture 引用
-                bgSpriteCurrent = std::make_unique<sf::Sprite>(*tex);
-                isBgFading = true;
-                bgFadeTimer = 0.0f;
-            }
-        } else {
-            bgSpriteCurrent.reset();
+    void update(float /*dt*/) {}
+
+    void setBackground(const std::string& path) {
+        if (path.empty() || path == currentBgPath) return;
+        currentBgPath = path;
+
+        auto texPtr = getOrLoadTexture(path);
+        if (texPtr) {
+            bgSprite.setTexture(*texPtr, true);
         }
     }
 
-    void setCharacter(const std::string& imagePath) {
-        if (imagePath == currentCharacterPath) return;
-
-        characterSpriteOld = std::move(characterSpriteCurrent);
-        currentCharacterPath = imagePath;
-
-        if (!imagePath.empty()) {
-            auto tex = getOrLoadTexture(imagePath);
-            if (tex) {
-                // SFML 3.x 建構 sf::Sprite 時傳入 sf::Texture 引用
-                characterSpriteCurrent = std::make_unique<sf::Sprite>(*tex);
-                isCharFading = true;
-                charFadeTimer = 0.0f;
-            }
-        } else {
-            characterSpriteCurrent.reset();
-            isCharFading = true;
-            charFadeTimer = 0.0f;
+    void setBackground(const std::string& path, sf::Vector2u windowSize) {
+        setBackground(path);
+        auto bounds = bgSprite.getLocalBounds();
+        if (bounds.size.x > 0 && bounds.size.y > 0) {
+            bgSprite.setScale(sf::Vector2f(
+                static_cast<float>(windowSize.x) / bounds.size.x,
+                static_cast<float>(windowSize.y) / bounds.size.y
+            ));
         }
     }
 
-    void update(float deltaTime) {
-        // 背景漸變更新
-        if (isBgFading) {
-            bgFadeTimer += deltaTime;
-            float progress = bgFadeTimer / fadeDuration;
-            if (progress >= 1.0f) {
-                progress = 1.0f;
-                isBgFading = false;
-                bgSpriteOld.reset(); // 結束過渡，釋放舊 Sprite
-            }
-            float alpha = Easing::easeOutQuad(progress) * 255.0f;
-            if (bgSpriteCurrent) {
-                bgSpriteCurrent->setColor(sf::Color(255, 255, 255, static_cast<std::uint8_t>(alpha)));
-            }
-            if (bgSpriteOld) {
-                bgSpriteOld->setColor(sf::Color(255, 255, 255, static_cast<std::uint8_t>(255.0f - alpha)));
+    void setCharacter(const std::string& path) {
+        std::map<CharSlot, std::string> slots;
+        if (!path.empty()) {
+            slots[CharSlot::Center] = path;
+        }
+        updateCharacters(slots, CharSlot::Center);
+    }
+
+    void updateCharacters(const std::map<CharSlot, std::string>& newSlots, 
+                          std::optional<CharSlot> activeSlot) {
+        for (auto it = currentSlotPaths.begin(); it != currentSlotPaths.end(); ) {
+            if (newSlots.find(it->first) == newSlots.end() || newSlots.at(it->first).empty()) {
+                characterSprites.erase(it->first);
+                it = currentSlotPaths.erase(it);
+            } else {
+                ++it;
             }
         }
 
-        // 立繪漸變更新
-        if (isCharFading) {
-            charFadeTimer += deltaTime;
-            float progress = charFadeTimer / fadeDuration;
-            if (progress >= 1.0f) {
-                progress = 1.0f;
-                isCharFading = false;
-                characterSpriteOld.reset(); // 結束過渡，釋放舊 Sprite
+        for (const auto& [slot, path] : newSlots) {
+            if (path.empty() || path == "none" || path == "clear") {
+                characterSprites.erase(slot);
+                currentSlotPaths.erase(slot);
+                continue;
             }
-            float alpha = Easing::easeOutQuad(progress) * 255.0f;
-            if (characterSpriteCurrent) {
-                characterSpriteCurrent->setColor(sf::Color(255, 255, 255, static_cast<std::uint8_t>(alpha)));
+
+            if (currentSlotPaths[slot] != path) {
+                currentSlotPaths[slot] = path;
+                auto texPtr = getOrLoadTexture(path);
+                if (texPtr) {
+                    sf::Sprite sprite(*texPtr);
+                    auto bounds = sprite.getLocalBounds();
+                    sprite.setOrigin(sf::Vector2f(bounds.size.x * 0.5f, bounds.size.y));
+                    
+                    // 💡 修正 2：使用 insert_or_assign 避開 std::map 的預設建構限制
+                    characterSprites.insert_or_assign(slot, sprite);
+                }
             }
-            if (characterSpriteOld) {
-                characterSpriteOld->setColor(sf::Color(255, 255, 255, static_cast<std::uint8_t>(255.0f - alpha)));
+        }
+
+        for (auto& [slot, sprite] : characterSprites) {
+            if (!activeSlot.has_value() || activeSlot.value() == slot) {
+                sprite.setColor(sf::Color(255, 255, 255, 255));
+            } else {
+                sprite.setColor(sf::Color(140, 140, 150, 220));
             }
         }
     }
 
-void draw(sf::RenderTarget& target) {
-        if (isBgFading && bgSpriteOld) {
-            target.draw(*bgSpriteOld);
+    void draw(sf::RenderTarget& target) {
+        if (!currentBgPath.empty()) {
+            target.draw(bgSprite);
         }
-        if (bgSpriteCurrent) {
-            target.draw(*bgSpriteCurrent);
-        }
+        float windowWidth = static_cast<float>(target.getSize().x);
+        float baselineY = static_cast<float>(target.getSize().y);
 
-        if (isCharFading && characterSpriteOld) {
-            target.draw(*characterSpriteOld);
-        }
-        if (characterSpriteCurrent) {
-            target.draw(*characterSpriteCurrent);
+        for (auto& [slot, sprite] : characterSprites) {
+            float posX = getSlotCenterX(slot, windowWidth);
+            
+            // --- 💡 修復：加入自動縮放邏輯 (Auto Scaling) ---
+            // 讀取原始圖片高度
+            float currentHeight = sprite.getLocalBounds().size.y;
+            if (currentHeight > 0) {
+                // 將目標高度設定為視窗高度的 95% (保留一點頂部空間)
+                // 如果覺得太大或太小，可以微調 0.95f 這個係數 (例如 0.85f)
+                float targetHeight = baselineY * 0.95f; 
+                float scale = targetHeight / currentHeight;
+                sprite.setScale(sf::Vector2f(scale, scale));
+            }
+
+            sprite.setPosition(sf::Vector2f(posX, baselineY));
+            target.draw(sprite);
         }
     }
 };

@@ -1,45 +1,92 @@
 ﻿#pragma once
 #include <string>
 #include <vector>
+#include <map>
 #include <memory>
 #include <functional>
-#include "../core/Blackboard.hpp"
 
-enum class NodeType {
-    Dialogue,   // 顯示對話與角色立繪
-    Choice,     // 等待玩家選擇分歧
-    Condition,  // 根據條件自動轉向分支
-    Action      // 執行指令（如更改 Flag、增加好感度）
+// 前向宣告 Blackboard 避免循環引用
+class Blackboard;
+
+// 角色站位列舉
+enum class CharSlot {
+    Left,
+    Center,
+    Right
 };
 
+// 節點型別列舉
+enum class NodeType {
+    Dialogue,
+    Choice,
+    Action,
+    Condition
+};
+
+// 變數操作運算 (用於 Blackboard)
+struct VariableMutation {
+    std::string variable;
+    std::string op; // "+=", "-=", "="
+    int value = 0;
+};
+
+// 分支選項定義
+class StoryNode;
 struct ChoiceOption {
     std::string text;
-    std::shared_ptr<struct StoryNode> nextNode;
+    std::string targetNodeId;
+    std::string conditionVar;
+    int conditionValue = 0;
+    std::shared_ptr<StoryNode> nextNode = nullptr; // 預先鏈接好的下一個節點
 };
 
-struct StoryNode {
+class StoryNode {
+public:
     std::string id;
-    NodeType type;
+    NodeType type = NodeType::Dialogue;
 
-    // Dialogue 節點屬性
+    // 基本文本屬性
     std::string speaker;
     std::string text;
+
+    // 資源路徑 (相容 bg/bgm/cv 與完整命名)
+    std::string bg;
+    std::string bgm;
+    std::string cv;
     std::string bgImagePath;
-    std::string characterSpritePath;
     std::string bgmPath;
     std::string voicePath;
+    std::string characterSpritePath;
 
-    // 💡 Week 10 天氣與震動屬性
-    std::string weather; 
+    // 環境與特效
+    std::string weather = "none";
     float shake = 0.0f;
 
-    // Choice / Branch 下一步連接
+    // Week 14: 規則遮罩轉場屬性
+    std::string transitionMask = "";
+    float transitionDuration = 1.0f;
+
+    // 多立繪站位系統
+    std::map<CharSlot, std::string> slotTextures;
+    CharSlot activeSlot = CharSlot::Center;
+
+    // 分支選項清單
     std::vector<ChoiceOption> choices;
-    std::shared_ptr<StoryNode> defaultNext;
 
-    std::function<std::shared_ptr<StoryNode>(const Blackboard&)> conditionFunc;
-    std::function<void(Blackboard&)> actionFunc;
+    // Blackboard 數值操作與條件分支
+    std::vector<VariableMutation> mutations;
+    std::function<void(Blackboard&)> actionFunc = nullptr;
 
-    explicit StoryNode(std::string nodeId, NodeType nodeType) 
-        : id(std::move(nodeId)), type(nodeType) {}
+    std::string thenNodeId;
+    std::string elseNodeId;
+    std::function<std::shared_ptr<StoryNode>(Blackboard&)> conditionFunc = nullptr;
+
+    // 順序流向指針
+    std::string nextNodeId;
+    std::shared_ptr<StoryNode> defaultNext = nullptr;
+    std::shared_ptr<StoryNode> nextNode = nullptr;
+
+    StoryNode() = default;
+    StoryNode(const std::string& nodeId, NodeType nodeType)
+        : id(nodeId), type(nodeType) {}
 };

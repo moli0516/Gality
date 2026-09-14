@@ -3,27 +3,33 @@
 #include <vector>
 #include <string>
 #include "../story/StoryNode.hpp"
+#include "../core/AssetPack.hpp"
 #include "UITheme.hpp"
 
 struct OptionButton {
     sf::RectangleShape shape;
     sf::Text text;
-    size_t index;
+    size_t index = 0;
     bool isHovered = false;
 
-    OptionButton(const sf::Font& font) : text(font) {}
+    explicit OptionButton(const sf::Font& font) : text(font) {}
 };
 
 class ChoiceUI {
 private:
     std::vector<OptionButton> buttons;
     sf::Font font;
+    std::vector<std::uint8_t> fontDataBuffer;
     ChoiceUIStyle style;
 
 public:
     ChoiceUI() = default;
 
     bool loadFont(const std::string& fontPath) {
+        fontDataBuffer.clear();
+        if (AssetPack::readFileFromPak(fontPath, fontDataBuffer, "data.pak") && !fontDataBuffer.empty()) {
+            return font.openFromMemory(fontDataBuffer.data(), fontDataBuffer.size());
+        }
         return font.openFromFile(fontPath);
     }
 
@@ -37,8 +43,8 @@ public:
         for (size_t i = 0; i < options.size(); ++i) {
             OptionButton btn(font);
             
-            float posX = (1280.f - style.width) / 2.f;
-            float posY = style.startY + i * (style.height + style.spacing);
+            float posX = (1920.f - style.width) * 0.5f;
+            float posY = style.startY + static_cast<float>(i) * (style.height + style.spacing);
 
             btn.shape.setSize(sf::Vector2f(style.width, style.height));
             btn.shape.setPosition(sf::Vector2f(posX, posY));
@@ -46,14 +52,15 @@ public:
             btn.shape.setOutlineThickness(2.f);
             btn.shape.setOutlineColor(style.normalOutlineColor);
 
+            btn.text.setFont(font);
             btn.text.setCharacterSize(style.fontSize);
             btn.text.setFillColor(style.textColor);
             btn.text.setString(sf::String::fromUtf8(options[i].text.begin(), options[i].text.end()));
             
             sf::FloatRect textBounds = btn.text.getLocalBounds();
             btn.text.setPosition(sf::Vector2f(
-                posX + (style.width - textBounds.size.x) / 2.f,
-                posY + (style.height - textBounds.size.y) / 2.f - 5.f
+                posX + (style.width - textBounds.size.x) * 0.5f,
+                posY + (style.height - textBounds.size.y) * 0.5f - 6.f
             ));
 
             btn.index = i;
@@ -61,8 +68,7 @@ public:
         }
     }
 
-    void updateHover(sf::Vector2i mousePos) {
-        sf::Vector2f mousePosF(static_cast<float>(mousePos.x), static_cast<float>(mousePos.y));
+    void updateHover(sf::Vector2f mousePosF) {
         for (auto& btn : buttons) {
             if (btn.shape.getGlobalBounds().contains(mousePosF)) {
                 btn.isHovered = true;
@@ -76,8 +82,7 @@ public:
         }
     }
 
-    int handleMouseClick(sf::Vector2i mousePos) {
-        sf::Vector2f mousePosF(static_cast<float>(mousePos.x), static_cast<float>(mousePos.y));
+    int handleMouseClick(sf::Vector2f mousePosF) {
         for (size_t i = 0; i < buttons.size(); ++i) {
             if (buttons[i].shape.getGlobalBounds().contains(mousePosF)) {
                 return static_cast<int>(i);

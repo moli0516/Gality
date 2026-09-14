@@ -1,11 +1,9 @@
 {
   "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg-configuration.schema.json",
   "name": "gality",
-  "version-string": "0.1.0",
+  "version-string": "0.2.0",
   "dependencies": [
     "sfml",
-    "nlohmann-json",
-    "imgui",
-    "imgui-sfml"
+    "nlohmann-json"
   ]
 }

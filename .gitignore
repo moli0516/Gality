@@ -6,8 +6,12 @@ code_packer.py
 *.jpg
 *.ttf
 *.ogg
+*.wav
 
 third_party/
+.vscode/
+.VSCodeCounter/
+.venv/
 dist/
 saves/
 vcpkg/

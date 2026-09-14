@@ -1,125 +1,200 @@
-import sys
-import json
 import re
+import json
+import os
+import sys
 
-def parse_gality(file_path):
-    with open(file_path, 'r', encoding='utf-8') as f:
-        lines = f.readlines()
+class GalityCompiler:
+    def __init__(self):
+        self.nodes = []
+        self.start_node = "node_01"
 
-    start_node = "start"
-    nodes = []
-    current_node = None
+    def compile(self, source_code: str) -> dict:
+        self.nodes = []
+        lines = source_code.splitlines()
 
-    for raw_line in lines:
-        line = raw_line.strip()
-        if not line or line.startswith("#"):
-            continue
+        current_node = None
 
-        if line.startswith("@start"):
-            start_node = line.split()[1]
-            continue
-
-        if line.startswith("[") and line.endswith("]"):
+        def finalize_current_node():
+            nonlocal current_node
             if current_node:
-                nodes.append(current_node)
-            node_id = line[1:-1]
-            current_node = {
-                "id": node_id,
-                "type": "dialogue",
-                "speaker": "",
-                "text": "",
-                "bg": "",
-                "character": "",
-                "bgm": "",
-                "cv": "",
-                "weather": "",
-                "shake": 0.0,
-                "next": ""
-            }
-            continue
+                # 若節點含有 choices，標記型別為 choice
+                if current_node.get("choices"):
+                    current_node["type"] = "choice"
+                # 若節點含有 condition，標記型別為 condition
+                elif current_node.get("condition"):
+                    current_node["type"] = "condition"
+                # 若節點含有 mutations 且無 text/choices，標記為 action
+                elif current_node.get("mutations") and not current_node.get("text"):
+                    current_node["type"] = "action"
+                else:
+                    current_node["type"] = "dialogue"
 
-        if not current_node:
-            continue
+                self.nodes.append(current_node)
+                current_node = None
 
-        if line.startswith("bg:"):
-            current_node["bg"] = line.split(":", 1)[1].strip()
-        elif line.startswith("char:"):
-            current_node["character"] = line.split(":", 1)[1].strip()
-        elif line.startswith("bgm:"):
-            current_node["bgm"] = line.split(":", 1)[1].strip()
-        elif line.startswith("cv:"):
-            current_node["cv"] = line.split(":", 1)[1].strip()
-        elif line.startswith("weather:"):
-            current_node["weather"] = line.split(":", 1)[1].strip().lower()
-        elif line.startswith("shake:"):
-            try:
-                current_node["shake"] = float(line.split(":", 1)[1].strip())
-            except ValueError:
-                current_node["shake"] = 0.4
-        elif line.startswith("->"):
-            current_node["next"] = line.split("->")[1].strip()
+        for raw_line in lines:
+            line = raw_line.strip()
+            # 略過空行與註解
+            if not line or line.startswith("//") or line.startswith("#"):
+                continue
 
-        elif line.startswith("$"):
-            match = re.match(r"\$\s*(\w+)\s*\+=\s*(-?\d+)", line)
-            if match:
-                current_node["type"] = "action"
-                current_node["flag"] = match.group(1)
-                current_node["value"] = int(match.group(2))
+            # 1. 解析 @start 入口標籤
+            if line.startswith("@start"):
+                parts = line.split()
+                if len(parts) >= 2:
+                    self.start_node = parts[1].strip()
+                continue
 
-        elif line.startswith("IF"):
-            match = re.match(r"IF\s+(\w+)\s*>=\s*(\d+)\s+THEN\s+(\w+)\s+ELSE\s+(\w+)", line)
-            if match:
-                current_node["type"] = "condition"
-                current_node["condition"] = {
-                    "flag": match.group(1),
-                    "value": int(match.group(2)),
-                    "trueNext": match.group(3),
-                    "falseNext": match.group(4)
+            # 2. 解析節點標籤 [node_id] (排除選項標籤如 ? [選項])
+            if line.startswith("[") and line.endswith("]") and not line.startswith("?"):
+                finalize_current_node()
+                node_id = line[1:-1].strip()
+                current_node = {
+                    "id": node_id,
+                    "type": "dialogue",
+                    "speaker": "",
+                    "text": "",
+                    "bg": "",
+                    "bgm": "",
+                    "cv": "",
+                    "weather": "none",
+                    "shake": 0.0,
+                    "transition_mask": "",
+                    "transition_duration": 1.0,
+                    "next": ""
                 }
+                continue
 
-        elif line.startswith("?"):
-            current_node["type"] = "choice"
-            if "choices" not in current_node:
-                current_node["choices"] = []
-            
-            match = re.match(r"\?\s*\[(.*?)\]\s*->\s*(\w+)", line)
-            if match:
-                current_node["choices"].append({
-                    "text": match.group(1),
-                    "next": match.group(2)
-                })
+            # 確保有活躍節點可填充屬性
+            if not current_node:
+                continue
 
-        # 💡 修正 5：強健的對話標籤與 Speaker 正則比對
-        elif ":" in line or "：" in line:
-            match = re.match(r"^([^:<#]+)[:：]\s*(.*)$", line)
-            if match:
-                current_node["speaker"] = match.group(1).strip()
-                current_node["text"] = match.group(2).strip()
+            # 3. 解析指向目標 -> next_node
+            if line.startswith("->"):
+                target = line[2:].strip()
+                current_node["next"] = target
+                continue
+
+            # 4. 解析分支選項 ? [選項文字] -> target_node
+            if line.startswith("?"):
+                choice_match = re.match(r'^\?\s*\[(.*?)\]\s*->\s*([\w\-]+)', line)
+                if choice_match:
+                    text, target = choice_match.groups()
+                    if "choices" not in current_node:
+                        current_node["choices"] = []
+                    current_node["choices"].append({
+                        "text": text.strip(),
+                        "target": target.strip()
+                    })
+                continue
+
+            # 5. 解析變數賦值 $ favorability += 10
+            if line.startswith("$"):
+                mut_match = re.match(r'^\$\s*(\w+)\s*(\+=|-=|=)\s*(-?\d+)', line)
+                if mut_match:
+                    var_name, op, val = mut_match.groups()
+                    if "mutations" not in current_node:
+                        current_node["mutations"] = []
+                    current_node["mutations"].append({
+                        "var": var_name,
+                        "op": op,
+                        "val": int(val)
+                    })
+                continue
+
+            # 6. 解析條件分支 IF favorability >= 80 THEN node_tier_high ELSE node_tier_low
+            if line.startswith("IF "):
+                cond_match = re.match(r'^IF\s+(\w+)\s*(>=|<=|>|<|==)\s*(-?\d+)\s+THEN\s+(\w+)\s+ELSE\s+(\w+)', line, re.IGNORECASE)
+                if cond_match:
+                    var_name, op, val, t_next, f_next = cond_match.groups()
+                    current_node["condition"] = {
+                        "var": var_name,
+                        "op": op,
+                        "val": int(val),
+                        "then": t_next,
+                        "else": f_next
+                    }
+                continue
+
+            # 7. 解析單行屬性 key: value
+            # 嚴格匹配白名單屬性，避免把角色名冒號誤判為屬性
+            attr_match = re.match(r'^(bg|bgm|cv|trans|transition|duration|weather|shake|char|character|char_left|char_center|char_right|active_char)\s*[:=]\s*(.*)$', line)
+            if attr_match:
+                key, val = attr_match.groups()
+                val = val.strip().strip('"')
+
+                if key == "bg":
+                    current_node["bg"] = val
+                elif key == "bgm":
+                    current_node["bgm"] = val
+                elif key == "cv":
+                    current_node["cv"] = val
+                elif key in ("trans", "transition"):
+                    current_node["transition_mask"] = val
+                elif key == "duration":
+                    try:
+                        current_node["transition_duration"] = float(val)
+                    except ValueError:
+                        current_node["transition_duration"] = 1.0
+                elif key == "weather":
+                    current_node["weather"] = val
+                elif key == "shake":
+                    try:
+                        current_node["shake"] = float(val)
+                    except ValueError:
+                        current_node["shake"] = 0.0
+                elif key in ("char", "character"):
+                    current_node["char_center"] = val
+                elif key in ("char_left", "char_center", "char_right", "active_char"):
+                    current_node[key] = val
+                continue
+
+            # 8. 解析對話台詞：說話者: 台詞 (例如 "學姐: 你好！" 或 "旁白: 春天來了。")
+            dialogue_match = re.match(r'^([^:：\s]+)\s*[:：]\s*(.*)$', line)
+            if dialogue_match:
+                speaker, text = dialogue_match.groups()
+                current_node["speaker"] = speaker.strip()
+                current_node["text"] = text.strip()
+                continue
+
+            # 9. 無說話者的純旁白文本
+            if current_node["text"]:
+                current_node["text"] += "\n" + line
             else:
-                current_node["speaker"] = ""
-                current_node["text"] = line.strip()
+                current_node["text"] = line
 
-    if current_node:
-        nodes.append(current_node)
+        finalize_current_node()
 
-    return {
-        "startNode": start_node,
-        "nodes": nodes
-    }
+        return {
+            "start": self.start_node,
+            "nodes": self.nodes
+        }
 
 def main():
-    if len(sys.argv) < 3:
-        print("Usage: python gality_compiler.py <input.gality> <output.json>")
+    input_path = "assets/scripts/main_story_multi.gality"
+    output_path = "assets/scripts/demo_long.json"
+
+    if len(sys.argv) >= 2:
+        input_path = sys.argv[1]
+    if len(sys.argv) >= 3:
+        output_path = sys.argv[2]
+
+    if not os.path.exists(input_path):
+        print(f"[Compiler Error] Source file not found: {input_path}")
         return
 
-    input_file = sys.argv[1]
-    output_file = sys.argv[2]
+    with open(input_path, "r", encoding="utf-8") as f:
+        source_code = f.read()
 
-    result = parse_gality(input_file)
-    with open(output_file, 'w', encoding='utf-8') as f:
+    compiler = GalityCompiler()
+    result = compiler.compile(source_code)
+
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    with open(output_path, "w", encoding="utf-8") as f:
         json.dump(result, f, ensure_ascii=False, indent=2)
 
-    print(f"[Gality DSL Compiler] Successfully compiled {input_file} -> {output_file}")
+    print(f"[GalityCompiler] Successfully compiled '{input_path}' -> '{output_path}'")
+    print(f"[GalityCompiler] Generated {len(result['nodes'])} valid AST nodes. Start node: '{result['start']}'")
 
 if __name__ == "__main__":
     main()

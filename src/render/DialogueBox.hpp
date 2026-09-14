@@ -3,41 +3,79 @@
 #include <SFML/Audio.hpp>
 #include <string>
 #include <vector>
-#include <regex>
 #include <sstream>
 #include <memory>
 #include <algorithm>
+#include <unordered_set>
+#include <cmath>
+#include <cstdlib>
 #include "UITheme.hpp"
+#include "../core/ConfigManager.hpp"
+#include "../core/AssetPack.hpp"
 
-struct ColoredSegment {
-    std::u32string text;
-    sf::Color color;
+// ============================================================================
+// 1. 排版與富文字標籤資料結構
+// ============================================================================
+struct GlyphStyle {
+    sf::Color color = sf::Color::White;
+    bool isShaking = false;
+    float customSpeed = -1.0f; // < 0 表示繼承全域 ConfigManager 設定
 };
 
+struct FormattedGlyph {
+    char32_t codepoint = 0;
+    sf::Vector2f position{0.0f, 0.0f};
+    GlyphStyle style;
+    float pauseDuration = 0.0f; // 該字元顯示完後的停頓時間 (秒)
+};
+
+// ============================================================================
+// 2. DialogueBox 類別實作 (純 SFML 原生向量排版，零 ImGui 依賴)
+// ============================================================================
 class DialogueBox {
 private:
     sf::RectangleShape boxShape;
     sf::RectangleShape nameBoxShape;
     sf::Font font;
     sf::Text nameText;
-    
-    std::vector<ColoredSegment> segments;
-    
+
+    // 持久保存字體二進位緩衝區，杜絕 FreeType 野指標光柵化失敗
+    std::vector<std::uint8_t> fontDataBuffer;
+    std::vector<std::uint8_t> soundDataBuffer;
+
+    std::vector<FormattedGlyph> glyphs;
     size_t totalCharCount = 0;
     size_t visibleCharCount = 0;
-    
+
     sf::Clock timer;
-    float charDelay = 0.04f;
+    float currentPauseRemaining = 0.0f;
     bool isCompleted = false;
 
-    // 💡 修正 1：使用 unique_ptr 確保 SFML 3.x 音效物件的移動與生命週期安全
     sf::SoundBuffer typeBuffer;
     std::unique_ptr<sf::Sound> typeSound;
     bool hasSound = false;
 
     DialogueBoxStyle style;
 
-    // 💡 修正 2：安全的 C++ HEX 顏色解析
+    // ------------------------------------------------------------------------
+    // CJK Kinsoku Shori (避頭尾禁則字元集合)
+    // ------------------------------------------------------------------------
+    static bool isProhibitedAtLineStart(char32_t cp) {
+        static const std::unordered_set<char32_t> lineStartProhibited = {
+            U'，', U'。', U'！', U'？', U'：', U'；', U'、', U'）', U'」', U'』',
+            U'”', U'’', U'>', U'·', U'…', U'—', U'~', U'～',
+            U',', U'.', U'!', U'?', U':', U';', U')', U']', U'}'
+        };
+        return lineStartProhibited.find(cp) != lineStartProhibited.end();
+    }
+
+    static bool isProhibitedAtLineEnd(char32_t cp) {
+        static const std::unordered_set<char32_t> lineEndProhibited = {
+            U'（', U'「', U'『', U'“', U'‘', U'《', U'<', U'(', U'[', U'{'
+        };
+        return lineEndProhibited.find(cp) != lineEndProhibited.end();
+    }
+
     sf::Color hexToColor(const std::string& hexStr) {
         std::string hex = hexStr;
         if (!hex.empty() && hex[0] == '#') hex = hex.substr(1);
@@ -55,17 +93,203 @@ private:
         return sf::Color(static_cast<std::uint8_t>(r), static_cast<std::uint8_t>(g), static_cast<std::uint8_t>(b));
     }
 
+    // ------------------------------------------------------------------------
+    // Tokenizer & Parser: 解析行內標籤並提取字元屬性
+    // ------------------------------------------------------------------------
+    struct ParsedChar {
+        char32_t codepoint;
+        GlyphStyle style;
+        float pause = 0.0f;
+    };
+
+    std::vector<ParsedChar> parseInlineTags(const std::string& rawText) {
+        std::vector<ParsedChar> result;
+        sf::String sfRaw = sf::String::fromUtf8(rawText.begin(), rawText.end());
+        std::u32string u32Str = sfRaw.toUtf32();
+
+        std::vector<sf::Color> colorStack = { sf::Color::White };
+        std::vector<bool> shakeStack = { false };
+        std::vector<float> speedStack = { -1.0f };
+
+        size_t idx = 0;
+        size_t length = u32Str.size();
+
+        while (idx < length) {
+            if (u32Str[idx] == U'<') {
+                size_t tagEnd = u32Str.find(U'>', idx);
+                if (tagEnd != std::u32string::npos) {
+                    // 將 ASCII 標籤直接轉換為 std::string，避開 SFML 3.x sf::U8String 型別限制
+                    std::string tag;
+                    tag.reserve(tagEnd - idx - 1);
+                    for (size_t t = idx + 1; t < tagEnd; ++t) {
+                        if (u32Str[t] < 128) {
+                            tag += static_cast<char>(u32Str[t]);
+                        }
+                    }
+
+                    if (tag.rfind("color=", 0) == 0) {
+                        std::string hex = tag.substr(6);
+                        colorStack.push_back(hexToColor(hex));
+                        idx = tagEnd + 1;
+                        continue;
+                    } else if (tag == "/color") {
+                        if (colorStack.size() > 1) colorStack.pop_back();
+                        idx = tagEnd + 1;
+                        continue;
+                    } else if (tag == "shake") {
+                        shakeStack.push_back(true);
+                        idx = tagEnd + 1;
+                        continue;
+                    } else if (tag == "/shake") {
+                        if (shakeStack.size() > 1) shakeStack.pop_back();
+                        idx = tagEnd + 1;
+                        continue;
+                    } else if (tag.rfind("speed=", 0) == 0) {
+                        try {
+                            float spd = std::stof(tag.substr(6));
+                            speedStack.push_back(spd);
+                        } catch (...) {}
+                        idx = tagEnd + 1;
+                        continue;
+                    } else if (tag == "/speed") {
+                        if (speedStack.size() > 1) speedStack.pop_back();
+                        idx = tagEnd + 1;
+                        continue;
+                    } else if (tag.rfind("w=", 0) == 0) {
+                        float pauseSec = 0.0f;
+                        try {
+                            pauseSec = std::stof(tag.substr(2));
+                        } catch (...) {}
+
+                        if (!result.empty()) {
+                            result.back().pause += pauseSec;
+                        } else {
+                            ParsedChar placeholder;
+                            placeholder.codepoint = U' ';
+                            placeholder.style.color = sf::Color::Transparent;
+                            placeholder.pause = pauseSec;
+                            result.push_back(placeholder);
+                        }
+                        idx = tagEnd + 1;
+                        continue;
+                    }
+                }
+            }
+
+            ParsedChar pc;
+            pc.codepoint = u32Str[idx];
+            pc.style.color = colorStack.back();
+            pc.style.isShaking = shakeStack.back();
+            pc.style.customSpeed = speedStack.back();
+            result.push_back(pc);
+            idx++;
+        }
+        return result;
+    }
+
+    // ------------------------------------------------------------------------
+    // Layout Shaper Pass: 執行字形測量、避頭尾斷行與座標計算
+    // ------------------------------------------------------------------------
+    void buildLayout(const std::vector<ParsedChar>& parsedList) {
+        glyphs.clear();
+        totalCharCount = parsedList.size();
+        visibleCharCount = 0;
+        isCompleted = false;
+
+        float padding = 25.0f;
+        float startX = boxShape.getPosition().x + padding;
+        float startY = boxShape.getPosition().y + padding;
+        float maxX = boxShape.getPosition().x + boxShape.getSize().x - padding;
+        float lineHeight = style.dialogueFontSize * 1.4f;
+
+        float currX = startX;
+        float currY = startY;
+
+        for (size_t i = 0; i < parsedList.size(); ++i) {
+            const auto& item = parsedList[i];
+            char32_t cp = item.codepoint;
+
+            if (cp == U'\n') {
+                currX = startX;
+                currY += lineHeight;
+                continue;
+            }
+
+            const auto& glyph = font.getGlyph(cp, style.dialogueFontSize, false);
+            float advanceX = glyph.advance;
+            if (advanceX <= 0.0f) {
+                advanceX = static_cast<float>(style.dialogueFontSize);
+            }
+
+            bool shouldWrap = false;
+
+            if (currX + advanceX > maxX) {
+                shouldWrap = true;
+            } else if (i + 1 < parsedList.size()) {
+                char32_t nextCp = parsedList[i + 1].codepoint;
+                if (isProhibitedAtLineStart(nextCp)) {
+                    const auto& nextGlyph = font.getGlyph(nextCp, style.dialogueFontSize, false);
+                    float nextAdvance = (nextGlyph.advance > 0.0f) ? nextGlyph.advance : static_cast<float>(style.dialogueFontSize);
+                    if (currX + advanceX + nextAdvance > maxX) {
+                        shouldWrap = true;
+                    }
+                }
+            }
+
+            if (!shouldWrap && isProhibitedAtLineEnd(cp)) {
+                if (currX + advanceX * 2.0f > maxX) {
+                    shouldWrap = true;
+                }
+            }
+
+            if (shouldWrap) {
+                currX = startX;
+                currY += lineHeight;
+            }
+
+            FormattedGlyph fg;
+            fg.codepoint = cp;
+            fg.position = sf::Vector2f(currX, currY);
+            fg.style = item.style;
+            fg.pauseDuration = item.pause;
+            glyphs.push_back(fg);
+
+            currX += advanceX;
+        }
+
+        totalCharCount = glyphs.size();
+    }
+
 public:
     DialogueBox() : nameText(font) {}
 
     bool loadFont(const std::string& fontPath) {
-        return font.openFromFile(fontPath);
+        fontDataBuffer.clear();
+        if (AssetPack::readFileFromPak(fontPath, fontDataBuffer, "data.pak") && !fontDataBuffer.empty()) {
+            if (font.openFromMemory(fontDataBuffer.data(), fontDataBuffer.size())) {
+                nameText.setFont(font);
+                return true;
+            }
+        }
+        if (font.openFromFile(fontPath)) {
+            nameText.setFont(font);
+            return true;
+        }
+        return false;
     }
 
     void loadTypeSound(const std::string& soundPath) {
+        soundDataBuffer.clear();
+        if (AssetPack::readFileFromPak(soundPath, soundDataBuffer, "data.pak") && !soundDataBuffer.empty()) {
+            if (typeBuffer.loadFromMemory(soundDataBuffer.data(), soundDataBuffer.size())) {
+                typeSound = std::make_unique<sf::Sound>(typeBuffer);
+                hasSound = true;
+            }
+            return;
+        }
+
         if (typeBuffer.loadFromFile(soundPath)) {
             typeSound = std::make_unique<sf::Sound>(typeBuffer);
-            typeSound->setVolume(30.0f);
             hasSound = true;
         }
     }
@@ -89,58 +313,42 @@ public:
 
     void setText(const std::string& speaker, const std::string& text) {
         nameText.setString(sf::String::fromUtf8(speaker.begin(), speaker.end()));
-        segments.clear();
-        totalCharCount = 0;
-        visibleCharCount = 0;
-        isCompleted = false;
+        
+        auto parsedList = parseInlineTags(text);
+        buildLayout(parsedList);
 
-        std::regex colorRegex(R"(<color=(#[0-9A-Fa-f]{6})>(.*?)</color>)");
-        auto words_begin = std::sregex_iterator(text.begin(), text.end(), colorRegex);
-        auto words_end = std::sregex_iterator();
-
-        size_t lastPos = 0;
-        for (std::sregex_iterator i = words_begin; i != words_end; ++i) {
-            std::smatch match = *i;
-            size_t matchPos = match.position();
-
-            if (matchPos > lastPos) {
-                std::string raw = text.substr(lastPos, matchPos - lastPos);
-                sf::String sfStr = sf::String::fromUtf8(raw.begin(), raw.end());
-                std::u32string u32(sfStr.begin(), sfStr.end());
-                segments.push_back({u32, sf::Color::White});
-                totalCharCount += u32.size();
-            }
-
-            std::string hexColor = match[1].str();
-            std::string innerText = match[2].str();
-            
-            sf::String sfStr = sf::String::fromUtf8(innerText.begin(), innerText.end());
-            std::u32string u32(sfStr.begin(), sfStr.end());
-            segments.push_back({u32, hexToColor(hexColor)});
-            totalCharCount += u32.size();
-
-            lastPos = matchPos + match.length();
-        }
-
-        if (lastPos < text.size()) {
-            std::string raw = text.substr(lastPos);
-            sf::String sfStr = sf::String::fromUtf8(raw.begin(), raw.end());
-            std::u32string u32(sfStr.begin(), sfStr.end());
-            segments.push_back({u32, sf::Color::White});
-            totalCharCount += u32.size();
-        }
-
+        currentPauseRemaining = 0.0f;
         timer.restart();
     }
 
     void update() {
         if (isCompleted) return;
 
-        if (timer.getElapsedTime().asSeconds() >= charDelay) {
+        float dt = timer.getElapsedTime().asSeconds();
+
+        if (currentPauseRemaining > 0.0f) {
+            currentPauseRemaining -= dt;
+            timer.restart();
+            return;
+        }
+
+        float stepInterval = ConfigManager::config.textSpeed;
+        if (visibleCharCount < totalCharCount && glyphs[visibleCharCount].style.customSpeed >= 0.0f) {
+            stepInterval = glyphs[visibleCharCount].style.customSpeed;
+        }
+
+        if (dt >= stepInterval) {
             timer.restart();
             if (visibleCharCount < totalCharCount) {
+                if (glyphs[visibleCharCount].pauseDuration > 0.0f) {
+                    currentPauseRemaining = glyphs[visibleCharCount].pauseDuration;
+                }
+
                 visibleCharCount++;
+
                 if (hasSound && typeSound && visibleCharCount % 2 == 0) {
+                    float finalSfxVol = 30.0f * (ConfigManager::config.sfxVolume / 100.0f) * (ConfigManager::config.masterVolume / 100.0f);
+                    typeSound->setVolume(finalSfxVol);
                     typeSound->play();
                 }
             } else {
@@ -152,13 +360,13 @@ public:
     bool onInteract() {
         if (!isCompleted) {
             visibleCharCount = totalCharCount;
+            currentPauseRemaining = 0.0f;
             isCompleted = true;
             return false;
         }
         return true;
     }
 
-    // 💡 修正 3：加入精準字元寬度量測與自動換行 (Word Wrap) 渲染邏輯
     void draw(sf::RenderTarget& target) {
         target.draw(boxShape);
         if (!nameText.getString().isEmpty()) {
@@ -166,49 +374,26 @@ public:
             target.draw(nameText);
         }
 
-        float padding = 25.f;
-        float startX = boxShape.getPosition().x + padding;
-        float startY = boxShape.getPosition().y + padding;
-        float maxX = boxShape.getPosition().x + boxShape.getSize().x - padding;
-        float lineHeight = style.dialogueFontSize * 1.4f;
+        size_t charsToRender = std::min(visibleCharCount, totalCharCount);
 
-        float currX = startX;
-        float currY = startY;
-        size_t drawnChars = 0;
+        for (size_t i = 0; i < charsToRender; ++i) {
+            const auto& fg = glyphs[i];
 
-        for (const auto& seg : segments) {
-            if (drawnChars >= visibleCharCount) break;
+            sf::Vector2f drawPos = fg.position;
 
-            size_t countToDraw = std::min(seg.text.size(), visibleCharCount - drawnChars);
-
-            for (size_t i = 0; i < countToDraw; ++i) {
-                char32_t ch = seg.text[i];
-                if (ch == U'\n') {
-                    currX = startX;
-                    currY += lineHeight;
-                    continue;
-                }
-
-                sf::String sfChar(ch);
-                sf::Text charText(font, sfChar, style.dialogueFontSize);
-                charText.setFillColor(seg.color);
-
-                float charWidth = charText.getLocalBounds().size.x;
-                if (charWidth == 0.0f) charWidth = style.dialogueFontSize * 0.5f;
-
-                // 自動換行檢查
-                if (currX + charWidth > maxX) {
-                    currX = startX;
-                    currY += lineHeight;
-                }
-
-                charText.setPosition(sf::Vector2f(currX, currY));
-                target.draw(charText);
-
-                currX += charWidth + 1.0f; // 加上固定 1px 字間距補償
+            if (fg.style.isShaking) {
+                float ox = (-1.0f + static_cast<float>(rand()) / (RAND_MAX / 2.0f)) * 2.0f;
+                float oy = (-1.0f + static_cast<float>(rand()) / (RAND_MAX / 2.0f)) * 2.0f;
+                drawPos += sf::Vector2f(ox, oy);
             }
 
-            drawnChars += countToDraw;
+            std::u32string singleCharStr(1, fg.codepoint);
+            sf::String sfChar(singleCharStr);
+
+            sf::Text charText(font, sfChar, style.dialogueFontSize);
+            charText.setFillColor(fg.style.color);
+            charText.setPosition(drawPos);
+            target.draw(charText);
         }
     }
 };

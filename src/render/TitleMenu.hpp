@@ -3,6 +3,7 @@
 #include <vector>
 #include <string>
 #include <functional>
+#include "../core/AssetPack.hpp"
 
 struct MenuButton {
     sf::RectangleShape shape;
@@ -10,69 +11,108 @@ struct MenuButton {
     std::function<void()> callback;
     bool isHovered = false;
 
-    MenuButton(const sf::Font& font) : text(font) {}
+    explicit MenuButton(const sf::Font& font) : text(font) {}
 };
 
 class TitleMenu {
 private:
     sf::Font font;
+    bool hasFont = false;
+    std::vector<std::uint8_t> fontBytes;
     sf::Text titleText;
     std::vector<MenuButton> buttons;
     bool visible = true;
+
+    std::function<void()> onStartCb;
+    std::function<void()> onLoadCb;
+    std::function<void()> onExitCb;
+
+    void rebuildButtons() {
+        if (!hasFont) return;
+        buttons.clear();
+
+        std::vector<std::pair<std::string, std::function<void()>>> menuItems = {
+            {"START GAME", onStartCb},
+            {"LOAD GAME",  onLoadCb},
+            {"EXIT",       onExitCb}
+        };
+
+        const float btnWidth = 400.f;
+        const float btnHeight = 65.f;
+        const float posX = (1920.f - btnWidth) * 0.5f;
+        const float startY = 460.f;
+        const float spacing = 95.f;
+
+        for (size_t i = 0; i < menuItems.size(); ++i) {
+            MenuButton btn(font);
+            float posY = startY + static_cast<float>(i) * spacing;
+
+            btn.shape.setSize(sf::Vector2f(btnWidth, btnHeight));
+            btn.shape.setPosition(sf::Vector2f(posX, posY));
+            btn.shape.setFillColor(sf::Color(20, 20, 40, 200));
+            btn.shape.setOutlineThickness(2.5f);
+            btn.shape.setOutlineColor(sf::Color(100, 100, 200, 255));
+
+            btn.text.setFont(font);
+            btn.text.setCharacterSize(28);
+            btn.text.setFillColor(sf::Color::White);
+            btn.text.setString(menuItems[i].first);
+
+            sf::FloatRect bounds = btn.text.getLocalBounds();
+            btn.text.setPosition(sf::Vector2f(
+                posX + (btnWidth - bounds.size.x) * 0.5f, 
+                posY + (btnHeight - bounds.size.y) * 0.5f - 6.f
+            ));
+            btn.callback = menuItems[i].second;
+
+            buttons.push_back(std::move(btn));
+        }
+    }
 
 public:
     TitleMenu() : titleText(font) {}
 
     bool loadFont(const std::string& fontPath) {
-        if (!font.openFromFile(fontPath)) return false;
+        fontBytes.clear();
+        hasFont = false;
 
-        titleText.setFont(font);
-        titleText.setString("GALITY ENGINE");
-        titleText.setCharacterSize(60);
-        titleText.setFillColor(sf::Color::White);
-        titleText.setPosition(sf::Vector2f(440.f, 150.f));
-        return true;
+        if (AssetPack::readFileFromPak(fontPath, fontBytes, "data.pak") && !fontBytes.empty()) {
+            if (font.openFromMemory(fontBytes.data(), fontBytes.size())) {
+                hasFont = true;
+            }
+        } else if (font.openFromFile(fontPath)) {
+            hasFont = true;
+        }
+
+        if (hasFont) {
+            titleText.setFont(font);
+            titleText.setString("GALITY ENGINE");
+            titleText.setCharacterSize(84);
+            titleText.setFillColor(sf::Color::White);
+            
+            sf::FloatRect bounds = titleText.getLocalBounds();
+            titleText.setPosition(sf::Vector2f((1920.f - bounds.size.x) * 0.5f, 200.f));
+            rebuildButtons();
+            return true;
+        }
+
+        return false;
     }
 
     void initButtons(std::function<void()> onStart, std::function<void()> onLoad, std::function<void()> onExit) {
-        buttons.clear();
-        std::vector<std::pair<std::string, std::function<void()>>> menuItems = {
-            {"START GAME", onStart},
-            {"LOAD GAME",  onLoad},
-            {"EXIT",       onExit}
-        };
-
-        for (size_t i = 0; i < menuItems.size(); ++i) {
-            MenuButton btn(font);
-            float posX = 490.f;
-            float posY = 320.f + i * 70.f;
-
-            btn.shape.setSize(sf::Vector2f(300.f, 50.f));
-            btn.shape.setPosition(sf::Vector2f(posX, posY));
-            btn.shape.setFillColor(sf::Color(20, 20, 40, 200));
-            btn.shape.setOutlineThickness(2.f);
-            btn.shape.setOutlineColor(sf::Color(100, 100, 200, 255));
-
-            btn.text.setCharacterSize(22);
-            btn.text.setFillColor(sf::Color::White);
-            btn.text.setString(menuItems[i].first);
-
-            sf::FloatRect bounds = btn.text.getLocalBounds();
-            btn.text.setPosition(sf::Vector2f(posX + (300.f - bounds.size.x) / 2.f, posY + (50.f - bounds.size.y) / 2.f - 4.f));
-            btn.callback = menuItems[i].second;
-
-            buttons.push_back(btn);
-        }
+        onStartCb = onStart;
+        onLoadCb = onLoad;
+        onExitCb = onExit;
+        rebuildButtons();
     }
 
     void setVisible(bool show) { visible = show; }
     bool isVisible() const { return visible; }
 
-    void updateHover(sf::Vector2i mousePos) {
+    void updateHover(sf::Vector2f mousePosF) {
         if (!visible) return;
-        sf::Vector2f mp(static_cast<float>(mousePos.x), static_cast<float>(mousePos.y));
         for (auto& btn : buttons) {
-            if (btn.shape.getGlobalBounds().contains(mp)) {
+            if (btn.shape.getGlobalBounds().contains(mousePosF)) {
                 btn.isHovered = true;
                 btn.shape.setFillColor(sf::Color(60, 60, 120, 240));
                 btn.shape.setOutlineColor(sf::Color(255, 215, 0, 255));
@@ -84,11 +124,10 @@ public:
         }
     }
 
-    bool handleClick(sf::Vector2i mousePos) {
+    bool handleClick(sf::Vector2f mousePosF) {
         if (!visible) return false;
-        sf::Vector2f mp(static_cast<float>(mousePos.x), static_cast<float>(mousePos.y));
         for (auto& btn : buttons) {
-            if (btn.shape.getGlobalBounds().contains(mp)) {
+            if (btn.shape.getGlobalBounds().contains(mousePosF)) {
                 if (btn.callback) btn.callback();
                 return true;
             }
@@ -97,7 +136,7 @@ public:
     }
 
     void draw(sf::RenderTarget& target) {
-        if (!visible) return;
+        if (!visible || !hasFont) return;
         target.draw(titleText);
         for (auto& btn : buttons) {
             target.draw(btn.shape);

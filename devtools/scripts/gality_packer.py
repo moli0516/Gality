@@ -14,7 +14,9 @@ def pack_assets(assets_dir: str, output_pak: str):
     for root, _, files in os.walk(assets_dir):
         for file in files:
             full_path = os.path.join(root, file)
-            rel_path = os.path.relpath(full_path, start=".").replace("\\", "/")
+            rel_path = os.path.relpath(full_path, start=assets_dir).replace("\\", "/")
+            if rel_path == ".":
+                continue
             file_entries.append((full_path, rel_path))
 
     print(f"[Gality Packer] Packing {len(file_entries)} assets into {output_pak}...")
