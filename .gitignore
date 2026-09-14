@@ -6,4 +6,14 @@ code_packer.py
 *.jpg
 *.ttf
 *.ogg
-devtools/
+
+third_party/
+dist/
+saves/
+vcpkg/
+imgui.ini
+packed_code.md
+data.pak
+
+devtools/*
+!devtools/scripts/

@@ -3,6 +3,7 @@
 #include <vector>
 #include <string>
 #include "../story/StoryNode.hpp"
+#include "UITheme.hpp"
 
 struct OptionButton {
     sf::RectangleShape shape;
@@ -10,7 +11,6 @@ struct OptionButton {
     size_t index;
     bool isHovered = false;
 
-    // 💡 SFML 3.x Text 建構
     OptionButton(const sf::Font& font) : text(font) {}
 };
 
@@ -18,6 +18,7 @@ class ChoiceUI {
 private:
     std::vector<OptionButton> buttons;
     sf::Font font;
+    ChoiceUIStyle style;
 
 public:
     ChoiceUI() = default;
@@ -26,34 +27,33 @@ public:
         return font.openFromFile(fontPath);
     }
 
+    void applyTheme(const ChoiceUIStyle& s) {
+        style = s;
+    }
+
     void setChoices(const std::vector<ChoiceOption>& options) {
         buttons.clear();
-        float buttonWidth = 800.f;
-        float buttonHeight = 55.f;
-        float spacing = 20.f;
-        float startY = 220.f;
 
         for (size_t i = 0; i < options.size(); ++i) {
             OptionButton btn(font);
             
-            float posX = (1280.f - buttonWidth) / 2.f;
-            float posY = startY + i * (buttonHeight + spacing);
+            float posX = (1280.f - style.width) / 2.f;
+            float posY = style.startY + i * (style.height + style.spacing);
 
-            btn.shape.setSize(sf::Vector2f(buttonWidth, buttonHeight));
+            btn.shape.setSize(sf::Vector2f(style.width, style.height));
             btn.shape.setPosition(sf::Vector2f(posX, posY));
-            btn.shape.setFillColor(sf::Color(30, 30, 50, 220));
+            btn.shape.setFillColor(style.normalBgColor);
             btn.shape.setOutlineThickness(2.f);
-            btn.shape.setOutlineColor(sf::Color(100, 100, 180, 255));
+            btn.shape.setOutlineColor(style.normalOutlineColor);
 
-            btn.text.setCharacterSize(22);
-            btn.text.setFillColor(sf::Color::White);
+            btn.text.setCharacterSize(style.fontSize);
+            btn.text.setFillColor(style.textColor);
             btn.text.setString(sf::String::fromUtf8(options[i].text.begin(), options[i].text.end()));
             
             sf::FloatRect textBounds = btn.text.getLocalBounds();
-            // 💡 SFML 3.x：使用 size.x 與 size.y
             btn.text.setPosition(sf::Vector2f(
-                posX + (buttonWidth - textBounds.size.x) / 2.f,
-                posY + (buttonHeight - textBounds.size.y) / 2.f - 5.f
+                posX + (style.width - textBounds.size.x) / 2.f,
+                posY + (style.height - textBounds.size.y) / 2.f - 5.f
             ));
 
             btn.index = i;
@@ -66,12 +66,12 @@ public:
         for (auto& btn : buttons) {
             if (btn.shape.getGlobalBounds().contains(mousePosF)) {
                 btn.isHovered = true;
-                btn.shape.setFillColor(sf::Color(70, 70, 130, 240));
-                btn.shape.setOutlineColor(sf::Color(255, 215, 0, 255));
+                btn.shape.setFillColor(style.hoverBgColor);
+                btn.shape.setOutlineColor(style.hoverOutlineColor);
             } else {
                 btn.isHovered = false;
-                btn.shape.setFillColor(sf::Color(30, 30, 50, 220));
-                btn.shape.setOutlineColor(sf::Color(100, 100, 180, 255));
+                btn.shape.setFillColor(style.normalBgColor);
+                btn.shape.setOutlineColor(style.normalOutlineColor);
             }
         }
     }
@@ -86,10 +86,10 @@ public:
         return -1;
     }
 
-    void draw(sf::RenderWindow& window) {
+    void draw(sf::RenderTarget& target) {
         for (auto& btn : buttons) {
-            window.draw(btn.shape);
-            window.draw(btn.text);
+            target.draw(btn.shape);
+            target.draw(btn.text);
         }
     }
 };

@@ -3,20 +3,21 @@
 [node_01]
 bg: assets/bg/classroom.jpg
 bgm: assets/audio/bgm_daily.ogg
-旁白: 放學後的陽光透過窗戶灑在課桌上，教室裡只剩下我和學姐兩個人。
+weather: sakura
+旁白: 放學後的陽光透過窗戶灑在課桌上，窗外飄著陣陣<color=#FFB7C5>櫻花雨</color>，教室裡只剩下我和學姐兩個人。
 -> node_02
 
 [node_02]
 bg: assets/bg/classroom.jpg
 char: assets/characters/senior_normal.png
 cv: assets/audio/cv_01.ogg
-學姐: 你終於準備好了嗎？我們等的遊戲引擎開發計劃，今天必須確定下來。
+學姐: 你終於準備好了嗎？我們等的<color=#FF5555>遊戲引擎開發計劃</color>，今天必須確定下來。
 -> node_03
 
 [node_03]
 bg: assets/bg/classroom.jpg
 char: assets/characters/senior_normal.png
-我: 抱歉學姐，剛剛在確認 C++17 的 SFML 3.x 資產快取邏輯，耽誤了一點時間。
+我: 抱歉學姐，剛剛在確認 C++17 的 <color=#55FF55>SFML 3.x</color> 資產快取邏輯，耽誤了一點時間。
 -> choice_01
 
 [choice_01]
@@ -35,6 +36,7 @@ $ favorability += -5
 bg: assets/bg/classroom.jpg
 char: assets/characters/senior_happy.png
 cv: assets/audio/cv_happy.ogg
+shake: 0.3
 學姐: 真可靠呢！我就知道沒有看錯你。
 -> node_05
 
@@ -42,6 +44,7 @@ cv: assets/audio/cv_happy.ogg
 bg: assets/bg/classroom.jpg
 char: assets/characters/senior_pout.png
 cv: assets/audio/cv_pout.ogg
+shake: 0.5
 學姐: 真是的，又在說這種懶散的話了...
 -> node_05
 
@@ -50,6 +53,7 @@ bg: assets/bg/hallway.jpg
 char: assets/characters/senior_normal.png
 bgm: assets/audio/bgm_club.ogg
 cv: assets/audio/cv_05.ogg
+weather: none
 學姐: 那麼，我們去社團教室討論具體的系統架構吧。
 -> node_06
 
@@ -99,7 +103,8 @@ cv: assets/audio/cv_12.ogg
 [node_13]
 bg: assets/bg/sunset.jpg
 bgm: assets/audio/bgm_quiet.ogg
-旁白: 不知不覺中，天色漸漸暗了下來。
+weather: rain
+旁白: 不知不覺中，天色漸漸暗了下來，窗外開始下起了細雨。
 -> node_14
 
 [node_14]
@@ -144,7 +149,8 @@ cv: assets/audio/cv_16_b.ogg
 [node_17]
 bg: assets/bg/station.jpg
 bgm: assets/audio/bgm_daily.ogg
-旁白: 離開學校後，我們來到了車站前。
+weather: rain
+旁白: 離開學校後，我們冒雨來到了車站前。
 -> node_18
 
 [node_18]
@@ -188,7 +194,8 @@ cv: assets/audio/cv_23.ogg
 [node_24]
 bg: assets/bg/night_street.jpg
 bgm: assets/audio/bgm_quiet.ogg
-旁白: 夜幕低垂，街燈陸續亮起。
+weather: snow
+旁白: 夜幕低垂，街燈陸續亮起，天空甚至飄起了微雪。
 -> node_25
 
 [node_25]
@@ -214,7 +221,7 @@ cv: assets/audio/cv_27.ogg
 [node_28]
 bg: assets/bg/night_street.jpg
 char: assets/characters/senior_normal.png
-我: 有啊，這展示了 C++17 記憶體與架構設計能力，面試 Quant/Backend 很加分。
+我: 有啊，這展示了 C++17 記憶體與架構設計能力，面試 <color=#FFFF55>Quant/Backend</color> 很加分。
 -> node_29
 
 [node_29]
@@ -233,6 +240,7 @@ char: assets/characters/senior_happy.png
 [node_31]
 bg: assets/bg/station.jpg
 bgm: assets/audio/bgm_daily.ogg
+weather: none
 旁白: 電車進站的廣播聲響起。
 -> node_32
 
@@ -274,7 +282,7 @@ bg: assets/bg/room.jpg
 
 [node_38]
 bg: assets/bg/room.jpg
-我: 抱著 Kuromi 娃娃休息一下，接著準備程式碼重構。
+我: 抱著 <color=#FF55FF>Kuromi 娃娃</color>休息一下，接著準備程式碼重構。
 -> node_39
 
 [node_39]
@@ -290,7 +298,8 @@ bg: assets/bg/classroom.jpg
 char: assets/characters/senior_happy.png
 bgm: assets/audio/bgm_daily.ogg
 cv: assets/audio/cv_good_end.ogg
-系統通知: 恭喜！學姐好感度達標！解鎖 【True Developer Ending】！
+shake: 0.6
+系統通知: 恭喜！學姐好感度達標！解鎖 <color=#FFD700>【True Developer Ending】</color>！
 -> end_choice
 
 [node_normal_ending]
@@ -298,7 +307,7 @@ bg: assets/bg/classroom.jpg
 char: assets/characters/senior_normal.png
 bgm: assets/audio/bgm_quiet.ogg
 cv: assets/audio/cv_norm_end.ogg
-系統通知: 解鎖 【Normal Developer Ending】！請繼續努力提升好感度！
+系統通知: 解鎖 <color=#AAAAAA>【Normal Developer Ending】</color>！請繼續努力提升好感度！
 -> end_choice
 
 [end_choice]

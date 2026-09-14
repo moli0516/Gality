@@ -124,19 +124,19 @@ public:
         }
     }
 
-    void draw(sf::RenderWindow& window) {
+void draw(sf::RenderTarget& target) {
         if (isBgFading && bgSpriteOld) {
-            window.draw(*bgSpriteOld);
+            target.draw(*bgSpriteOld);
         }
         if (bgSpriteCurrent) {
-            window.draw(*bgSpriteCurrent);
+            target.draw(*bgSpriteCurrent);
         }
 
         if (isCharFading && characterSpriteOld) {
-            window.draw(*characterSpriteOld);
+            target.draw(*characterSpriteOld);
         }
         if (characterSpriteCurrent) {
-            window.draw(*characterSpriteCurrent);
+            target.draw(*characterSpriteCurrent);
         }
     }
 };

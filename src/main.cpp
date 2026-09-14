@@ -1,5 +1,7 @@
 ﻿#include <SFML/Graphics.hpp>
 #include <SFML/Audio.hpp>
+#include <imgui.h>
+#include <imgui-SFML.h>
 #include <iostream>
 #include <memory>
 #include <filesystem>
@@ -13,20 +15,45 @@
 #include "render/ChoiceUI.hpp"
 #include "render/LayerRenderer.hpp"
 #include "render/BacklogUI.hpp"
+#include "render/DebugOverlay.hpp"
+#include "render/WeatherSystem.hpp"
+#include "render/PostFX.hpp"
+#include "render/UITheme.hpp"
+#include "render/TitleMenu.hpp" // 💡 Week 11 TitleMenu
 #include "core/AudioManager.hpp"
 #include "core/SaveManager.hpp"
 
 namespace fs = std::filesystem;
 
 int main() {
-    // 1. 初始化 SFML 視窗 (SFML 3.x 語法)
+    // 1. 初始化 SFML 視窗
     sf::RenderWindow window(sf::VideoMode(sf::Vector2u(1280, 720)), "Gality Galgame Engine MVP");
     window.setFramerateLimit(60);
 
-    // 2. 確保 saves 資料夾存在
-    fs::create_directories("saves");
+    // 離屏渲染緩衝區 (SFML 3.x 建構子語法)
+    sf::RenderTexture sceneBuffer(sf::Vector2u(1280, 720));
 
-    // 3. 初始化數據與腳本
+    // 2. 初始化 ImGui-SFML
+    if (!ImGui::SFML::Init(window)) {
+        std::cerr << "Failed to initialize ImGui-SFML!" << std::endl;
+        return -1;
+    }
+
+    // 3. 載入中文字型至 ImGui Font Atlas
+    ImGuiIO& io = ImGui::GetIO();
+    io.Fonts->AddFontFromFileTTF(
+        "assets/fonts/font.ttf",
+        16.0f,
+        nullptr,
+        io.Fonts->GetGlyphRangesChineseSimplifiedCommon()
+    );
+    ImGui::StyleColorsDark();
+
+    // 4. 確保 saves 與 config 資料夾存在
+    fs::create_directories("saves");
+    fs::create_directories("assets/config");
+
+    // 5. 初始化數據與腳本
     Blackboard blackboard;
     auto rootNode = ScriptLoader::loadFromFile("assets/scripts/demo_long.json");
     if (!rootNode) {
@@ -34,7 +61,7 @@ int main() {
         return -1;
     }
 
-    // 建立 Node ID 索引表 (供 Save/Load 快速跳轉)
+    // 建立 Node ID 索引表
     std::unordered_map<std::string, std::shared_ptr<StoryNode>> nodeIndexMap;
     std::function<void(std::shared_ptr<StoryNode>)> buildIndex = [&](std::shared_ptr<StoryNode> node) {
         if (!node || nodeIndexMap.count(node->id)) return;
@@ -47,23 +74,36 @@ int main() {
     buildIndex(rootNode);
 
     StoryExecutor executor(blackboard);
-    executor.start(rootNode);
 
-    // 4. 初始化所有 UI 與音效模組
+    // 6. 初始化 UI、音效、TitleMenu、Weather 與 PostFX 模組
     DialogueBox dialogueBox;
     ChoiceUI choiceUI;
     LayerRenderer layerRenderer;
     AudioManager audioManager;
     BacklogUI backlogUI;
+    DebugOverlay debugOverlay;
+    WeatherSystem weatherSystem(window.getSize());
+    PostFX postFX;
+    TitleMenu titleMenu; // 💡 Week 11 主選單
 
     if (!dialogueBox.loadFont("assets/fonts/font.ttf") || 
         !choiceUI.loadFont("assets/fonts/font.ttf") ||
-        !backlogUI.loadFont("assets/fonts/font.ttf")) {
+        !backlogUI.loadFont("assets/fonts/font.ttf") ||
+        !titleMenu.loadFont("assets/fonts/font.ttf")) {
         std::cerr << "Failed to load font. Please ensure assets/fonts/font.ttf exists." << std::endl;
         return -1;
     }
 
-    // 5. 定義狀態同步 Lambda
+    // 💡 載入打字音效 (可選)
+    dialogueBox.loadTypeSound("assets/audio/typewriter.wav");
+
+    // 💡 載入與套用 Data-Driven UI Theme 配置
+    UITheme uiTheme;
+    uiTheme.loadFromFile("assets/config/ui_theme.json");
+    dialogueBox.applyTheme(uiTheme.dialogueStyle);
+    choiceUI.applyTheme(uiTheme.choiceStyle);
+
+    // 7. 定義狀態同步 Lambda
     auto syncCurrentNodeState = [&](bool recordHistory = true) {
         auto currentNode = executor.getCurrentNode();
         if (!currentNode) return;
@@ -71,7 +111,6 @@ int main() {
         if (currentNode->type == NodeType::Dialogue) {
             dialogueBox.setText(currentNode->speaker, currentNode->text);
             
-            // 寫入 Backlog 歷史
             if (recordHistory) {
                 backlogUI.addEntry(currentNode->speaker, currentNode->text, currentNode->voicePath);
             }
@@ -84,55 +123,115 @@ int main() {
             
             if (!currentNode->bgmPath.empty()) audioManager.playBGM(currentNode->bgmPath);
             audioManager.playVoice(currentNode->voicePath);
+
+            if (!currentNode->weather.empty()) {
+                if (currentNode->weather == "rain") weatherSystem.setWeather(WeatherType::Rain);
+                else if (currentNode->weather == "snow") weatherSystem.setWeather(WeatherType::Snow);
+                else if (currentNode->weather == "sakura") weatherSystem.setWeather(WeatherType::Sakura);
+                else if (currentNode->weather == "none") weatherSystem.setWeather(WeatherType::None);
+            }
+
+            if (currentNode->shake > 0.0f) {
+                postFX.triggerShake(currentNode->shake, 15.0f);
+            }
             
         } else if (currentNode->type == NodeType::Choice) {
             choiceUI.setChoices(currentNode->choices);
         }
     };
 
-    // 初始第一句同步
-    syncCurrentNodeState(true);
+    // 💡 綁定 TitleMenu 按鈕動作
+    titleMenu.initButtons(
+        [&]() { // Start Game
+            titleMenu.setVisible(false);
+            blackboard = Blackboard();
+            backlogUI.clear();
+            executor.start(rootNode);
+            syncCurrentNodeState(true);
+        },
+        [&]() { // Load Game
+            SaveSnapshot snapshot;
+            if (SaveManager::loadGame("saves/save1.json", snapshot)) {
+                if (nodeIndexMap.count(snapshot.currentNodeId)) {
+                    blackboard.setAllInts(snapshot.intFlags);
+                    executor.jumpToNode(nodeIndexMap[snapshot.currentNodeId]);
+                    titleMenu.setVisible(false);
+                    syncCurrentNodeState(false);
+                }
+            }
+        },
+        [&]() { // Exit
+            window.close();
+        }
+    );
 
-    // ⏱️ Week 7: 初始化 Delta Clock 用於平滑過渡與動畫更新
     sf::Clock deltaClock;
 
-    // 6. 主迴圈
+    // 8. 主迴圈
     while (window.isOpen()) {
-        float deltaTime = deltaClock.restart().asSeconds();
+        sf::Time dt = deltaClock.restart();
+        float deltaTime = dt.asSeconds();
 
-        // ⏱️ Week 7: 更新音訊漸變與圖層動畫
+        // 更新 ImGui 與各模組
+        ImGui::SFML::Update(window, dt);
         audioManager.update(deltaTime);
         layerRenderer.update(deltaTime);
+        weatherSystem.update(deltaTime);
+        
+        bool shouldBlur = titleMenu.isVisible() || backlogUI.isVisible() || debugOverlay.getIsVisible();
+        postFX.setBlur(shouldBlur ? 3.5f : 0.0f);
+        postFX.update(deltaTime, window.getSize());
 
         sf::Vector2i mousePos = sf::Mouse::getPosition(window);
 
         while (const auto event = window.pollEvent()) {
+            ImGui::SFML::ProcessEvent(window, *event);
+
             if (event->is<sf::Event::Closed>()) {
                 window.close();
             }
 
-            // -------------------------------------------------------------
-            // 🔙 Backlog 滾輪事件處理 (SFML 3.x 語法)
-            // -------------------------------------------------------------
+            // F1 / ~ 切換 Debugger
+            if (const auto* keyBtn = event->getIf<sf::Event::KeyPressed>()) {
+                if (keyBtn->code == sf::Keyboard::Key::Grave || keyBtn->code == sf::Keyboard::Key::F1) {
+                    debugOverlay.toggle();
+                }
+            }
+
+            if (ImGui::GetIO().WantCaptureKeyboard || ImGui::GetIO().WantCaptureMouse) {
+                continue;
+            }
+
+            // 💡 主選單開頭攔截事件
+            if (titleMenu.isVisible()) {
+                if (event->is<sf::Event::MouseMoved>()) {
+                    titleMenu.updateHover(mousePos);
+                }
+                if (const auto* mouseBtn = event->getIf<sf::Event::MouseButtonPressed>()) {
+                    if (mouseBtn->button == sf::Mouse::Button::Left) {
+                        titleMenu.handleClick(mousePos);
+                    }
+                }
+                continue;
+            }
+
+            // Backlog 滾輪處理
             if (const auto* wheelEvt = event->getIf<sf::Event::MouseWheelScrolled>()) {
                 if (wheelEvt->wheel == sf::Mouse::Wheel::Vertical) {
                     if (wheelEvt->delta > 0.0f) {
                         if (!backlogUI.isVisible()) {
-                            backlogUI.setVisible(true); // 向上滾動：開啟 Backlog
+                            backlogUI.setVisible(true);
                         } else {
-                            backlogUI.handleScroll(wheelEvt->delta); // 向上滑動清單
+                            backlogUI.handleScroll(wheelEvt->delta);
                         }
                     } else if (wheelEvt->delta < 0.0f) {
                         if (backlogUI.isVisible()) {
-                            backlogUI.handleScroll(wheelEvt->delta); // 向下滑動清單
+                            backlogUI.handleScroll(wheelEvt->delta);
                         }
                     }
                 }
             }
 
-            // -------------------------------------------------------------
-            // 🔙 Backlog 開啟狀態下的鍵盤/滑鼠攔截
-            // -------------------------------------------------------------
             if (backlogUI.isVisible()) {
                 if (const auto* keyBtn = event->getIf<sf::Event::KeyPressed>()) {
                     if (keyBtn->code == sf::Keyboard::Key::Escape || keyBtn->code == sf::Keyboard::Key::Tab) {
@@ -143,36 +242,35 @@ int main() {
                 }
                 if (const auto* mouseBtn = event->getIf<sf::Event::MouseButtonPressed>()) {
                     if (mouseBtn->button == sf::Mouse::Button::Right) {
-                        backlogUI.setVisible(false); // 右鍵關閉
+                        backlogUI.setVisible(false);
                     }
                 }
-                continue; // Backlog 開啟時，不處理下方遊戲的推進與點擊
+                continue;
             }
 
-            // -------------------------------------------------------------
-            // 全局快捷鍵處理 (Backlog 切換、S 存檔、L 讀檔)
-            // -------------------------------------------------------------
+            // 快捷鍵處理
             auto currentNode = executor.getCurrentNode();
 
             if (const auto* keyBtn = event->getIf<sf::Event::KeyPressed>()) {
-                // 按 Tab 或 H 鍵開關 Backlog (滑鼠滾輪的備用方案)
                 if (keyBtn->code == sf::Keyboard::Key::Tab || keyBtn->code == sf::Keyboard::Key::H) {
                     backlogUI.toggle();
                 }
 
-                // S 鍵存檔
+                if (keyBtn->code == sf::Keyboard::Key::K) {
+                    postFX.triggerShake(0.4f, 20.0f);
+                }
+
                 if (keyBtn->code == sf::Keyboard::Key::S && currentNode) {
                     SaveManager::saveGame("saves/save1.json", currentNode->id, blackboard);
                 }
 
-                // L 鍵讀檔
                 if (keyBtn->code == sf::Keyboard::Key::L) {
                     SaveSnapshot snapshot;
                     if (SaveManager::loadGame("saves/save1.json", snapshot)) {
                         if (nodeIndexMap.count(snapshot.currentNodeId)) {
                             blackboard.setAllInts(snapshot.intFlags);
                             executor.jumpToNode(nodeIndexMap[snapshot.currentNodeId]);
-                            syncCurrentNodeState(false); // 讀檔不重複錄入 Backlog
+                            syncCurrentNodeState(false);
                         }
                     }
                 }
@@ -180,9 +278,7 @@ int main() {
 
             if (!currentNode) continue;
 
-            // -------------------------------------------------------------
-            // 遊戲劇情邏輯 (Choice & Dialogue 點擊)
-            // -------------------------------------------------------------
+            // 遊戲劇情推進
             if (currentNode->type == NodeType::Choice) {
                 if (event->is<sf::Event::MouseMoved>()) {
                     choiceUI.updateHover(mousePos);
@@ -194,10 +290,7 @@ int main() {
                             if (currentNode->id == "end_choice") {
                                 if (selectedOption == 0) {
                                     audioManager.stopBGM();
-                                    blackboard = Blackboard();
-                                    backlogUI.clear();
-                                    executor.start(rootNode);
-                                    syncCurrentNodeState(true);
+                                    titleMenu.setVisible(true); // 重新返回主選單
                                     continue;
                                 } else if (selectedOption == 1) {
                                     window.close();
@@ -234,32 +327,43 @@ int main() {
             }
         }
 
-        // 7. 更新與渲染
+        // 9. 渲染流程
         dialogueBox.update();
 
-        window.clear(sf::Color(20, 20, 30));
-        
-        // 底層：背景與立繪 (自動處理 Crossfade 渲染)
-        layerRenderer.draw(window);
+        sceneBuffer.clear(sf::Color(20, 20, 30));
+        layerRenderer.draw(sceneBuffer);
 
-        // 中層：對話框與選項 UI
-        if (!executor.isFinished()) {
+        if (!titleMenu.isVisible() && !executor.isFinished()) {
             auto currentNode = executor.getCurrentNode();
             if (currentNode) {
                 if (currentNode->type == NodeType::Dialogue) {
-                    dialogueBox.draw(window);
+                    dialogueBox.draw(sceneBuffer);
                 } else if (currentNode->type == NodeType::Choice) {
-                    dialogueBox.draw(window);
-                    choiceUI.draw(window);
+                    dialogueBox.draw(sceneBuffer);
+                    choiceUI.draw(sceneBuffer);
                 }
             }
         }
+        weatherSystem.draw(sceneBuffer);
+        sceneBuffer.display();
 
-        // 最上層：Backlog 遮罩
+        window.clear();
+        postFX.applyAndDraw(window, sceneBuffer);
+
+        // 最上層 UI 繪製
+        titleMenu.draw(window);
         backlogUI.draw(window);
+
+        debugOverlay.draw(window, blackboard, executor, nodeIndexMap, [&]() {
+            syncCurrentNodeState(false);
+        });
+
+        ImGui::SFML::Render(window);
 
         window.display();
     }
+
+    ImGui::SFML::Shutdown();
 
     return 0;
 }

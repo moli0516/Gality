@@ -15,12 +15,10 @@ def parse_gality(file_path):
         if not line or line.startswith("#"):
             continue
 
-        # 解析 @start 指令
         if line.startswith("@start"):
             start_node = line.split()[1]
             continue
 
-        # 解析 [node_id] 標籤
         if line.startswith("[") and line.endswith("]"):
             if current_node:
                 nodes.append(current_node)
@@ -34,6 +32,8 @@ def parse_gality(file_path):
                 "character": "",
                 "bgm": "",
                 "cv": "",
+                "weather": "",
+                "shake": 0.0,
                 "next": ""
             }
             continue
@@ -41,7 +41,6 @@ def parse_gality(file_path):
         if not current_node:
             continue
 
-        # 解析資源屬性
         if line.startswith("bg:"):
             current_node["bg"] = line.split(":", 1)[1].strip()
         elif line.startswith("char:"):
@@ -50,12 +49,16 @@ def parse_gality(file_path):
             current_node["bgm"] = line.split(":", 1)[1].strip()
         elif line.startswith("cv:"):
             current_node["cv"] = line.split(":", 1)[1].strip()
-        
-        # 解析單向鏈結 -> node_id
+        elif line.startswith("weather:"):
+            current_node["weather"] = line.split(":", 1)[1].strip().lower()
+        elif line.startswith("shake:"):
+            try:
+                current_node["shake"] = float(line.split(":", 1)[1].strip())
+            except ValueError:
+                current_node["shake"] = 0.4
         elif line.startswith("->"):
             current_node["next"] = line.split("->")[1].strip()
 
-        # 解析 Action 指令: $ flag += val
         elif line.startswith("$"):
             match = re.match(r"\$\s*(\w+)\s*\+=\s*(-?\d+)", line)
             if match:
@@ -63,7 +66,6 @@ def parse_gality(file_path):
                 current_node["flag"] = match.group(1)
                 current_node["value"] = int(match.group(2))
 
-        # 解析 Condition 指令: IF flag >= val THEN true_node ELSE false_node
         elif line.startswith("IF"):
             match = re.match(r"IF\s+(\w+)\s*>=\s*(\d+)\s+THEN\s+(\w+)\s+ELSE\s+(\w+)", line)
             if match:
@@ -75,7 +77,6 @@ def parse_gality(file_path):
                     "falseNext": match.group(4)
                 }
 
-        # 解析 Choice 指令: ? [選項] -> node_id
         elif line.startswith("?"):
             current_node["type"] = "choice"
             if "choices" not in current_node:
@@ -88,17 +89,19 @@ def parse_gality(file_path):
                     "next": match.group(2)
                 })
 
-        # 解析對話內容: Speaker: Text
+        # 💡 修正 5：強健的對話標籤與 Speaker 正則比對
         elif ":" in line or "：" in line:
-            sep = ":" if ":" in line else "："
-            parts = line.split(sep, 1)
-            current_node["speaker"] = parts[0].strip()
-            current_node["text"] = parts[1].strip()
+            match = re.match(r"^([^:<#]+)[:：]\s*(.*)$", line)
+            if match:
+                current_node["speaker"] = match.group(1).strip()
+                current_node["text"] = match.group(2).strip()
+            else:
+                current_node["speaker"] = ""
+                current_node["text"] = line.strip()
 
     if current_node:
         nodes.append(current_node)
 
-    # 封裝成標準 JSON 結構
     return {
         "startNode": start_node,
         "nodes": nodes

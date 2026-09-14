@@ -26,7 +26,7 @@ public:
 
     void setVisible(bool show) {
         visible = show;
-        if (show) scrollOffset = 0.0f; // 開啟時重置滾動
+        if (show) scrollOffset = 0.0f;
     }
 
     bool isVisible() const {
@@ -51,36 +51,38 @@ public:
         if (scrollOffset < 0.0f) scrollOffset = 0.0f;
     }
 
-    void draw(sf::RenderWindow& window) {
+    // 💡 修正 4：介面由 sf::RenderWindow& 改為抽象度更高的 sf::RenderTarget&
+    void draw(sf::RenderTarget& target) {
         if (!visible) return;
 
+        sf::Vector2f targetSize(static_cast<float>(target.getSize().x), static_cast<float>(target.getSize().y));
+
         // 1. 半透明黑色背景遮罩
-        sf::RectangleShape overlay(sf::Vector2f(window.getSize().x, window.getSize().y));
+        sf::RectangleShape overlay(targetSize);
         overlay.setFillColor(sf::Color(0, 0, 0, 220));
-        window.draw(overlay);
+        target.draw(overlay);
 
         // 2. 標題
         sf::Text titleText(font, "=== HISTORY BACKLOG (Scroll to Navigate | Right Click / Esc to Close) ===", 20);
         titleText.setFillColor(sf::Color(200, 200, 200));
         titleText.setPosition(sf::Vector2f(50.f, 30.f));
-        window.draw(titleText);
+        target.draw(titleText);
 
-        // 3. 繪製對話列表 (從最新到最舊倒序渲染)
+        // 3. 繪製對話歷史倒序列表
         float startY = 80.f + scrollOffset;
         float lineSpacing = 70.f;
 
         for (int i = static_cast<int>(historyEntries.size()) - 1; i >= 0; --i) {
             float currentY = startY + (historyEntries.size() - 1 - i) * lineSpacing;
             
-            // 超出螢幕範圍不渲染 (Culling)
-            if (currentY < 70.f || currentY > window.getSize().y - 50.f) continue;
+            if (currentY < 70.f || currentY > targetSize.y - 50.f) continue;
 
             std::string displayText = (historyEntries[i].speaker.empty() ? "" : historyEntries[i].speaker + ": ") + historyEntries[i].text;
             sf::Text entryText(font, sf::String::fromUtf8(displayText.begin(), displayText.end()), 18);
             entryText.setFillColor(sf::Color::White);
             entryText.setPosition(sf::Vector2f(70.f, currentY));
             
-            window.draw(entryText);
+            target.draw(entryText);
         }
     }
 };

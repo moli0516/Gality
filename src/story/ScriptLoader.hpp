@@ -41,6 +41,10 @@ public:
                 node->characterSpritePath = item.value("character", "");
                 node->bgmPath = item.value("bgm", "");
                 node->voicePath = item.value("cv", "");
+
+                // 💡 Week 10: 載入 Weather 與 Shake
+                node->weather = item.value("weather", "");
+                node->shake = item.value("shake", 0.0f);
             } else if (type == NodeType::Action) {
                 std::string flag = item["flag"];
                 int val = item["value"];

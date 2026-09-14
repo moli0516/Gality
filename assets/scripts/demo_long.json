@@ -1,37 +1,43 @@
-﻿{
+{
   "startNode": "node_01",
   "nodes": [
     {
       "id": "node_01",
       "type": "dialogue",
       "speaker": "旁白",
-      "text": "放學後的陽光透過窗戶灑在課桌上，教室裡只剩下我和學姐兩個人。",
+      "text": "放學後的陽光透過窗戶灑在課桌上，窗外飄著陣陣<color=#FFB7C5>櫻花雨</color>，教室裡只剩下我和學姐兩個人。",
       "bg": "assets/bg/classroom.jpg",
       "character": "",
       "bgm": "assets/audio/bgm_daily.ogg",
       "cv": "",
+      "weather": "sakura",
+      "shake": 0.0,
       "next": "node_02"
     },
     {
       "id": "node_02",
       "type": "dialogue",
       "speaker": "學姐",
-      "text": "你終於準備好了嗎？我們等的遊戲引擎開發計劃，今天必須確定下來。",
+      "text": "你終於準備好了嗎？我們等的<color=#FF5555>遊戲引擎開發計劃</color>，今天必須確定下來。",
       "bg": "assets/bg/classroom.jpg",
       "character": "assets/characters/senior_normal.png",
       "bgm": "",
       "cv": "assets/audio/cv_01.ogg",
+      "weather": "",
+      "shake": 0.0,
       "next": "node_03"
     },
     {
       "id": "node_03",
       "type": "dialogue",
       "speaker": "我",
-      "text": "抱歉學姐，剛剛在確認 C++17 的 SFML 3.x 資產快取邏輯，耽誤了一點時間。",
+      "text": "抱歉學姐，剛剛在確認 C++17 的 <color=#55FF55>SFML 3.x</color> 資產快取邏輯，耽誤了一點時間。",
       "bg": "assets/bg/classroom.jpg",
       "character": "assets/characters/senior_normal.png",
       "bgm": "",
       "cv": "",
+      "weather": "",
+      "shake": 0.0,
       "next": "choice_01"
     },
     {
@@ -39,24 +45,53 @@
       "type": "choice",
       "speaker": "",
       "text": "",
+      "bg": "",
+      "character": "",
+      "bgm": "",
+      "cv": "",
+      "weather": "",
+      "shake": 0.0,
+      "next": "",
       "choices": [
-        { "text": "包在我身上吧！今晚就能搞定！", "next": "act_favor_up" },
-        { "text": "感覺好麻煩啊... 可以交給別人嗎？", "next": "act_favor_down" }
+        {
+          "text": "包在我身上吧！今晚就能搞定！",
+          "next": "act_favor_up"
+        },
+        {
+          "text": "感覺好麻煩啊... 可以交給別人嗎？",
+          "next": "act_favor_down"
+        }
       ]
     },
     {
       "id": "act_favor_up",
       "type": "action",
+      "speaker": "",
+      "text": "",
+      "bg": "",
+      "character": "",
+      "bgm": "",
+      "cv": "",
+      "weather": "",
+      "shake": 0.0,
+      "next": "node_04_a",
       "flag": "favorability",
-      "value": 10,
-      "next": "node_04_a"
+      "value": 10
     },
     {
       "id": "act_favor_down",
       "type": "action",
+      "speaker": "",
+      "text": "",
+      "bg": "",
+      "character": "",
+      "bgm": "",
+      "cv": "",
+      "weather": "",
+      "shake": 0.0,
+      "next": "node_04_b",
       "flag": "favorability",
-      "value": -5,
-      "next": "node_04_b"
+      "value": -5
     },
     {
       "id": "node_04_a",
@@ -67,6 +102,8 @@
       "character": "assets/characters/senior_happy.png",
       "bgm": "",
       "cv": "assets/audio/cv_happy.ogg",
+      "weather": "",
+      "shake": 0.3,
       "next": "node_05"
     },
     {
@@ -78,6 +115,8 @@
       "character": "assets/characters/senior_pout.png",
       "bgm": "",
       "cv": "assets/audio/cv_pout.ogg",
+      "weather": "",
+      "shake": 0.5,
       "next": "node_05"
     },
     {
@@ -89,6 +128,8 @@
       "character": "assets/characters/senior_normal.png",
       "bgm": "assets/audio/bgm_club.ogg",
       "cv": "assets/audio/cv_05.ogg",
+      "weather": "none",
+      "shake": 0.0,
       "next": "node_06"
     },
     {
@@ -100,6 +141,8 @@
       "character": "",
       "bgm": "",
       "cv": "",
+      "weather": "",
+      "shake": 0.0,
       "next": "node_07"
     },
     {
@@ -111,6 +154,8 @@
       "character": "",
       "bgm": "",
       "cv": "",
+      "weather": "",
+      "shake": 0.0,
       "next": "node_08"
     },
     {
@@ -122,6 +167,8 @@
       "character": "assets/characters/senior_surprised.png",
       "bgm": "",
       "cv": "assets/audio/cv_08.ogg",
+      "weather": "",
+      "shake": 0.0,
       "next": "node_09"
     },
     {
@@ -133,6 +180,8 @@
       "character": "assets/characters/senior_smile.png",
       "bgm": "",
       "cv": "",
+      "weather": "",
+      "shake": 0.0,
       "next": "node_10"
     },
     {
@@ -144,6 +193,8 @@
       "character": "assets/characters/senior_normal.png",
       "bgm": "",
       "cv": "assets/audio/cv_10.ogg",
+      "weather": "",
+      "shake": 0.0,
       "next": "node_11"
     },
     {
@@ -155,6 +206,8 @@
       "character": "assets/characters/senior_normal.png",
       "bgm": "",
       "cv": "",
+      "weather": "",
+      "shake": 0.0,
       "next": "node_12"
     },
     {
@@ -166,17 +219,21 @@
       "character": "assets/characters/senior_happy.png",
       "bgm": "",
       "cv": "assets/audio/cv_12.ogg",
+      "weather": "",
+      "shake": 0.0,
       "next": "node_13"
     },
     {
       "id": "node_13",
       "type": "dialogue",
       "speaker": "旁白",
-      "text": "不知不覺中，天色漸漸暗了下來。",
+      "text": "不知不覺中，天色漸漸暗了下來，窗外開始下起了細雨。",
       "bg": "assets/bg/sunset.jpg",
       "character": "",
       "bgm": "assets/audio/bgm_quiet.ogg",
       "cv": "",
+      "weather": "rain",
+      "shake": 0.0,
       "next": "node_14"
     },
     {
@@ -188,6 +245,8 @@
       "character": "assets/characters/senior_normal.png",
       "bgm": "",
       "cv": "assets/audio/cv_14.ogg",
+      "weather": "",
+      "shake": 0.0,
       "next": "node_15"
     },
     {
@@ -199,6 +258,8 @@
       "character": "assets/characters/senior_normal.png",
       "bgm": "",
       "cv": "",
+      "weather": "",
+      "shake": 0.0,
       "next": "choice_02"
     },
     {
@@ -206,24 +267,53 @@
       "type": "choice",
       "speaker": "",
       "text": "",
+      "bg": "",
+      "character": "",
+      "bgm": "",
+      "cv": "",
+      "weather": "",
+      "shake": 0.0,
+      "next": "",
       "choices": [
-        { "text": "邀請學姐一起去 Cafe 喝杯咖啡", "next": "act_cafe" },
-        { "text": "直接搭電車回家", "next": "act_home" }
+        {
+          "text": "邀請學姐一起去 Cafe 喝杯咖啡",
+          "next": "act_cafe"
+        },
+        {
+          "text": "直接搭電車回家",
+          "next": "act_home"
+        }
       ]
     },
     {
       "id": "act_cafe",
       "type": "action",
+      "speaker": "",
+      "text": "",
+      "bg": "",
+      "character": "",
+      "bgm": "",
+      "cv": "",
+      "weather": "",
+      "shake": 0.0,
+      "next": "node_16_a",
       "flag": "favorability",
-      "value": 15,
-      "next": "node_16_a"
+      "value": 15
     },
     {
       "id": "act_home",
       "type": "action",
+      "speaker": "",
+      "text": "",
+      "bg": "",
+      "character": "",
+      "bgm": "",
+      "cv": "",
+      "weather": "",
+      "shake": 0.0,
+      "next": "node_16_b",
       "flag": "favorability",
-      "value": 0,
-      "next": "node_16_b"
+      "value": 0
     },
     {
       "id": "node_16_a",
@@ -234,6 +324,8 @@
       "character": "assets/characters/senior_happy.png",
       "bgm": "",
       "cv": "assets/audio/cv_16_a.ogg",
+      "weather": "",
+      "shake": 0.0,
       "next": "node_17"
     },
     {
@@ -245,17 +337,21 @@
       "character": "assets/characters/senior_smile.png",
       "bgm": "",
       "cv": "assets/audio/cv_16_b.ogg",
+      "weather": "",
+      "shake": 0.0,
       "next": "node_17"
     },
     {
       "id": "node_17",
       "type": "dialogue",
       "speaker": "旁白",
-      "text": "離開學校後，我們來到了車站前。",
+      "text": "離開學校後，我們冒雨來到了車站前。",
       "bg": "assets/bg/station.jpg",
       "character": "",
       "bgm": "assets/audio/bgm_daily.ogg",
       "cv": "",
+      "weather": "rain",
+      "shake": 0.0,
       "next": "node_18"
     },
     {
@@ -267,6 +363,8 @@
       "character": "",
       "bgm": "",
       "cv": "",
+      "weather": "",
+      "shake": 0.0,
       "next": "node_19"
     },
     {
@@ -278,6 +376,8 @@
       "character": "assets/characters/senior_happy.png",
       "bgm": "",
       "cv": "assets/audio/cv_19.ogg",
+      "weather": "",
+      "shake": 0.0,
       "next": "node_20"
     },
     {
@@ -289,6 +389,8 @@
       "character": "assets/characters/senior_normal.png",
       "bgm": "",
       "cv": "",
+      "weather": "",
+      "shake": 0.0,
       "next": "node_21"
     },
     {
@@ -300,6 +402,8 @@
       "character": "assets/characters/senior_normal.png",
       "bgm": "",
       "cv": "assets/audio/cv_21.ogg",
+      "weather": "",
+      "shake": 0.0,
       "next": "node_22"
     },
     {
@@ -311,6 +415,8 @@
       "character": "assets/characters/senior_smile.png",
       "bgm": "",
       "cv": "",
+      "weather": "",
+      "shake": 0.0,
       "next": "node_23"
     },
     {
@@ -322,17 +428,21 @@
       "character": "assets/characters/senior_happy.png",
       "bgm": "",
       "cv": "assets/audio/cv_23.ogg",
+      "weather": "",
+      "shake": 0.0,
       "next": "node_24"
     },
     {
       "id": "node_24",
       "type": "dialogue",
       "speaker": "旁白",
-      "text": "夜幕低垂，街燈陸續亮起。",
+      "text": "夜幕低垂，街燈陸續亮起，天空甚至飄起了微雪。",
       "bg": "assets/bg/night_street.jpg",
       "character": "",
       "bgm": "assets/audio/bgm_quiet.ogg",
       "cv": "",
+      "weather": "snow",
+      "shake": 0.0,
       "next": "node_25"
     },
     {
@@ -344,6 +454,8 @@
       "character": "assets/characters/senior_smile.png",
       "bgm": "",
       "cv": "assets/audio/cv_25.ogg",
+      "weather": "",
+      "shake": 0.0,
       "next": "node_26"
     },
     {
@@ -355,6 +467,8 @@
       "character": "assets/characters/senior_smile.png",
       "bgm": "",
       "cv": "",
+      "weather": "",
+      "shake": 0.0,
       "next": "node_27"
     },
     {
@@ -366,17 +480,21 @@
       "character": "assets/characters/senior_normal.png",
       "bgm": "",
       "cv": "assets/audio/cv_27.ogg",
+      "weather": "",
+      "shake": 0.0,
       "next": "node_28"
     },
     {
       "id": "node_28",
       "type": "dialogue",
       "speaker": "我",
-      "text": "有啊，這展示了 C++17 記憶體與架構設計能力，面試 Quant/Backend 很加分。",
+      "text": "有啊，這展示了 C++17 記憶體與架構設計能力，面試 <color=#FFFF55>Quant/Backend</color> 很加分。",
       "bg": "assets/bg/night_street.jpg",
       "character": "assets/characters/senior_normal.png",
       "bgm": "",
       "cv": "",
+      "weather": "",
+      "shake": 0.0,
       "next": "node_29"
     },
     {
@@ -388,6 +506,8 @@
       "character": "assets/characters/senior_happy.png",
       "bgm": "",
       "cv": "assets/audio/cv_29.ogg",
+      "weather": "",
+      "shake": 0.0,
       "next": "node_30"
     },
     {
@@ -399,6 +519,8 @@
       "character": "assets/characters/senior_happy.png",
       "bgm": "",
       "cv": "",
+      "weather": "",
+      "shake": 0.0,
       "next": "node_31"
     },
     {
@@ -410,6 +532,8 @@
       "character": "",
       "bgm": "assets/audio/bgm_daily.ogg",
       "cv": "",
+      "weather": "none",
+      "shake": 0.0,
       "next": "node_32"
     },
     {
@@ -421,6 +545,8 @@
       "character": "assets/characters/senior_normal.png",
       "bgm": "",
       "cv": "assets/audio/cv_32.ogg",
+      "weather": "",
+      "shake": 0.0,
       "next": "node_33"
     },
     {
@@ -432,6 +558,8 @@
       "character": "assets/characters/senior_normal.png",
       "bgm": "",
       "cv": "",
+      "weather": "",
+      "shake": 0.0,
       "next": "node_34"
     },
     {
@@ -443,6 +571,8 @@
       "character": "assets/characters/senior_smile.png",
       "bgm": "",
       "cv": "assets/audio/cv_34.ogg",
+      "weather": "",
+      "shake": 0.0,
       "next": "node_35"
     },
     {
@@ -454,6 +584,8 @@
       "character": "",
       "bgm": "",
       "cv": "",
+      "weather": "",
+      "shake": 0.0,
       "next": "node_36"
     },
     {
@@ -465,6 +597,8 @@
       "character": "",
       "bgm": "assets/audio/bgm_quiet.ogg",
       "cv": "",
+      "weather": "",
+      "shake": 0.0,
       "next": "node_37"
     },
     {
@@ -476,17 +610,21 @@
       "character": "",
       "bgm": "",
       "cv": "",
+      "weather": "",
+      "shake": 0.0,
       "next": "node_38"
     },
     {
       "id": "node_38",
       "type": "dialogue",
       "speaker": "我",
-      "text": "抱著 Kuromi 娃娃休息一下，接著準備程式碼重構。",
+      "text": "抱著 <color=#FF55FF>Kuromi 娃娃</color>休息一下，接著準備程式碼重構。",
       "bg": "assets/bg/room.jpg",
       "character": "",
       "bgm": "",
       "cv": "",
+      "weather": "",
+      "shake": 0.0,
       "next": "node_39"
     },
     {
@@ -498,11 +636,22 @@
       "character": "",
       "bgm": "",
       "cv": "",
+      "weather": "",
+      "shake": 0.0,
       "next": "cond_check_ending"
     },
     {
       "id": "cond_check_ending",
       "type": "condition",
+      "speaker": "",
+      "text": "",
+      "bg": "",
+      "character": "",
+      "bgm": "",
+      "cv": "",
+      "weather": "",
+      "shake": 0.0,
+      "next": "",
       "condition": {
         "flag": "favorability",
         "value": 10,
@@ -514,22 +663,26 @@
       "id": "node_good_ending",
       "type": "dialogue",
       "speaker": "系統通知",
-      "text": "恭喜！學姐好感度達標！解鎖 【True Developer Ending】！",
+      "text": "恭喜！學姐好感度達標！解鎖 <color=#FFD700>【True Developer Ending】</color>！",
       "bg": "assets/bg/classroom.jpg",
       "character": "assets/characters/senior_happy.png",
       "bgm": "assets/audio/bgm_daily.ogg",
       "cv": "assets/audio/cv_good_end.ogg",
+      "weather": "",
+      "shake": 0.6,
       "next": "end_choice"
     },
     {
       "id": "node_normal_ending",
       "type": "dialogue",
       "speaker": "系統通知",
-      "text": "解鎖 【Normal Developer Ending】！請繼續努力提升好感度！",
+      "text": "解鎖 <color=#AAAAAA>【Normal Developer Ending】</color>！請繼續努力提升好感度！",
       "bg": "assets/bg/classroom.jpg",
       "character": "assets/characters/senior_normal.png",
       "bgm": "assets/audio/bgm_quiet.ogg",
       "cv": "assets/audio/cv_norm_end.ogg",
+      "weather": "",
+      "shake": 0.0,
       "next": "end_choice"
     },
     {
@@ -537,9 +690,22 @@
       "type": "choice",
       "speaker": "",
       "text": "",
+      "bg": "",
+      "character": "",
+      "bgm": "",
+      "cv": "",
+      "weather": "",
+      "shake": 0.0,
+      "next": "",
       "choices": [
-        { "text": "重新開始遊戲 (Restart)", "next": "node_01" },
-        { "text": "退出遊戲 (Exit)", "next": "node_01" }
+        {
+          "text": "重新開始遊戲 (Restart)",
+          "next": "node_01"
+        },
+        {
+          "text": "退出遊戲 (Exit)",
+          "next": "node_01"
+        }
       ]
     }
   ]

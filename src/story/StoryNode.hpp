@@ -29,14 +29,15 @@ struct StoryNode {
     std::string bgmPath;
     std::string voicePath;
 
+    // 💡 Week 10 天氣與震動屬性
+    std::string weather; 
+    float shake = 0.0f;
+
     // Choice / Branch 下一步連接
     std::vector<ChoiceOption> choices;
     std::shared_ptr<StoryNode> defaultNext;
 
-    // Condition 節點的評估邏輯: 傳入 Blackboard, 回傳該跳轉的目標節點
     std::function<std::shared_ptr<StoryNode>(const Blackboard&)> conditionFunc;
-
-    // Action 節點執行的動作
     std::function<void(Blackboard&)> actionFunc;
 
     explicit StoryNode(std::string nodeId, NodeType nodeType) 

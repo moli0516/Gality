@@ -1,0 +1,31 @@
+{
+  "dialogueBox": {
+    "posX": 40.0,
+    "posY": 480.0,
+    "width": 1200.0,
+    "height": 200.0,
+    "bgColor": [0, 0, 0, 200],
+    "borderColor": [255, 255, 255, 100],
+    "nameBoxPosX": 40.0,
+    "nameBoxPosY": 430.0,
+    "nameBoxWidth": 250.0,
+    "nameBoxHeight": 45.0,
+    "nameBoxBgColor": [40, 40, 90, 220],
+    "nameTextColor": [255, 255, 0, 255],
+    "dialogueTextColor": [255, 255, 255, 255],
+    "nameFontSize": 22,
+    "dialogueFontSize": 24
+  },
+  "choiceUI": {
+    "width": 800.0,
+    "height": 55.0,
+    "spacing": 20.0,
+    "startY": 220.0,
+    "fontSize": 22,
+    "normalBgColor": [30, 30, 50, 220],
+    "hoverBgColor": [70, 70, 130, 240],
+    "normalOutlineColor": [100, 100, 180, 255],
+    "hoverOutlineColor": [255, 215, 0, 255],
+    "textColor": [255, 255, 255, 255]
+  }
+}
