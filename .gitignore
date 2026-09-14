@@ -14,10 +14,8 @@ third_party/
 .venv/
 dist/
 saves/
-vcpkg/
 imgui.ini
 packed_code.md
 data.pak
-
 devtools/*
 !devtools/scripts/

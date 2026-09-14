@@ -1,36 +1,23 @@
+# 🌸 Gality Engine - Script & Asset Authoring Manual (v1.0)
 
+## 1. Project Directory Structure
 
-# Gality Engine 劇本與資產創作手冊 (v1.0)
+Place all raw assets into their corresponding folders prior to compilation:
 
-## 1. 專案目錄結構
-
-創作時只需將素材放入對應的資料夾：
-
-* `assets/scripts/`：存放 `.gality` 劇本原始檔
-
-
-* `assets/bg/`：背景圖檔 (`.jpg` / `.png`)
-
-
-* `assets/characters/`：人物立繪 (`.png` 建議去背透明)
-
-
-* `assets/audio/`：背景音樂 (`.ogg`) 與語音/音效 (`.ogg` / `.wav`)
-
-
-* `assets/fonts/`：預設字型 `font.ttf`
-
-* `assets/config/ui_theme.json`：UI 介面外觀配置檔
-
-
+* `assets/scripts/` : Stores raw `.gality` narrative source scripts.
+* `assets/bg/` : Background images (`.jpg` / `.png`).
+* `assets/characters/` : Character sprites (`.png` with transparent backgrounds recommended).
+* `assets/audio/` : Background music (`.ogg`) and voice/SFX audio (`.ogg` / `.wav`).
+* `assets/fonts/` : Default TrueType font (`font.ttf`).
+* `assets/config/ui_theme.json` : User interface layout and style configuration file.
 
 ---
 
-## 2. `.gality` 劇本語法指南
+## 2. `.gality` Scripting Guide
 
-### 2.1 劇本開頭與節點定義
+### 2.1 Entry Point & Node Declaration
 
-每個劇本檔必須以 `@start` 指定起始節點標籤。每個對話區塊使用 `[節點名稱]` 宣告：
+Every script must define an entry point node using `@start`. Declare narrative blocks using bracketed IDs:
 
 ```gality
 @start node_01
@@ -46,17 +33,11 @@ weather: sakura
 
 ---
 
-### 2.2 對話與人物演出 (Dialogue)
+### 2.2 Dialogue & Character Staging
 
-* **對話格式**：`角色名稱: 對話內容`。若無角色名稱則為旁白。
-
-
-* **立繪與語音**：使用 `char:` 指定人物立繪，`cv:` 指定語音檔。
-
-
-* **富文字顏色標籤**：使用 `<color=#HEX>文字</color>` 進行動態劃重點加色。
-
-
+* **Dialogue Format**: `Speaker Name: Dialogue Text`. Omit the speaker prefix and colon for narrator text.
+* **Character Sprites & Voice**: Use `char:` to stage character textures and `cv:` to trigger voice-over clips.
+* **Rich Text Formatting**: Wrap text in `<color=#HEX>Text</color>` for dynamic color highlighting.
 
 ```gality
 [node_02]
@@ -70,14 +51,10 @@ cv: assets/audio/cv_01.ogg
 
 ---
 
-### 2.3 演出特效指令
+### 2.3 Presentation & Visual FX Directives
 
-* **天氣粒子 (`weather`)**：支援 `sakura`（櫻花）、`rain`（下雨）、`snow`（飄雪）、`none`（關閉）。
-
-
-* **畫面震動 (`shake`)**：設定數值（如 `0.3` 或 `0.6`）觸發震動效果。
-
-
+* **Weather Particles (`weather`)**: Supports `sakura`, `rain`, `snow`, and `none` (disabled).
+* **Screen Shake (`shake`)**: Set an intensity scalar (e.g., `0.3` or `0.6`) to trigger dynamic camera shake.
 
 ```gality
 [node_weather_demo]
@@ -91,9 +68,9 @@ shake: 0.5
 
 ---
 
-### 2.4 選擇題與分支 (Choices)
+### 2.4 Branching Choices
 
-使用 `? [選項文字] -> 目標節點` 建立玩家選擇分歧：
+Create interactive branches using `? [Option Text] -> TargetNode`:
 
 ```gality
 [choice_01]
@@ -104,14 +81,10 @@ shake: 0.5
 
 ---
 
-### 2.5 數值變更與條件判斷 (Flags & Conditions)
+### 2.5 State Flags & Conditional Logic
 
-* **數值變更 (`$`)**：修改 `Blackboard` 全域旗標（例如好感度 `$ favorability += 10`）。
-
-
-* **條件跳轉 (`IF ... THEN ... ELSE`)**：根據條件自動評估並跳轉結局。
-
-
+* **Variable Mutation (`$`)**: Modify global `Blackboard` variables (e.g., character affinity `$ favorability += 10`).
+* **Conditional Jumps (`IF ... THEN ... ELSE`)**: Evaluate expressions to determine narrative paths automatically.
 
 ```gality
 [act_favor_up]
@@ -125,9 +98,9 @@ IF favorability >= 10 THEN node_good_ending ELSE node_normal_ending
 
 ---
 
-## 3. UI 樣式自訂 (`assets/config/ui_theme.json`)
+## 3. UI Customization (`assets/config/ui_theme.json`)
 
-無需重新編譯專案，修改 `ui_theme.json` 即可自訂對話框與選項視覺：
+Skin dialogue boxes and choice menus instantly without recompiling the binary by editing `ui_theme.json`:
 
 ```json
 {
@@ -154,27 +127,19 @@ IF favorability >= 10 THEN node_good_ending ELSE node_normal_ending
 
 ---
 
-## 4. 熱插拔除錯捷徑 (Debug Keys)
+## 4. Hot-Reload & Debug Shortcuts
 
-在遊戲執行時可使用以下快捷鍵：
+Use the following runtime diagnostics shortcuts during execution:
 
-* **`F1` 或 ``` (波浪鍵)**：開啟內建 Debugger Inspector，可動態調整變數、強制跳轉劇本節點。
-
-
-* **`Tab` 或 `H**`：開啟 / 關閉歷史對話 Backlog 視窗。
-
-
-* **`Mouse Wheel Up`**：向上滾動滾輪直接查看歷史歷史對話。
-
-
-* **`S` 鍵 / `L` 鍵**：快速儲存 / 載入目前進度。
-
-
+* **`F1` or ` (Tilde Key)**: Toggle the native Debugger Inspector to modify variables and force-jump nodes.
+* **`Tab` or `H`**: Open or close the history backlog overlay.
+* **`Mouse Wheel Up`**: Scroll directly upward to inspect past dialogue logs.
+* **`F5` / `F9` Keys**: Quick-save or quick-load current session state.
 
 ---
 
-## 5. 一鍵編譯與打包發布
+## 5. One-Click Build & Distribution
 
-完成劇本編寫後，直接雙擊專案根目錄的 **`build_game.bat`** 檔。
+Once writing is complete, double-click the root directory script: **`build_game.bat`**.
 
-系統將自動完成劇本轉譯、資產加密打包與 C++ 執行檔封裝，並於 `dist/` 資料夾中生成綠色免安裝發布包！
+The build script automatically executes script transpilation (`gality_compiler.py`), encrypted asset packaging (`gality_packer.py`), and C++ binary compilation, delivering a fully standalone distribution package inside the `dist/` directory!
