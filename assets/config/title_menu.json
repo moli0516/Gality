@@ -1,0 +1,89 @@
+{
+  "background": "assets/bg/classroom.jpg",
+  "title": {
+    "text": "GALITY ENGINE DEMO",
+    "posX": -1,
+    "posY": 200,
+    "fontSize": 120,
+    "color": [255, 105, 180, 255]
+  },
+  "bgm": {
+    "path": "assets/audio/bgm_credit.ogg",
+    "volume": 0.8,
+    "fadeIn": 2.0,
+    "loop": true,
+    "stopOnStart": true
+  },
+  "subtitle": {
+    "text": "A narrative engine built by engineers",
+    "posX": -1,
+    "posY": 320,
+    "fontSize": 20,
+    "color": [180, 190, 210, 255]
+  },
+  "version": {
+    "text": "v0.2.0",
+    "posX": 1850,
+    "posY": 1040,
+    "fontSize": 16,
+    "color": [120, 130, 150, 255]
+  },
+  "buttons": [
+    {
+      "action": "start",
+      "text": "START GAME",
+      "posX": -1,
+      "posY": 460,
+      "width": 400,
+      "height": 65,
+      "fontSize": 28,
+      "baseColor": [20, 20, 40, 200],
+      "hoverColor": [60, 60, 120, 240],
+      "outlineColor": [100, 100, 200, 255],
+      "hoverOutlineColor": [255, 215, 0, 255],
+      "textColor": [255, 255, 255, 255]
+    },
+    {
+      "action": "load",
+      "text": "LOAD GAME",
+      "posX": -1,
+      "posY": 555,
+      "width": 400,
+      "height": 65,
+      "fontSize": 28,
+      "baseColor": [20, 20, 40, 200],
+      "hoverColor": [60, 60, 120, 240],
+      "outlineColor": [100, 100, 200, 255],
+      "hoverOutlineColor": [255, 215, 0, 255],
+      "textColor": [255, 255, 255, 255]
+    },
+    {
+      "action": "settings",
+      "text": "SETTINGS",
+      "posX": -1,
+      "posY": 650,
+      "width": 400,
+      "height": 65,
+      "fontSize": 28,
+      "baseColor": [20, 20, 40, 200],
+      "hoverColor": [60, 60, 120, 240],
+      "outlineColor": [100, 100, 200, 255],
+      "hoverOutlineColor": [255, 215, 0, 255],
+      "textColor": [255, 255, 255, 255]
+    },
+    {
+      "action": "exit",
+      "text": "EXIT",
+      "posX": -1,
+      "posY": 745,
+      "width": 400,
+      "height": 65,
+      "fontSize": 28,
+      "baseColor": [20, 20, 40, 200],
+      "hoverColor": [140, 50, 50, 240],
+      "outlineColor": [100, 100, 200, 255],
+      "hoverOutlineColor": [255, 100, 100, 255],
+      "textColor": [255, 255, 255, 255]
+    }
+  ]
+}

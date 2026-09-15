@@ -5689,7 +5689,7 @@
       "condition": {
         "var": "san_loss",
         "op": ">=",
-        "val": 80,
+        "val": 70,
         "then": "node_datastream_01",
         "else": "node_route_selector"
       }
@@ -7197,7 +7197,14 @@
       "transition_mask": "",
       "transition_duration": 1.0,
       "next": "node_corrupt_progression_06",
-      "char_center": "assets/characters/senior_corrupt.png"
+      "char_center": "assets/characters/senior_corrupt.png",
+      "mutations": [
+        {
+          "var": "san_loss",
+          "op": "+=",
+          "val": 10
+        }
+      ]
     },
     {
       "id": "node_corrupt_progression_06",

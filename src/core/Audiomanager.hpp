@@ -18,7 +18,7 @@ private:
     std::unique_ptr<sf::Sound> voiceSound;
     std::string currentBgmPath;
 
-    // 持久保存 BGM 串流二進位緩衝區，杜絕 sf::Music (SoundStream) 非同步解碼時訪問懸空指針
+    // 持久保存 BGM 串流二進位緩衝區
     std::vector<std::uint8_t> activeBgmBytes;
     std::vector<std::uint8_t> fadingBgmBytes;
 
@@ -28,16 +28,21 @@ private:
     float fadeTimer = 0.0f;
     float fadeDuration = 1.5f;
 
-    // 智慧 Ducking 變數 (當 CV 播放時自動平滑壓低 BGM)
-    float duckingFactor = 1.0f; // 1.0f = 正常音量, 0.65f = 壓低 35%
+    // 智慧 Ducking
+    float duckingFactor = 1.0f;
+
+    // 音量倍率（由 playBGM 設定）
+    float currentBgmVolumeMultiplier = 1.0f;
+    bool  currentBgmLoop = true;
 
     float getFinalBGMVolume(float baseVolume) const {
-        return baseVolume * (ConfigManager::config.bgmVolume / 100.0f) * 
+        return baseVolume * currentBgmVolumeMultiplier *
+               (ConfigManager::config.bgmVolume / 100.0f) *
                (ConfigManager::config.masterVolume / 100.0f) * duckingFactor;
     }
 
     float getFinalVoiceVolume() const {
-        return 100.0f * (ConfigManager::config.voiceVolume / 100.0f) * 
+        return 100.0f * (ConfigManager::config.voiceVolume / 100.0f) *
                (ConfigManager::config.masterVolume / 100.0f);
     }
 
@@ -45,12 +50,12 @@ public:
     AudioManager() : voiceCache(20) {}
 
     void update(float deltaTime) {
-        // 1. 智慧 Ducking 狀態檢測與平滑插值
+        // 智慧 Ducking
         bool isVoicePlaying = (voiceSound && voiceSound->getStatus() == sf::Sound::Status::Playing);
         float targetDucking = isVoicePlaying ? 0.65f : 1.0f;
         duckingFactor += (targetDucking - duckingFactor) * deltaTime * 6.0f;
 
-        // 2. BGM 跨淡入淡出 (Crossfade) 與音量同步
+        // Crossfade
         if (isCrossfading) {
             fadeTimer += deltaTime;
             float progress = fadeTimer / fadeDuration;
@@ -76,19 +81,36 @@ public:
         }
     }
 
-    void playBGM(const std::string& audioPath, float fadeTime = 1.5f) {
-        if (audioPath.empty() || audioPath == currentBgmPath) return;
+    // ============================================================================
+    // 播放 BGM（支援音量倍率、循環、淡入時間）
+    // ============================================================================
+    void playBGM(const std::string& audioPath,
+                 float volumeMultiplier = 1.0f,
+                 bool loop = true,
+                 float fadeTime = 1.5f)
+    {
+        if (audioPath.empty()) return;
+
+        // 同一路徑、同設定 → 不重啟
+        if (audioPath == currentBgmPath &&
+            volumeMultiplier == currentBgmVolumeMultiplier &&
+            loop == currentBgmLoop) {
+            return;
+        }
 
         currentBgmPath = audioPath;
+        currentBgmVolumeMultiplier = volumeMultiplier;
+        currentBgmLoop = loop;
         fadeDuration = (fadeTime <= 0.0f) ? 0.01f : fadeTime;
         fadeTimer = 0.0f;
 
-        // 如果目前已有 BGM 正在播放，且要求漸層，則啟動真實的雙軌交換 Crossfade
-        if (activeBgm.getStatus() == sf::SoundStream::Status::Playing && fadeTime > 0.0f) {
+        // 若目前已有 BGM 播放，啟動 Crossfade
+        bool hasActiveBgm = (activeBgm.getStatus() == sf::SoundStream::Status::Playing);
+
+        if (hasActiveBgm && fadeTime > 0.0f) {
             fadingBgm.stop();
             fadingBgmBytes = std::move(activeBgmBytes);
 
-            // 重新在 fadingBgm 上掛載當前即將淡出的音軌
             if (!fadingBgmBytes.empty()) {
                 if (fadingBgm.openFromMemory(fadingBgmBytes.data(), fadingBgmBytes.size())) {
                     fadingBgm.setLooping(true);
@@ -96,7 +118,6 @@ public:
                 }
             }
 
-            // 載入新的 BGM 至 activeBgm
             activeBgmBytes.clear();
             bool fromPak = AssetPack::readFileFromPak(audioPath, activeBgmBytes, "data.pak");
             bool loaded = false;
@@ -108,16 +129,15 @@ public:
             }
 
             if (loaded) {
-                activeBgm.setLooping(true);
+                activeBgm.setLooping(loop);
                 activeBgm.setVolume(0.0f);
                 activeBgm.play();
                 isCrossfading = true;
             } else {
-                std::cerr << "[AudioManager Error] Failed to open BGM: " << audioPath << std::endl;
+                std::cerr << "[AudioManager] Failed to open BGM: " << audioPath << std::endl;
                 isCrossfading = false;
             }
         } else {
-            // 直接播放（無漸變或當前無音軌）
             fadingBgm.stop();
             fadingBgmBytes.clear();
             isCrossfading = false;
@@ -135,11 +155,17 @@ public:
             }
 
             if (loaded) {
-                activeBgm.setLooping(true);
-                activeBgm.setVolume(getFinalBGMVolume(100.0f));
-                activeBgm.play();
+                activeBgm.setLooping(loop);
+                if (fadeTime > 0.0f) {
+                    activeBgm.setVolume(0.0f);
+                    activeBgm.play();
+                    isCrossfading = true;
+                } else {
+                    activeBgm.setVolume(getFinalBGMVolume(100.0f));
+                    activeBgm.play();
+                }
             } else {
-                std::cerr << "[AudioManager Error] Failed to open BGM: " << audioPath << std::endl;
+                std::cerr << "[AudioManager] Failed to open BGM: " << audioPath << std::endl;
             }
         }
     }
@@ -153,7 +179,7 @@ public:
         isCrossfading = false;
     }
 
-    // 支援 CharSlot 空間立體聲定位 (Spatial Panning)
+    // 播放語音
     void playVoice(const std::string& audioPath, std::optional<CharSlot> slot = std::nullopt) {
         if (audioPath.empty()) return;
         if (voiceSound) voiceSound->stop();
@@ -168,13 +194,12 @@ public:
                 if (buffer->loadFromMemory(bytes.data(), bytes.size())) {
                     voiceCache.put(audioPath, buffer);
                 } else {
-                    std::cerr << "[AudioManager] Failed to load Voice from archive: " << audioPath << std::endl;
+                    std::cerr << "[AudioManager] Failed to load Voice: " << audioPath << std::endl;
                     return;
                 }
             } else if (buffer->loadFromFile(audioPath)) {
                 voiceCache.put(audioPath, buffer);
             } else {
-                std::cerr << "[AudioManager] Failed to load Voice: " << audioPath << std::endl;
                 return;
             }
         }
@@ -182,7 +207,6 @@ public:
         voiceSound = std::make_unique<sf::Sound>(*buffer);
         voiceSound->setVolume(getFinalVoiceVolume());
 
-        // 計算 3D 立體聲位置 (X 軸：左 -3.0, 中 0.0, 右 +3.0)
         float posX = 0.0f;
         if (slot.has_value()) {
             switch (slot.value()) {
@@ -199,5 +223,13 @@ public:
 
     void stopVoice() {
         if (voiceSound) voiceSound->stop();
+    }
+
+    bool isBGMPlaying() const {
+        return activeBgm.getStatus() == sf::SoundStream::Status::Playing;
+    }
+
+    const std::string& getCurrentBgmPath() const {
+        return currentBgmPath;
     }
 };

@@ -20,7 +20,11 @@ data.pak
 devtools/*
 
 !devtools/scripts/
-demo_1.0/
-demo_2.0/
+game/
+dist-dev/
+vcpkg_installed/
+.agent.md
+screenshots/
+build-dev/
 assets copy/
 test/

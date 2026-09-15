@@ -115,6 +115,11 @@ public:
             }
 
             // 節點型別嚴格推導
+// ============================================================================
+// 節點型別推導 + actionFunc 綁定
+// ============================================================================
+
+// 節點型別嚴格推導
             std::string typeStr = item.value("type", "");
             if (typeStr == "action") {
                 node->type = NodeType::Action;
@@ -125,7 +130,9 @@ public:
             } else {
                 node->type = NodeType::Dialogue;
             }
-            if (node->type == NodeType::Action) {
+
+            // ⚠️ 關鍵修復：為所有節點綁定 actionFunc（不限於 Action）
+            if (!node->mutations.empty()) {
                 node->actionFunc = [node](Blackboard& bb) {
                     for (const auto& mut : node->mutations) {
                         if (mut.op == "+=") bb.addInt(mut.variable, mut.value);

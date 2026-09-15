@@ -39,7 +39,8 @@ private:
             p.velocity = sf::Vector2f(-20.0f + rand() % 40, 50.0f + rand() % 50);
             p.size = 3.0f + rand() % 4;
         } else if (currentType == WeatherType::Sakura) {
-            p.velocity = sf::Vector2f(-40.0f + rand() % 30, 80.0f + rand() % 40);
+            // ⚡ 提高速度
+            p.velocity = sf::Vector2f(-80.0f + rand() % 60, 150.0f + rand() % 80);
             p.size = 6.0f + rand() % 4;
             p.rotation = static_cast<float>(rand() % 360);
             p.rotationSpeed = -60.0f + rand() % 120;
@@ -49,6 +50,17 @@ private:
 public:
     WeatherSystem(sf::Vector2u winSize) : windowSize(winSize) {}
 
+    void setParticleCount(std::size_t count) {
+        maxParticles = count;
+        if (currentType != WeatherType::None) {
+            particles.resize(maxParticles);
+            for (auto& p : particles) {
+                resetParticle(p);
+                p.position.y = static_cast<float>(rand() % windowSize.y);
+            }
+        }
+    }
+
     void setWeather(WeatherType type) {
         currentType = type;
         particles.clear();
@@ -57,7 +69,7 @@ public:
         particles.resize(maxParticles);
         for (auto& p : particles) {
             resetParticle(p);
-            p.position.y = static_cast<float>(rand() % windowSize.y); // 初次隨機分佈
+            p.position.y = static_cast<float>(rand() % windowSize.y);
         }
     }
 
@@ -68,7 +80,6 @@ public:
             p.position += p.velocity * deltaTime;
             p.rotation += p.rotationSpeed * deltaTime;
 
-            // 超出螢幕邊界重置
             if (p.position.y > windowSize.y || p.position.x < -20.0f || p.position.x > windowSize.x + 20.0f) {
                 resetParticle(p);
             }

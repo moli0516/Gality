@@ -1,8 +1,20 @@
 ﻿#pragma once
+
+// ============================================================================
+// Standard Library
+// ============================================================================
 #include <memory>
 #include <vector>
 #include <string>
 #include <functional>
+#include <iostream>
+#include <map>              // ← 新增（std::map）
+#include <optional>         // ← 新增（std::optional）
+#include <unordered_map>    // ← 新增（std::unordered_map）
+
+// ============================================================================
+// Project Headers
+// ============================================================================
 #include "StoryNode.hpp"
 #include "../core/Blackboard.hpp"
 #include "../core/SaveManager.hpp"
@@ -34,10 +46,10 @@ public:
     }
 
     // 更新當前舞台外觀狀態，以確保 push 時能截取最新幀
-    void updatePresentationState(const std::string& bg, 
-                                const std::map<CharSlot, std::string>& slots, 
-                                std::optional<CharSlot> activeSlot, 
-                                const std::string& weather, 
+    void updatePresentationState(const std::string& bg,
+                                const std::map<CharSlot, std::string>& slots,
+                                std::optional<CharSlot> activeSlot,
+                                const std::string& weather,
                                 const std::string& bgm) {
         currentPresentationState.bgImagePath = bg;
         currentPresentationState.slotTextures = slots;
@@ -94,6 +106,7 @@ public:
         return !historyStack.empty();
     }
 
+    // ⚠️ 核心修復：Dialogue / Choice 節點也執行一次 mutations
     void evaluateCurrentNode() {
         while (currentNode) {
             if (currentNode->type == NodeType::Action) {
@@ -108,8 +121,12 @@ public:
                     currentNode = currentNode->defaultNext;
                 }
             } else {
-                if (!currentNode->mutations.empty() && currentNode->actionFunc) {
+                // Dialogue / Choice：執行一次 mutations 後停止
+                if (currentNode->actionFunc) {
                     currentNode->actionFunc(blackboard);
+                    // 清空以避免重複執行
+                    currentNode->actionFunc = nullptr;
+                    currentNode->mutations.clear();
                 }
                 break;
             }

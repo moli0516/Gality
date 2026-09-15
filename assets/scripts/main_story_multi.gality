@@ -2396,7 +2396,7 @@ $ san_loss += 5
 -> node_datastream_check
 
 [node_datastream_check]
-IF san_loss >= 80 THEN node_datastream_01 ELSE node_route_selector
+IF san_loss >= 70 THEN node_datastream_01 ELSE node_route_selector
 
 // ==============================================================================
 // 最終路線分歧 (FINAL ROUTE SELECTOR — 隱性)
@@ -3001,6 +3001,7 @@ bg: assets/bg/clubroom.jpg
 char: assets/characters/senior_corrupt.png
 cv: assets/audio/cv_61.ogg
 學姐: <glitch>我是... 天野遙... 也是... 副社長... 我們... 都是... 同一個... 錯誤...</glitch>
+$ san_loss += 10
 -> node_corrupt_progression_06
 
 [node_corrupt_progression_06]
