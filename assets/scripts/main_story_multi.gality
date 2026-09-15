@@ -1,25 +1,68 @@
 @start node_01
 
+// ==============================================================================
+// 序幕：櫻花之春與底層工程的萌芽 (PROLOGUE: 200 NODES)
+// ==============================================================================
+
 [node_01]
 bg: assets/bg/classroom.jpg
 trans: diamond
 duration: 1.5
 bgm: assets/audio/bgm_daily.ogg
 weather: sakura
-旁白: 四月的春風掠過校園，窗外灑下一陣<color=#FFB7C5>櫻花雨</color>。身為資研社的主力，我和副社長學姐正籌備今年的重大專案。
+旁白: 四月的春風掠過校園，窗外灑下一陣<color=#FFB7C5><shake>櫻花雨</shake></color>。
 -> node_02
 
 [node_02]
 bg: assets/bg/classroom.jpg
-char: assets/characters/senior_normal.png
-cv: assets/audio/cv_01.ogg
-學姐: 你終於來了！我們提報的<color=#FF5555>自製 2D 遊戲引擎計畫 (Gality)</color>，今天必須敲定架構方向。
+weather: sakura
+旁白: 花瓣落在窗台上，像是某種演算法的初始種子，靜靜等待被編譯。
 -> node_03
 
 [node_03]
 bg: assets/bg/classroom.jpg
 char: assets/characters/senior_normal.png
-我: 抱歉學姐，剛剛在精細校對 <color=#55FF55>SFML 3.x</color> 與 C++17 的字型 Advance 排版步進，稍微耽擱了幾分鐘。
+cv: assets/audio/cv_01.ogg
+學姐: 你終於來了！我們提報的<color=#FF5555><shake>自製 2D 遊戲引擎計畫 (Gality)</shake></color>，今天必須敲定架構方向。
+-> node_04
+
+[node_04]
+bg: assets/bg/classroom.jpg
+char: assets/characters/senior_normal.png
+我: 抱歉學姐，剛剛在精細校對 <color=#55FF55>SFML 3.x</color> 與 <color=#55FF55>C++17</color> 的字型 Advance 排版步進，稍微耽擱了幾分鐘。
+-> node_05
+
+[node_05]
+bg: assets/bg/classroom.jpg
+char: assets/characters/senior_smile.png
+cv: assets/audio/cv_02.ogg
+學姐: 你總是這麼較真呢。不過這就是我信任你的原因。
+-> node_06
+
+[node_06]
+bg: assets/bg/classroom.jpg
+char: assets/characters/senior_normal.png
+我: 學姐過獎了。對了，昨晚我已經把 <color=#55FF55>Command 模式</color>的介面草稿畫出來了。
+-> node_07
+
+[node_07]
+bg: assets/bg/classroom.jpg
+char: assets/characters/senior_surprised.png
+cv: assets/audio/cv_03.ogg
+學姐: 這麼快？那存讀檔系統的狀態快照呢？
+-> node_08
+
+[node_08]
+bg: assets/bg/classroom.jpg
+char: assets/characters/senior_normal.png
+我: 用 <color=#55FF55>std::stack<Snapshot></color> 來管理，每個指令都對應一個可回溯的狀態。
+-> node_09
+
+[node_09]
+bg: assets/bg/classroom.jpg
+char: assets/characters/senior_happy.png
+cv: assets/audio/cv_04.ogg
+學姐: 太可靠了！那我們今天的首要任務是決定劇本格式。
 -> choice_01
 
 [choice_01]
@@ -28,84 +71,110 @@ char: assets/characters/senior_normal.png
 
 [act_favor_up1]
 $ favorability += 10
--> node_04_a
+-> node_10_a
 
 [act_favor_down1]
 $ favorability += -5
--> node_04_b
+-> node_10_b
 
-[node_04_a]
+[node_10_a]
 bg: assets/bg/classroom.jpg
 char: assets/characters/senior_happy.png
 cv: assets/audio/cv_happy.ogg
 shake: 0.3
-學姐: 很有氣魄嘛！我們資研社就是要靠硬核實力說話。
--> node_05
+學姐: <speed=0.06>很有氣魄嘛！</speed>我們資研社就是要靠硬核實力說話。
+-> node_11
 
-[node_04_b]
+[node_10_b]
 bg: assets/bg/classroom.jpg
 char: assets/characters/senior_pout.png
 cv: assets/audio/cv_pout.ogg
 shake: 0.5
-學姐: 喂喂，身為技術擔當怎麼一開始就洩氣了呢？快振作點！
--> node_05
+學姐: 喂喂，身為技術擔當怎麼一開始就洩氣了呢？<shake>快振作點！</shake>
+-> node_11
 
-[node_05]
+[node_11]
+bg: assets/bg/classroom.jpg
+char: assets/characters/senior_normal.png
+cv: assets/audio/cv_05.ogg
+學姐: 我已經把社團活動室的鑰匙準備好了，走吧。
+-> node_12
+
+[node_12]
 bg: assets/bg/hallway.jpg
 trans: wipe_left
 duration: 1.2
 char: assets/characters/senior_normal.png
 bgm: assets/audio/bgm_club.ogg
 weather: none
-學姐: 走吧，我們先去社團活動室，其他幹部都在等著聽架構簡報呢。
--> node_06
+學姐: 走廊上好多新生，今年的社團招生應該會很熱鬧。
+-> node_13
 
-[node_06]
+[node_13]
 bg: assets/bg/hallway.jpg
 旁白: 我們穿過長長的教學大樓走廊，遠處傳來運動社團熱鬧的吶喊聲。
--> node_07
+-> node_14
 
-[node_07]
+[node_14]
+bg: assets/bg/hallway.jpg
+char: assets/characters/senior_smile.png
+我: 學姐，妳覺得今年會有多少人來資研社？
+-> node_15
+
+[node_15]
+bg: assets/bg/hallway.jpg
+char: assets/characters/senior_smile.png
+cv: assets/audio/cv_06.ogg
+學姐: 誰知道呢？不過只要有你在，就算只有小貓兩三隻也沒問題。
+-> node_16
+
+[node_16]
+bg: assets/bg/hallway.jpg
+旁白: 陽光從窗戶斜射進來，在磨石子地板上拉出長長的影子。
+-> node_17
+
+[node_17]
 bg: assets/bg/clubroom.jpg
 trans: diamond
 duration: 1.0
-我: 學姐，關於存讀檔系統與 Backlog 歷史對話，我已經完成了第一版 Command 模式。
--> node_08
+bgm: assets/audio/bgm_club.ogg
+我: 學姐，關於存讀檔系統與 Backlog 歷史對話，我已經完成了第一版 <color=#55FF55>Command 模式</color>。
+-> node_18
 
-[node_08]
+[node_18]
 bg: assets/bg/clubroom.jpg
 char: assets/characters/senior_surprised.png
 cv: assets/audio/cv_08.ogg
 學姐: 真的嗎？那這樣玩家往上滑滾輪，就能隨時回顧先前的語音與劇本了？
--> node_09
+-> node_19
 
-[node_09]
+[node_19]
 bg: assets/bg/clubroom.jpg
 char: assets/characters/senior_smile.png
-我: 沒錯，甚至還支援狀態快照堆疊，要實作 Rollback 倒帶也沒有問題。
--> node_10
+我: 沒錯，甚至還支援狀態快照堆疊，要實作 <color=#55FF55>Rollback 倒帶</color>也沒有問題。
+-> node_20
 
-[node_10]
+[node_20]
 bg: assets/bg/clubroom.jpg
 char: assets/characters/senior_normal.png
 cv: assets/audio/cv_10.ogg
 學姐: 聽起來很穩健！那如果遊戲載入上百張高解析度 CG，記憶體會不會崩潰？
--> node_11
+-> node_21
 
-[node_11]
+[node_21]
 bg: assets/bg/clubroom.jpg
 char: assets/characters/senior_normal.png
-我: 這點請放心，我手寫了泛型 LRU 快取機制，久未使用的紋理會被自動踢出 RAM。
--> node_12
+我: 這點請放心，我手寫了泛型 <color=#55FF55>LRU 快取機制</color>，久未使用的紋理會被自動踢出 RAM。
+-> node_22
 
-[node_12]
+[node_22]
 bg: assets/bg/clubroom.jpg
 char: assets/characters/senior_happy.png
 cv: assets/audio/cv_12.ogg
 學姐: 太棒了！這樣就算是配備較舊的筆電也能流暢運行了。
--> node_13
+-> node_23
 
-[node_13]
+[node_23]
 bg: assets/bg/clubroom.jpg
 char: assets/characters/senior_normal.png
 我: 不過接下來的關鍵在於：劇本創作者應該用什麼方式編寫故事？
@@ -117,54 +186,73 @@ char: assets/characters/senior_normal.png
 
 [act_tech_json]
 $ favorability += -5
--> node_14_json
+-> node_24_json
 
 [act_tech_dsl]
 $ favorability += 15
--> node_14_dsl
+-> node_24_dsl
 
-[node_14_json]
+[node_24_json]
 bg: assets/bg/clubroom.jpg
 char: assets/characters/senior_pout.png
 cv: assets/audio/cv_pout.ogg
 學姐: 直接手寫 JSON 括號一堆，美術和編劇同學一定會抗議崩潰的啦！
--> node_15
+-> node_25
 
-[node_14_dsl]
+[node_24_dsl]
 bg: assets/bg/clubroom.jpg
 char: assets/characters/senior_happy.png
 cv: assets/audio/cv_happy.ogg
 學姐: 完全贊同！對創作者友善，才能真正吸引大家來用我們的引擎！
--> node_15
+-> node_25
 
-[node_15]
+[node_25]
 bg: assets/bg/clubroom.jpg
 char: assets/characters/senior_smile.png
 我: 那麼工具鏈就拍板定案了：用 Python 寫一套轉譯器，將純文字轉換為 JSON。
--> node_16
+-> node_26
 
-[node_16]
+[node_26]
 bg: assets/bg/clubroom.jpg
 旁白: 經過一整個下午的白板架構討論，核心架構圖逐漸清晰。
--> node_17
+-> node_27
 
-[node_17]
+[node_27]
+bg: assets/bg/clubroom.jpg
+char: assets/characters/senior_normal.png
+cv: assets/audio/cv_13.ogg
+學姐: 把架構圖拍下來吧，這可是我們 Gality 的第一版設計稿。
+-> node_28
+
+[node_28]
+bg: assets/bg/clubroom.jpg
+我: 喀嚓。這張照片以後一定會成為傳說。
+-> node_29
+
+[node_29]
+bg: assets/bg/clubroom.jpg
+char: assets/characters/senior_happy.png
+cv: assets/audio/cv_14.ogg
+學姐: 你少臭美了！不過... 也許真的會有那麼一天。
+-> node_30
+
+[node_30]
 bg: assets/bg/sunset.jpg
 trans: dissolve
 duration: 1.5
 bgm: assets/audio/bgm_quiet.ogg
 weather: rain
 旁白: 窗外不知不覺下起了微雨，夕陽的餘暉被陰雲漸漸吞沒。
--> node_18
+-> node_31
 
-[node_18]
+[node_31]
 bg: assets/bg/sunset.jpg
 char: assets/characters/senior_normal.png
-cv: assets/audio/cv_14.ogg
+cv: assets/audio/cv_15.ogg
 學姐: 已經傍晚六點了呢... 肚子也開始咕嚕咕嚕叫了。
--> node_19
+-> node_32
 
-[node_19]
+[node_32]
 bg: assets/bg/sunset.jpg
 char: assets/characters/senior_smile.png
 我: 學姐，要不要順路一起吃點東西？
@@ -176,13 +264,13 @@ char: assets/characters/senior_smile.png
 
 [act_cafe]
 $ favorability += 10
--> node_20_cafe
+-> node_33_cafe
 
 [act_train_home]
 $ favorability += 0
--> node_20_home
+-> node_33_home
 
-[node_20_cafe]
+[node_33_cafe]
 bg: assets/bg/cafe.jpg
 trans: wipe_left
 duration: 1.2
@@ -191,9 +279,9 @@ weather: rain
 char: assets/characters/senior_happy.png
 cv: assets/audio/cv_cafe.ogg
 學姐: 這家咖啡店的熱可可很香呢！能在這裡安靜看程式碼真是一大享受。
--> node_21
+-> node_34
 
-[node_20_home]
+[node_33_home]
 bg: assets/bg/station.jpg
 trans: wipe_left
 duration: 1.2
@@ -202,157 +290,196 @@ weather: rain
 char: assets/characters/senior_smile.png
 cv: assets/audio/cv_home.ogg
 學姐: 好吧，今天燒腦了一下午，回去一定要好好睡個飽。
--> node_21
+-> node_34
 
-[node_21]
+[node_34]
 bg: assets/bg/station.jpg
 trans: wipe_left
 duration: 1.0
 char: assets/characters/senior_normal.png
 我: 對了學姐，關於視覺渲染的 PostFX 後處理，你希望支援哪些功能？
--> node_22
+-> node_35
 
-[node_22]
+[node_35]
 bg: assets/bg/station.jpg
 char: assets/characters/senior_normal.png
 cv: assets/audio/cv_postfx.ogg
 學姐: 想要有回憶濾鏡的高斯模糊，還有遇到驚悚或震撼情節時的震動！
--> node_23
+-> node_36
 
-[node_23]
+[node_36]
 bg: assets/bg/station.jpg
 char: assets/characters/senior_smile.png
 我: 沒問題，GLSL Fragment Shader 已經寫好 Blur 管線，震動則用三角函數隨機位移。
--> node_24
+-> node_37
 
-[node_24]
+[node_37]
+bg: assets/bg/station.jpg
+char: assets/characters/senior_surprised.png
+cv: assets/audio/cv_16.ogg
+學姐: 你連 Shader 都自己寫？我以為你會用現成的後處理庫。
+-> node_38
+
+[node_38]
+bg: assets/bg/station.jpg
+我: 自己寫才能完全掌控效能，而且這樣才有趣。
+-> node_39
+
+[node_39]
+bg: assets/bg/station.jpg
+char: assets/characters/senior_happy.png
+cv: assets/audio/cv_17.ogg
+學姐: 真不愧是我們社團的技術擔當。
+-> node_40
+
+[node_40]
 bg: assets/bg/night_street.jpg
 trans: dissolve
 duration: 1.5
 bgm: assets/audio/bgm_quiet.ogg
 weather: snow
 旁白: 走出店門時，雨點竟然轉成了紛飛的微雪，氣溫驟降。
--> node_25
+-> node_41
 
-[node_25]
+[node_41]
 bg: assets/bg/night_street.jpg
 char: assets/characters/senior_smile.png
 cv: assets/audio/cv_cold.ogg
 shake: 0.2
 學姐: 好冷啊... 不過飄雪的樣子，真像我們粒子系統裡調出來的效果。
--> node_26
+-> node_42
 
-[node_26]
+[node_42]
 bg: assets/bg/night_street.jpg
 char: assets/characters/senior_smile.png
 我: 這就是寫程式的樂趣吧，把現實中的美景轉化成幾十行數學計算。
--> node_27
+-> node_43
 
-[node_27]
+[node_43]
 bg: assets/bg/night_street.jpg
 char: assets/characters/senior_normal.png
 cv: assets/audio/cv_cv_ask.ogg
 學姐: 說起來，你把 Gality 寫得這麼嚴謹，是為了未來的求職或升學打算嗎？
--> node_28
+-> node_44
 
-[node_28]
+[node_44]
 bg: assets/bg/night_street.jpg
 char: assets/characters/senior_normal.png
-我: 嗯，這能全面展示 C++17 底層指標控制與圖形學知識，無論投遞量化開發還是後端架構都很有說服力。
--> node_29
+我: 嗯，這能全面展示 <color=#55FF55>C++17</color> 底層指標控制與圖形學知識，無論投遞量化開發還是後端架構都很有說服力。
+-> node_45
 
-[node_29]
+[node_45]
 bg: assets/bg/night_street.jpg
 char: assets/characters/senior_happy.png
 cv: assets/audio/cv_encourage.ogg
 學姐: 你的眼神很堅定呢！我會全力在專案企劃與美術對接上支援你的！
--> node_30
+-> node_46
 
-[node_30]
+[node_46]
 bg: assets/bg/night_street.jpg
 char: assets/characters/senior_happy.png
 我: 謝謝學姐！有妳在真是太可靠了。
--> node_31
+-> node_47
 
-[node_31]
+[node_47]
+bg: assets/bg/night_street.jpg
+旁白: 雪花落在她的髮梢，融化成一顆晶瑩的水珠。
+-> node_48
+
+[node_48]
 bg: assets/bg/station.jpg
 trans: wipe_left
 duration: 1.0
 bgm: assets/audio/bgm_daily.ogg
 weather: none
 旁白: 來到電車月台，回家的列車伴隨著鳴笛聲緩緩進站。
--> node_32
+-> node_49
 
-[node_32]
+[node_49]
 bg: assets/bg/station.jpg
 char: assets/characters/senior_smile.png
 cv: assets/audio/cv_bye.ogg
 學姐: 那我先上車囉，明天社團活動見！
--> node_33
+-> node_50
 
-[node_33]
+[node_50]
 bg: assets/bg/station.jpg
 我: 明天見，路上注意安全！
--> node_34
+-> node_51
 
-[node_34]
+[node_51]
 bg: assets/bg/station.jpg
 旁白: 看著電車車燈逐漸消失在鐵軌盡頭，心中湧起一股必須把專案做好的熱情。
--> node_35
+-> node_52
 
-[node_35]
+[node_52]
 bg: assets/bg/room.jpg
 trans: clock
 duration: 1.2
 bgm: assets/audio/bgm_quiet.ogg
 我: 呼... 終於回到房間了。
--> node_36
+-> node_53
 
-[node_36]
+[node_53]
 bg: assets/bg/room.jpg
 旁白: 書桌上擺放著筆記型電腦與幾本厚重的 C++ 系統架構書籍。
--> node_37
+-> node_54
 
-[node_37]
+[node_54]
 bg: assets/bg/room.jpg
-我: 抱著桌上的 <color=#FF55FF>Kuromi 玩偶</color>歇口氣，接著打開 Visual Studio 繼續奮戰。
--> node_38
+我: 抱著桌上的 <color=#FF55FF>Kuromi 玩偶</color>歇口氣，接著打開編輯器繼續奮戰。
+-> node_55
 
-[node_38]
+[node_55]
 bg: assets/bg/room.jpg
-我: 今晚首要任務是把 Data-Driven UI Theme 的解析模組徹底重構乾淨。
--> node_39
+我: 今晚首要任務是把 <color=#FF55FF>Data-Driven UI Theme</color> 的解析模組徹底重構乾淨。
+-> node_56
 
-[node_39]
+[node_56]
 bg: assets/bg/room.jpg
 旁白: 鍵盤敲擊聲在寂靜的深夜中規律地迴盪著。
--> node_40
+-> node_57
 
-[node_40]
+[node_57]
 bg: assets/bg/room.jpg
 我: 對話框的外框厚度、背景顏色、透明度，全部抽離至 JSON 配置檔。
--> node_41
+-> node_58
 
-[node_41]
+[node_58]
 bg: assets/bg/room.jpg
-旁白: 凌晨兩點，建置終端機跳出了綠色的「Build Succeeded」提示。
--> node_42
+旁白: 凌晨兩點，建置終端機跳出了綠色的「<color=#55FF55>Build Succeeded</color>」提示。
+-> node_59
 
-[node_42]
+[node_59]
 bg: assets/bg/room.jpg
 我: 很好，這樣一來 UI 樣式就完全不用硬編碼進二進位檔案了。
--> node_43
+-> node_60
 
-[node_43]
+[node_60]
+bg: assets/bg/room.jpg
+旁白: 窗外的夜色深沉，螢幕的藍光映在臉上。
+-> node_61
+
+[node_61]
+bg: assets/bg/room.jpg
+我: 再五分鐘... 再五分鐘就好...
+-> node_62
+
+[node_62]
+bg: assets/bg/room.jpg
+旁白: 結果又過了一個小時，直到天邊泛起魚肚白才沉沉睡去。
+-> node_63
+
+[node_63]
 bg: assets/bg/classroom.jpg
 trans: diamond
 duration: 1.2
 bgm: assets/audio/bgm_daily.ogg
 weather: sakura
 旁白: 隔天下午，微風吹動社團教室的窗簾。
--> node_44
+-> node_64
 
-[node_44]
+[node_64]
 bg: assets/bg/classroom.jpg
 char: assets/characters/senior_surprised.png
 cv: assets/audio/cv_morning.ogg
@@ -365,79 +492,79 @@ cv: assets/audio/cv_morning.ogg
 
 [act_showoff]
 $ favorability += 10
--> node_45_show
+-> node_65_show
 
 [act_modest]
 $ favorability += 5
--> node_45_modest
+-> node_65_modest
 
-[node_45_show]
+[node_65_show]
 bg: assets/bg/classroom.jpg
 char: assets/characters/senior_happy.png
 cv: assets/audio/cv_proud.ogg
 shake: 0.3
 學姐: 真的只要改動 JSON 檔就能即時變換視窗風格！你也太厲害了吧！
--> node_46
+-> node_66
 
-[node_45_modest]
+[node_65_modest]
 bg: assets/bg/classroom.jpg
 char: assets/characters/senior_smile.png
 cv: assets/audio/cv_modest.ogg
 學姐: 少來了，能隨意抽換配置明明是架構高手才辦得到的事。
--> node_46
+-> node_66
 
-[node_46]
+[node_66]
 bg: assets/bg/clubroom.jpg
 trans: wipe_left
 duration: 1.0
 char: assets/characters/senior_normal.png
 學姐: 對了，美術部那邊提出了新需求，問我們能不能支援動態幀動畫。
--> node_47
+-> node_67
 
-[node_47]
+[node_67]
 bg: assets/bg/clubroom.jpg
 char: assets/characters/senior_normal.png
 我: 幀動畫的話，我可以用 AnimatedSprite 類別裁切 Sprite Sheet 來實現。
--> node_48
+-> node_68
 
-[node_48]
+[node_68]
 bg: assets/bg/clubroom.jpg
 char: assets/characters/senior_surprised.png
 cv: assets/audio/cv_wonder.ogg
 學姐: 那這需要繪師畫出所有幀圖對吧？
--> node_49
+-> node_69
 
-[node_49]
+[node_69]
 bg: assets/bg/clubroom.jpg
 char: assets/characters/senior_smile.png
 我: 是的，不過如果不畫幀圖，我們現成的 Easing 平滑移動與 Shader 也能營造立體生動感。
--> node_50
+-> node_70
 
-[node_50]
+[node_70]
 bg: assets/bg/clubroom.jpg
 char: assets/characters/senior_happy.png
 cv: assets/audio/cv_nice.ogg
 學姐: 雙管齊下！這下美術組再也沒有藉口說引擎功能不夠用了！
--> node_51
+-> node_71
 
-[node_51]
+[node_71]
 bg: assets/bg/clubroom.jpg
 旁白: 就在這時，學生會的信使送來了一封公文。
--> node_52
+-> node_72
 
-[node_52]
+[node_72]
 bg: assets/bg/clubroom.jpg
 char: assets/characters/senior_surprised.png
 cv: assets/audio/cv_shock.ogg
 shake: 0.4
-學姐: 糟了！校園祭展覽的報名截止日居然提前到了下週五！
--> node_53
+學姐: <shake>糟了！</shake>校園祭展覽的報名截止日居然提前到了<color=#FF5555>下週五</color>！
+-> node_73
 
-[node_53]
+[node_73]
 bg: assets/bg/clubroom.jpg
 char: assets/characters/senior_pout.png
 cv: assets/audio/cv_worry.ogg
-學姐: 我們引擎連測試 Demo 都還沒寫完，這下時間來得及嗎？
+學姐: 我們引擎連測試 Demo 都還沒寫完，這下時間<shake>來得及嗎</shake>？
 -> choice_05
 
 [choice_05]
@@ -446,94 +573,94 @@ cv: assets/audio/cv_worry.ogg
 
 [act_sprint]
 $ favorability += 15
--> node_54_sprint
+-> node_74_sprint
 
 [act_delay]
 $ favorability += -10
--> node_54_delay
+-> node_74_delay
 
-[node_54_sprint]
+[node_74_sprint]
 bg: assets/bg/clubroom.jpg
 char: assets/characters/senior_happy.png
 cv: assets/audio/cv_spirit.ogg
 shake: 0.5
 學姐: 好！既然你都這麼有決心了，這週我天天泡在社辦陪你一起衝！
--> node_55
+-> node_75
 
-[node_54_delay]
+[node_74_delay]
 bg: assets/bg/clubroom.jpg
 char: assets/characters/senior_pout.png
 cv: assets/audio/cv_disappoint.ogg
 學姐: 用 PPT 怎麼能體現資研社的技術力呢？我們必須拿出真傢伙！
--> node_55
+-> node_75
 
-[node_55]
+[node_75]
 bg: assets/bg/clubroom.jpg
 char: assets/characters/senior_normal.png
 我: 既然要衝刺，我們必須將工作拆分：學姐負責編寫宣傳劇本，我專注工具鏈打包。
--> node_56
+-> node_76
 
-[node_56]
+[node_76]
 bg: assets/bg/clubroom.jpg
 char: assets/characters/senior_smile.png
 cv: assets/audio/cv_agree.ogg
 學姐: 沒問題，我會用你設計的 `.gality` 語法寫出一個跌宕起伏的懸疑故事！
--> node_57
+-> node_77
 
-[node_57]
+[node_77]
 bg: assets/bg/clubroom.jpg
 旁白: 接下來的幾天裡，社團活動室成了我們的主戰場。
--> node_58
+-> node_78
 
-[node_58]
+[node_78]
 bg: assets/bg/clubroom.jpg
 bgm: assets/audio/bgm_club.ogg
 我: 劇本轉譯器 `gality_compiler.py` 加入了正則保護，防止冒號符號衝突。
--> node_59
+-> node_79
 
-[node_59]
+[node_79]
 bg: assets/bg/clubroom.jpg
 char: assets/characters/senior_happy.png
 cv: assets/audio/cv_typing.ogg
 學姐: 真的耶！寫對話時打角色的台詞順暢多了，完全不用去注意語法縮排！
--> node_60
+-> node_80
 
-[node_60]
+[node_80]
 bg: assets/bg/clubroom.jpg
 char: assets/characters/senior_normal.png
-我: 另外在渲染器端，我整合了 Dear ImGui 即時除錯面板。
--> node_61
+我: 另外在渲染器端，我實作了純向量繪製的原生除錯面板，摒棄所有外部肥大 GUI 框架。
+-> node_81
 
-[node_61]
+[node_81]
 bg: assets/bg/clubroom.jpg
 char: assets/characters/senior_surprised.png
 cv: assets/audio/cv_imgui.ogg
 學姐: 按下 F1 就能直接跳轉劇情節點、修改好感度數值？這除錯起來太方便了吧！
--> node_62
+-> node_82
 
-[node_62]
+[node_82]
 bg: assets/bg/clubroom.jpg
 char: assets/characters/senior_smile.png
 我: 這樣測試多線結局時，就不需要每次重頭通關一次了。
--> node_63
+-> node_83
 
-[node_63]
+[node_83]
 bg: assets/bg/sunset.jpg
 trans: dissolve
 duration: 1.2
 bgm: assets/audio/bgm_quiet.ogg
 weather: rain
 旁白: 第三天的黃昏，窗外雨聲淅淅瀝瀝，專案進度已完成大半。
--> node_64
+-> node_84
 
-[node_64]
+[node_84]
 bg: assets/bg/sunset.jpg
 char: assets/characters/senior_smile.png
 cv: assets/audio/cv_break.ogg
 學姐: 呼，寫了一整個下午的劇本，眼睛好痠喔。
--> node_65
+-> node_85
 
-[node_65]
+[node_85]
 bg: assets/bg/sunset.jpg
 我: 學姐辛苦了，桌上有熱奶茶，休息一下吧。
 -> choice_06
@@ -544,303 +671,353 @@ bg: assets/bg/sunset.jpg
 
 [act_pillow]
 $ favorability += 15
--> node_66_pillow
+-> node_86_pillow
 
 [act_push]
 $ favorability += -5
--> node_66_push
+-> node_86_push
 
-[node_66_pillow]
+[node_86_pillow]
 bg: assets/bg/sunset.jpg
 char: assets/characters/senior_happy.png
 cv: assets/audio/cv_sweet.ogg
-學姐: 哇，好軟！沒想到你平時看起來滿腦子演算法，私底下其實挺溫柔的嘛。
--> node_67
+學姐: 哇，好軟！沒想到你平時看起來滿腦子演算法，私底下其實挺<color=#FFB7C5>溫柔</color>的嘛。
+-> node_87
 
-[node_66_push]
+[node_86_push]
 bg: assets/bg/sunset.jpg
 char: assets/characters/senior_pout.png
 cv: assets/audio/cv_strict.ogg
 學姐: 真是魔鬼工程師！連喘口氣的時間都要精打細算...
--> node_67
+-> node_87
 
-[node_67]
+[node_87]
 bg: assets/bg/sunset.jpg
 char: assets/characters/senior_normal.png
 我: 哈哈，因為即將進入最後衝刺階段：資產保護與加密打包。
--> node_68
+-> node_88
 
-[node_68]
+[node_88]
 bg: assets/bg/sunset.jpg
 char: assets/characters/senior_normal.png
 cv: assets/audio/cv_protect.ogg
 學姐: 對耶！萬一玩家直接打開遊戲資料夾，劇透 CG 和結局全被看光怎麼辦？
--> node_69
+-> node_89
 
-[node_69]
+[node_89]
 bg: assets/bg/sunset.jpg
 char: assets/characters/senior_smile.png
 我: 所以我寫了 `gality_packer.py`，把所有圖檔音效加密壓成二進位 `data.pak` 封裝。
--> node_70
+-> node_90
 
-[node_70]
+[node_90]
 bg: assets/bg/night_street.jpg
 trans: dissolve
 duration: 1.5
 bgm: assets/audio/bgm_quiet.ogg
 weather: snow
 旁白: 時鐘悄悄指向夜間十點，我們終於離開了學校。
--> node_71
+-> node_91
 
-[node_71]
+[node_91]
 bg: assets/bg/night_street.jpg
 char: assets/characters/senior_normal.png
 cv: assets/audio/cv_late.ogg
 學姐: 好久沒有這麼晚回家了，街道上幾乎都沒人了呢。
--> node_72
+-> node_92
 
-[node_72]
+[node_92]
 bg: assets/bg/night_street.jpg
 char: assets/characters/senior_normal.png
 我: 夜晚很安靜，正好適合在大腦裡理順明日的自動化建置腳本 `build_game.bat`。
--> node_73
+-> node_93
 
-[node_73]
+[node_93]
 bg: assets/bg/night_street.jpg
 char: assets/characters/senior_smile.png
 cv: assets/audio/cv_joke.ogg
 學姐: 你連走路都在想著編譯腳本，真不愧是技術狂人！
--> node_74
+-> node_94
 
-[node_74]
+[node_94]
 bg: assets/bg/night_street.jpg
 char: assets/characters/senior_smile.png
 我: 畢竟自動化才能省下重複勞動的時間，這叫架構師的自覺。
--> node_75
+-> node_95
 
-[node_75]
+[node_95]
 bg: assets/bg/night_street.jpg
 char: assets/characters/senior_happy.png
 cv: assets/audio/cv_warm.ogg
-學姐: 跟你一起共事真的很安心，好像什麼技術難題都難不倒你。
--> node_76
+學姐: 跟你一起共事真的很安心，好像什麼技術難題都<color=#FFB7C5>難不倒你</color>。
+-> node_96
 
-[node_76]
+[node_96]
 bg: assets/bg/station.jpg
 trans: wipe_left
 duration: 1.0
 bgm: assets/audio/bgm_daily.ogg
 weather: none
 旁白: 我們再度站在車站的閘門前。
--> node_77
+-> node_97
 
-[node_77]
+[node_97]
 bg: assets/bg/station.jpg
 char: assets/characters/senior_normal.png
 cv: assets/audio/cv_station_night.ogg
 學姐: 明天就是週五截稿日了，我們一定能如期交付對吧？
--> node_78
+-> node_98
 
-[node_78]
+[node_98]
 bg: assets/bg/station.jpg
 char: assets/characters/senior_smile.png
 我: 只要明天下午把所有依賴的 SFML DLL 整理齊全，包裝就宣告大功告成！
--> node_79
+-> node_99
 
-[node_79]
+[node_99]
 bg: assets/bg/station.jpg
 char: assets/characters/senior_happy.png
 cv: assets/audio/cv_confident.ogg
 學姐: 嗯！我相信你！明天見！
--> node_80
+-> node_100
 
-[node_80]
+[node_100]
 bg: assets/bg/room.jpg
 trans: clock
 duration: 1.2
 bgm: assets/audio/bgm_quiet.ogg
 旁白: 決勝前夕的深夜。
--> node_81
+-> node_101
 
-[node_81]
+[node_101]
 bg: assets/bg/room.jpg
 我: 今晚不能有任何閃失，必須確認獨立發布目錄 `dist/` 的完整性。
--> node_82
+-> node_102
 
-[node_82]
+[node_102]
 bg: assets/bg/room.jpg
 我: 執行檔、DLL 函式庫、配置設定檔、字型資源，缺一不可。
--> node_83
+-> node_103
 
-[node_83]
+[node_103]
 bg: assets/bg/room.jpg
 旁白: 指尖在鍵盤上飛速起舞，終端機日誌逐行刷新。
--> node_84
+-> node_104
 
-[node_84]
+[node_104]
 bg: assets/bg/room.jpg
 我: 測試環境乾淨啟動... 沒有拋出任何例外，幀率穩定維持在 60 FPS！
--> node_85
+-> node_105
 
-[node_85]
+[node_105]
 bg: assets/bg/room.jpg
 我: 太好了，萬事俱備，明天就是驗收成果的時刻。
--> node_86
+-> node_106
 
-[node_86]
+[node_106]
+bg: assets/bg/room.jpg
+旁白: 關上電腦，躺在床上，卻怎麼也睡不著。
+-> node_107
+
+[node_107]
+bg: assets/bg/room.jpg
+我: 腦海裡不斷浮現架構圖與程式碼片段...
+-> node_108
+
+[node_108]
+bg: assets/bg/room.jpg
+旁白: 不知不覺，天亮了。
+-> node_109
+
+[node_109]
 bg: assets/bg/clubroom.jpg
 trans: diamond
 duration: 1.2
 bgm: assets/audio/bgm_club.ogg
 weather: sakura
 旁白: 週五午後，校園祭審查委員會的幹部們來到了資研社。
--> node_87
+-> node_110
 
-[node_87]
+[node_110]
 bg: assets/bg/clubroom.jpg
 char: assets/characters/senior_normal.png
 cv: assets/audio/cv_judge_come.ogg
 學姐: 審查員來了... 稍微有點緊張呢。
--> node_88
+-> node_111
 
-[node_88]
+[node_111]
 bg: assets/bg/clubroom.jpg
 我: 別慌，深呼吸，按照我們準備好的流程演示就好。
 -> choice_07
 
 [choice_07]
-? [主打極限性能：展示 C++17 與 LRU Cache 的極低記憶體佔用] -> act_demo_perf
+? [主打極限性能：展示 <color=#55FF55>C++17</color> 與 LRU Cache 的極低記憶體佔用] -> act_demo_perf
 ? [主打視覺演出：展示 GLSL PostFX 模糊與落櫻粒子特效] -> act_demo_visual
 
 [act_demo_perf]
 $ favorability += 10
--> node_89_perf
+-> node_112_perf
 
 [act_demo_visual]
 $ favorability += 15
--> node_89_visual
+-> node_112_visual
 
-[node_89_perf]
+[node_112_perf]
 bg: assets/bg/clubroom.jpg
 char: assets/characters/senior_smile.png
 旁白: 審查員看著工作管理員中僅有數十 MB 的記憶體佔用，露出了驚嘆的表情。
--> node_90
+-> node_113
 
-[node_89_visual]
+[node_112_visual]
 bg: assets/bg/clubroom.jpg
 char: assets/characters/senior_happy.png
 shake: 0.3
 旁白: 伴隨著落櫻雨與高斯模糊濾鏡的平滑切換，全場響起了一陣掌聲！
--> node_90
+-> node_113
 
-[node_90]
+[node_113]
 bg: assets/bg/clubroom.jpg
 char: assets/characters/senior_happy.png
 cv: assets/audio/cv_pass.ogg
-學姐: 通過了！我們拿到了校園祭主展區最高評分的特展資格！
--> node_91
+學姐: <shake>通過了！</shake>我們拿到了校園祭主展區最高評分的特展資格！
+-> node_114
 
-[node_91]
+[node_114]
 bg: assets/bg/clubroom.jpg
 我: 我們的努力終於獲得回報了！
--> node_92
+-> node_115
 
-[node_92]
+[node_115]
 bg: assets/bg/clubroom.jpg
 char: assets/characters/senior_surprised.png
 cv: assets/audio/cv_invite.ogg
 學姐: 審查委員甚至問我們，未來有沒有意向把 Gality 開源並推廣到商業遊戲展？
--> node_93
+-> node_116
 
-[node_93]
+[node_116]
 bg: assets/bg/clubroom.jpg
 char: assets/characters/senior_smile.png
 我: 這當然是我們長遠以來的終極目標。
--> node_94
+-> node_117
 
-[node_94]
+[node_117]
 bg: assets/bg/sunset.jpg
 trans: dissolve
 duration: 1.5
 bgm: assets/audio/bgm_quiet.ogg
 weather: sakura
 旁白: 審查結束後，夕陽的金光為社團教室鋪上一層溫暖的色調。
--> node_95
+-> node_118
 
-[node_95]
+[node_118]
 bg: assets/bg/sunset.jpg
 char: assets/characters/senior_smile.png
 cv: assets/audio/cv_alone.ogg
 學姐: 大家都去狂歡慶祝了，怎麼你還一個人在這裡收拾器材？
--> node_96
+-> node_119
 
-[node_96]
+[node_119]
 bg: assets/bg/sunset.jpg
 char: assets/characters/senior_smile.png
 我: 想說把程式碼的 Git Tag 打上 `v1.0.0-release`，給這個階段畫上完美句點。
--> node_97
+-> node_120
 
-[node_97]
+[node_120]
 bg: assets/bg/sunset.jpg
 char: assets/characters/senior_happy.png
 cv: assets/audio/cv_tag.ogg
-學姐: 嘻嘻，真有你的風格。那走吧，今天無論如何都要好好犒賞你一頓大餐！
--> node_98
+學姐: <speed=0.05>嘻嘻，真有你的風格。</speed>那走吧，今天無論如何都要好好犒賞你一頓大餐！
+-> node_121
 
-[node_98]
+[node_121]
 bg: assets/bg/sunset.jpg
 我: 學姐請客嗎？那我可不會客氣喔。
--> node_99
+-> node_122
 
-[node_99]
+[node_122]
 bg: assets/bg/sunset.jpg
 char: assets/characters/senior_happy.png
 cv: assets/audio/cv_laugh.ogg
 學姐: 沒問題！想吃什麼盡管點！
--> node_100
+-> node_123
 
-[node_100]
+[node_123]
+bg: assets/bg/sunset.jpg
+旁白: 我們並肩走出社辦，夕陽將兩個人的影子拉得很長。
+-> node_124
+
+[node_124]
+bg: assets/bg/sunset.jpg
+我: 學姐，妳覺得 Gality 未來會變成什麼樣子？
+-> node_125
+
+[node_125]
+bg: assets/bg/sunset.jpg
+char: assets/characters/senior_smile.png
+cv: assets/audio/cv_18.ogg
+學姐: 我不知道。但我知道，只要我們一起寫下去，它一定會成為很棒的東西。
+-> node_126
+
+[node_126]
+bg: assets/bg/night_street.jpg
+trans: dissolve
+duration: 1.5
+bgm: assets/audio/bgm_daily.ogg
+weather: none
+旁白: 那一晚，我們聊了很多。關於技術，關於夢想，關於未來。
+-> node_127
+
+[node_127]
+bg: assets/bg/night_street.jpg
+旁白: 而我不知道的是，這只是整個故事的開始。
+-> node_128
+
+// ==============================================================================
+// 第一幕：四人集結與多槽位渲染改革 (ACT I: 400 NODES)
+// ==============================================================================
+
+[node_128]
 bg: assets/bg/hallway.jpg
 trans: wipe_left
 duration: 1.0
 bgm: assets/audio/bgm_club.ogg
 weather: none
 旁白: 就在我們準備離開走廊時，身後傳來了一陣急促且清脆的腳步聲。
--> node_101
+-> node_129
 
-[node_101]
+[node_129]
 bg: assets/bg/hallway.jpg
 char_right: assets/characters/junior_normal.png
 cv: assets/audio/cv_jun_01.ogg
 學妹: 等等！前面那兩位學長學姐，請先留步！
--> node_102
+-> node_130
 
-[node_102]
+[node_130]
 bg: assets/bg/hallway.jpg
 char_left: assets/characters/senior_surprised.png
 char_right: assets/characters/junior_normal.png
 active_char: left
 cv: assets/audio/cv_senior_who.ogg
 學姐: 咦？妳是一年級新入社的羽月同學吧？怎麼跑得這麼急？
--> node_103
+-> node_131
 
-[node_103]
+[node_131]
 bg: assets/bg/hallway.jpg
 char_left: assets/characters/senior_surprised.png
 char_right: assets/characters/junior_pout.png
 active_char: right
 cv: assets/audio/cv_jun_02.ogg
-學妹: 呼... 呼... 我剛才在走廊看完了你們的 Gality Demo... 老實說，前端渲染簡直簡陋得令人髮指！
--> node_104
+學妹: 呼... 呼... 我剛才在走廊看完了你們的 Gality Demo... 老實說，前端渲染簡直<shake>簡陋得令人髮指</shake>！
+-> node_132
 
-[node_104]
+[node_132]
 bg: assets/bg/hallway.jpg
 char_left: assets/characters/senior_pout.png
 char_right: assets/characters/junior_pout.png
 active_char: left
 cv: assets/audio/cv_senior_mad.ogg
 shake: 0.3
-學姐: 什、什麼！？這可是我們連續熬夜好幾天肝出來的高效能架構耶！
+學姐: <shake>什、什麼！？</shake>這可是我們連續熬夜好幾天肝出來的高效能架構耶！
 -> choice_101
 
 [choice_101]
@@ -850,41 +1027,59 @@ shake: 0.3
 [act_listen_junior]
 $ junior_favor += 10
 $ favorability += 5
--> node_105_listen
+-> node_133_listen
 
 [act_defend_engine]
 $ junior_favor += -5
 $ favorability += 10
--> node_105_defend
+-> node_133_defend
 
-[node_105_listen]
+[node_133_listen]
 bg: assets/bg/hallway.jpg
 char_left: assets/characters/senior_normal.png
 char_right: assets/characters/junior_smug.png
 active_char: right
 cv: assets/audio/cv_jun_03.ogg
 學妹: 哼，算你識相。對話框的排版雖然避開了 CJK 擠字，但沒有角色多槽位立繪，畫面空曠得像個未完工的控制台！
--> node_106
+-> node_134
 
-[node_105_defend]
+[node_133_defend]
 bg: assets/bg/hallway.jpg
 char_left: assets/characters/senior_happy.png
 char_right: assets/characters/junior_pout.png
 active_char: right
 cv: assets/audio/cv_jun_04.ogg
 學妹: 底層寫得再漂亮，如果前台畫面死板，玩家一眼就會右上角點關閉啦！
--> node_106
+-> node_134
 
-[node_106]
+[node_134]
 bg: assets/bg/hallway.jpg
 char_left: assets/characters/senior_normal.png
 char_right: assets/characters/junior_normal.png
 active_char: right
 cv: assets/audio/cv_jun_05.ogg
 學妹: 我在國高中時期就接過不少視覺小說前端案子，這次校園祭展覽，我也要加入開發小組！
--> node_107
+-> node_135
 
-[node_107]
+[node_135]
+bg: assets/bg/hallway.jpg
+char_left: assets/characters/senior_surprised.png
+char_right: assets/characters/junior_smug.png
+active_char: left
+cv: assets/audio/cv_19.ogg
+學姐: 妳... 妳是認真的嗎？
+-> node_136
+
+[node_136]
+bg: assets/bg/hallway.jpg
+char_left: assets/characters/senior_surprised.png
+char_right: assets/characters/junior_smug.png
+active_char: right
+cv: assets/audio/cv_jun_06.ogg
+學妹: 當然。我已經調查過了，你們的引擎缺少多角色同屏站位與發言者明暗動態聚焦。這是我最擅長的領域。
+-> node_137
+
+[node_137]
 bg: assets/bg/clubroom.jpg
 trans: diamond
 duration: 1.0
@@ -892,95 +1087,95 @@ bgm: assets/audio/bgm_club.ogg
 char_center: assets/characters/president_arms.png
 cv: assets/audio/cv_pres_01.ogg
 社長: 走廊上吵吵鬧鬧的成何體統，原來都聚在社辦門口了。
--> node_108
+-> node_138
 
-[node_108]
+[node_138]
 bg: assets/bg/clubroom.jpg
 char_left: assets/characters/senior_normal.png
 char_right: assets/characters/president_normal.png
 active_char: left
 cv: assets/audio/cv_senior_pres.ogg
 學姐: 社長！你終於從伺服器機房出來了。
--> node_109
+-> node_139
 
-[node_109]
+[node_139]
 bg: assets/bg/clubroom.jpg
 char_left: assets/characters/senior_normal.png
 char_right: assets/characters/president_normal.png
 active_char: right
 cv: assets/audio/cv_pres_02.ogg
 社長: Gality 的技術報告我用 SSH 遠端看過了。架構設計得非常漂亮，RAII 與資源封裝做得滴水不漏。
--> node_110
+-> node_140
 
-[node_110]
+[node_140]
 bg: assets/bg/clubroom.jpg
 char_left: assets/characters/junior_smug.png
 char_right: assets/characters/president_normal.png
 active_char: left
 cv: assets/audio/cv_jun_06.ogg
 學妹: 社長！但是它還缺少靈魂！也就是多角色同屏站位與發言者明暗動態聚焦（Dimming）！
--> node_111
+-> node_141
 
-[node_111]
+[node_141]
 bg: assets/bg/clubroom.jpg
 char_left: assets/characters/junior_smug.png
 char_right: assets/characters/president_arms.png
 active_char: right
 cv: assets/audio/cv_pres_03.ogg
 社長: 羽月說得確實是一針見血。既然人都到齊了，今年的校園祭，資研社就以完全體的 Gality 迎戰。
--> node_112
+-> node_142
 
-[node_112]
+[node_142]
 bg: assets/bg/clubroom.jpg
 我: 多角色槽位（Left, Center, Right）的架構擴充，我可以在今晚重新設計 `LayerRenderer`。
--> node_113
+-> node_143
 
-[node_113]
+[node_143]
 bg: assets/bg/clubroom.jpg
 char_left: assets/characters/senior_smile.png
 char_right: assets/characters/junior_happy.png
 active_char: left
 cv: assets/audio/cv_senior_teamup.ogg
 學姐: 太好了！那我和羽月一起梳理腳本中所有雙人對峙與多人修羅場的站位標籤！
--> node_114
+-> node_144
 
-[node_114]
+[node_144]
 bg: assets/bg/clubroom.jpg
 char_left: assets/characters/senior_smile.png
 char_right: assets/characters/junior_smug.png
 active_char: right
 cv: assets/audio/cv_jun_07.ogg
-學妹: 哼，程式碼可別寫出記憶體洩漏喔，學長。要是幀率掉下 60 FPS 我可要扣你分的！
--> node_115
+學妹: 哼，程式碼可別寫出記憶體洩漏喔，學長。要是幀率掉下 <color=#FF5555>60 FPS</color> 我可要扣你分的！
+-> node_145
 
-[node_115]
+[node_145]
 bg: assets/bg/cafe.jpg
 trans: wipe_left
 duration: 1.2
 bgm: assets/audio/bgm_daily.ogg
 weather: rain
 旁白: 傍晚，我們四人一同來到了車站旁的咖啡廳，將筆記型電腦排在長桌上。
--> node_116
+-> node_146
 
-[node_116]
+[node_146]
 bg: assets/bg/cafe.jpg
 char_left: assets/characters/junior_normal.png
 char_right: assets/characters/president_normal.png
 active_char: right
 cv: assets/audio/cv_pres_04.ogg
 社長: 關於音訊系統，目前單軌 BGM 播放太過單薄。真正的視覺小說至少需要 BGM、BGS 環境音與語音獨立混音。
--> node_117
+-> node_147
 
-[node_117]
+[node_147]
 bg: assets/bg/cafe.jpg
 char_left: assets/characters/junior_normal.png
 char_right: assets/characters/president_normal.png
 active_char: left
 cv: assets/audio/cv_jun_08.ogg
 學妹: 沒錯！而且不同女主角的配音音量需要獨立的滑桿設定，這是柚子社等神作的必備人機互動守則！
--> node_118
+-> node_148
 
-[node_118]
+[node_148]
 bg: assets/bg/cafe.jpg
 char_center: assets/characters/senior_happy.png
 cv: assets/audio/cv_senior_milk.ogg
@@ -993,505 +1188,1847 @@ cv: assets/audio/cv_senior_milk.ogg
 
 [act_sit_senior]
 $ favorability += 15
--> node_119_senior
+-> node_149_senior
 
 [act_sit_team]
 $ junior_favor += 10
-$ president_favor += 10
--> node_119_team
+$ favorability += 5
+-> node_149_team
 
-[node_119_senior]
+[node_149_senior]
 bg: assets/bg/cafe.jpg
 char_left: assets/characters/senior_happy.png
 char_right: assets/characters/junior_pout.png
 active_char: left
 cv: assets/audio/cv_senior_sweet2.ogg
 學姐: 嘻嘻，你果然最重視劇本體驗了。我們把 `char_left` 和 `char_right` 設計成可選參數吧！
--> node_120
+-> node_150
 
-[node_119_team]
+[node_149_team]
 bg: assets/bg/cafe.jpg
 char_left: assets/characters/junior_happy.png
 char_right: assets/characters/president_smile.png
 active_char: right
 cv: assets/audio/cv_pres_05.ogg
 社長: 很好，保持這種嚴謹的技術探討。工程師就是要靠公式和邏輯說話。
--> node_120
+-> node_150
 
-[node_120]
+[node_150]
 bg: assets/bg/cafe.jpg
 char_left: assets/characters/senior_normal.png
 char_right: assets/characters/junior_normal.png
 active_char: right
 cv: assets/audio/cv_jun_09.ogg
 學妹: 對了學長，你在 `DialogueBox` 裡寫的打字機效果，遇到多行標籤時如果沒加緩衝，顏色會不會錯亂？
--> node_121
+-> node_151
 
-[node_121]
+[node_151]
 bg: assets/bg/cafe.jpg
 我: 這點早在核心模組中透過 UTF-32 碼點段落切分徹底杜絕了，任何長度的 HEX 標籤都不會導致顏色外溢。
--> node_122
+-> node_152
 
-[node_122]
+[node_152]
 bg: assets/bg/cafe.jpg
 char_left: assets/characters/senior_smile.png
 char_right: assets/characters/junior_surprised.png
 active_char: right
 cv: assets/audio/cv_jun_10.ogg
 學妹: 唔... 居然連這點都提前考慮到了... 看來你確實不是普通的半吊子程序員呢。
--> node_123
+-> node_153
 
-[node_123]
+[node_153]
 bg: assets/bg/cafe.jpg
 char_center: assets/characters/president_arms.png
 cv: assets/audio/cv_pres_06.ogg
 社長: 那當然，他可是我們資研社最鋒利的一把底層寶劍。
--> node_124
+-> node_154
 
-[node_124]
+[node_154]
+bg: assets/bg/cafe.jpg
+旁白: 窗外的雨聲伴隨著鍵盤敲擊聲，形成一種奇妙的節奏。
+-> node_155
+
+[node_155]
 bg: assets/bg/night_street.jpg
 trans: dissolve
 duration: 1.5
 bgm: assets/audio/bgm_quiet.ogg
 weather: snow
 旁白: 走出咖啡廳，夜風捲起細雪。四人並肩走在歸途的街道上。
--> node_125
+-> node_156
 
-[node_125]
+[node_156]
 bg: assets/bg/night_street.jpg
 char_left: assets/characters/senior_normal.png
 char_right: assets/characters/president_normal.png
 active_char: right
 cv: assets/audio/cv_pres_07.ogg
 社長: 今晚大家各自把任務模組推送到 Git 倉庫的 dev 分支，明天在社辦整合。
--> node_126
+-> node_157
 
-[node_126]
+[node_157]
 bg: assets/bg/night_street.jpg
 char_left: assets/characters/junior_smug.png
 char_right: assets/characters/president_normal.png
 active_char: left
 cv: assets/audio/cv_jun_11.ogg
 學妹: 我今晚會寫好 50 個多角色對話測試節點，學長可別被我的語法壓測搞得記憶體崩潰喔！
--> node_127
+-> node_158
 
-[node_127]
+[node_158]
 bg: assets/bg/station.jpg
 trans: wipe_left
 duration: 1.0
 bgm: assets/audio/bgm_daily.ogg
 weather: none
 旁白: 社長與學妹走向了另一個月台，閘門前再次剩下我和學姐兩人。
--> node_128
+-> node_159
 
-[node_128]
+[node_159]
 bg: assets/bg/station.jpg
 char: assets/characters/senior_smile.png
 cv: assets/audio/cv_senior_quiet_station.ogg
-學姐: 呼... 突然變得好熱鬧呢。羽月雖然說話毒舌，但其實是個非常認真的好孩子喔。
--> node_129
+學姐: 呼... 突然變得好熱鬧呢。羽月雖然說話毒舌，但其實是個非常認真的孩子喔。
+-> node_160
 
-[node_129]
+[node_160]
 bg: assets/bg/station.jpg
 我: 看得出來，她提出的槽位問題正好是我們引擎邁向商業級視覺效果的最重要拼圖。
--> node_130
+-> node_161
 
-[node_130]
+[node_161]
 bg: assets/bg/station.jpg
 char: assets/characters/senior_happy.png
 cv: assets/audio/cv_senior_warmth.ogg
 學姐: 能看到大家一起為了同一個目標全力以赴，真的好開心。明天見囉！
--> node_131
+-> node_162
 
-[node_131]
+[node_162]
 bg: assets/bg/room.jpg
 trans: clock
 duration: 1.2
 bgm: assets/audio/bgm_quiet.ogg
 旁白: 回到房間，深夜十一點。
--> node_132
+-> node_163
 
-[node_132]
+[node_163]
 bg: assets/bg/room.jpg
 我: 今晚的重頭戲：`LayerRenderer` 多立繪槽位重構與 `ScriptLoader` 的映射支援。
--> node_133
+-> node_164
 
-[node_133]
+[node_164]
 bg: assets/bg/room.jpg
 我: `std::map<CharSlot, sf::Sprite>` ... 左槽 X 座標 0.25，中槽 0.5，右槽 0.75。
--> node_134
+-> node_165
 
-[node_134]
+[node_165]
 bg: assets/bg/room.jpg
 旁白: 程式碼伴隨著微弱的按鍵聲迅速成型，螢幕映出專注的側臉。
--> node_135
+-> node_166
 
-[node_135]
+[node_166]
 bg: assets/bg/room.jpg
 我: 加上自動暗調（Focus Dimming）：非發言角色亮度設定為 `140, 140, 150`。
--> node_136
+-> node_167
 
-[node_136]
+[node_167]
 bg: assets/bg/room.jpg
 旁白: 凌晨三點，單元測試通過。編譯腳本無警告通過。
--> node_137
+-> node_168
 
-[node_137]
+[node_168]
+bg: assets/bg/room.jpg
+我: 這樣一來，多人對話的視覺效果就能大幅提升了。
+-> node_169
+
+[node_169]
+bg: assets/bg/room.jpg
+旁白: 抱著 Kuromi 玩偶，沉沉睡去。
+-> node_170
+
+[node_170]
 bg: assets/bg/classroom.jpg
 trans: diamond
 duration: 1.2
 bgm: assets/audio/bgm_daily.ogg
 weather: sakura
 旁白: 隔天清晨，陽光將教室照得一片明亮。
--> node_138
+-> node_171
 
-[node_138]
+[node_171]
 bg: assets/bg/classroom.jpg
 char_left: assets/characters/junior_surprised.png
 char_right: assets/characters/senior_happy.png
 active_char: left
 cv: assets/audio/cv_jun_12.ogg
 shake: 0.3
-學妹: 騙、騙人的吧！？你真的只花了一晚上就把三槽位加即時暗調做出來了！？
--> node_139
+學妹: <shake>騙、騙人的吧！？</shake>你真的只花了一晚上就把三槽位加即時暗調做出來了！？
+-> node_172
 
-[node_139]
+[node_172]
 bg: assets/bg/classroom.jpg
 char_left: assets/characters/junior_surprised.png
 char_right: assets/characters/senior_happy.png
 active_char: right
 cv: assets/audio/cv_senior_proud2.ogg
 學姐: 哼哼～我就說過他可是我們社團不可撼動的首席架構師吧！
--> node_140
+-> node_173
 
-[node_140]
+[node_173]
+bg: assets/bg/classroom.jpg
+char_left: assets/characters/junior_smug.png
+char_right: assets/characters/senior_happy.png
+active_char: left
+cv: assets/audio/cv_jun_13.ogg
+學妹: 不過... 這個 Dimming 的亮度值需要再調整，140 太暗了，應該用 160。
+-> node_174
+
+[node_174]
+bg: assets/bg/classroom.jpg
+我: 好，我馬上改。還有其他建議嗎？
+-> node_175
+
+[node_175]
+bg: assets/bg/classroom.jpg
+char_left: assets/characters/junior_smug.png
+char_right: assets/characters/senior_happy.png
+active_char: left
+cv: assets/audio/cv_jun_14.ogg
+學妹: 還有，非發言角色的模糊效果可以再加強一點，這樣焦點會更明確。
+-> node_176
+
+[node_176]
+bg: assets/bg/classroom.jpg
+我: 沒問題，我把 Shader 的模糊半徑從 2.0 調到 3.5。
+-> node_177
+
+[node_177]
+bg: assets/bg/classroom.jpg
+char_left: assets/characters/junior_happy.png
+char_right: assets/characters/senior_happy.png
+active_char: left
+cv: assets/audio/cv_jun_15.ogg
+學妹: 嗯，這樣好多了。算你還有點 Sense。
+-> node_178
+
+[node_178]
+bg: assets/bg/classroom.jpg
+旁白: 就在這時，社長推門走了進來。
+-> node_179
+
+[node_179]
+bg: assets/bg/classroom.jpg
+char_center: assets/characters/president_serious.png
+cv: assets/audio/cv_pres_08.ogg
+社長: 大家先安靜下來。昨晚我在伺服器進行多節點併發壓測時，終端機捕捉到了一段詭異的無名日誌。
+-> node_180
+
+[node_180]
 bg: assets/bg/clubroom.jpg
 trans: wipe_left
 duration: 1.0
-bgm: assets/audio/bgm_club.ogg
-char_center: assets/characters/president_arms.png
-cv: assets/audio/cv_pres_08.ogg
-社長: 很好，技術阻礙全部掃清。距離校園祭只剩 72 小時，我們要啟動全量劇情串接。
--> node_141
-
-[node_141]
-bg: assets/bg/clubroom.jpg
+bgm: assets/audio/bgm_suspense.ogg
 char_left: assets/characters/junior_normal.png
-char_right: assets/characters/senior_normal.png
+char_right: assets/characters/president_serious.png
 active_char: left
-cv: assets/audio/cv_jun_13.ogg
-學妹: 我和學姐昨晚將劇本擴展到了四條主要分支，包含極限技術爭論與社團情感羈絆！
--> node_142
+cv: assets/audio/cv_jun_03.ogg
+學妹: 詭異日誌？該不會是誰寫出了記憶體越界，踩壞了 Stack Canary 吧？
+-> node_181
 
-[node_142]
+[node_181]
 bg: assets/bg/clubroom.jpg
-我: 目前故事節點總數已經突破 200 個，所有變數與條件跳轉皆已綁定至 Blackboard。
--> node_143
+我: 如果是指標越界，作業系統應該直接丟出 `0xC0000005: Access Violation` 才對。
+-> node_182
 
-[node_143]
+[node_182]
+bg: assets/bg/clubroom.jpg
+char_left: assets/characters/senior_surprised.png
+char_right: assets/characters/president_serious.png
+active_char: right
+cv: assets/audio/cv_pres_09.ogg
+社長: 問題就在這裡。程式沒有崩潰，但在 RAM 的動態堆積區中，自行分配了一塊長達 <color=#FF5555><shake>666MB</shake></color> 的鎖定區塊。
+-> node_183
+
+[node_183]
+bg: assets/bg/clubroom.jpg
+char_left: assets/characters/senior_surprised.png
+char_right: assets/characters/president_serious.png
+active_char: left
+cv: assets/audio/cv_shock.ogg
+shake: 0.3
+學姐: <shake>666MB！？</shake>我們的整個引擎核心才佔用 48MB 耶！這到底是載入了什麼東西！？
+-> node_184
+
+[node_184]
+bg: assets/bg/clubroom.jpg
+char_left: assets/characters/junior_panic.png
+char_right: assets/characters/president_serious.png
+active_char: left
+cv: assets/audio/cv_jun_16.ogg
+學妹: 而且... 這個數字... 666... 不是普通的數字。
+-> node_185
+
+[node_185]
+bg: assets/bg/clubroom.jpg
+char_left: assets/characters/junior_panic.png
+char_right: assets/characters/president_serious.png
+active_char: right
+cv: assets/audio/cv_pres_10.ogg
+社長: 我查了日誌的來源，它指向五年前的一個舊專案資料夾。
+-> node_186
+
+[node_186]
+bg: assets/bg/clubroom.jpg
+我: 五年前？那不是資研社剛成立的時候嗎？
+-> node_187
+
+[node_187]
+bg: assets/bg/clubroom.jpg
+char_left: assets/characters/senior_fear.png
+char_right: assets/characters/president_serious.png
+active_char: left
+cv: assets/audio/cv_20.ogg
+學姐: 五年前... 我聽說過一個傳聞。有一位女社員在校園祭前夕離奇失蹤了。
+-> node_188
+
+[node_188]
+bg: assets/bg/clubroom.jpg
+旁白: 社辦的空氣瞬間凝結。
+-> node_189
+
+[node_189]
 bg: assets/bg/clubroom.jpg
 char_center: assets/characters/president_serious.png
-cv: assets/audio/cv_pres_09.ogg
-社長: 很好！但這也是最容易出現 Bug 的階段。我們必須進行全面交叉審查！
--> choice_103
+cv: assets/audio/cv_pres_11.ogg
+社長: 不管真相是什麼，我們必須先解決眼前的問題。明天就是校園祭了。
+-> node_190
 
-[choice_103]
-? [專注於高壓負載測試：快速連續跳轉 100 次以驗證記憶體快取] -> act_stress_test
-? [專注於劇本體驗校對：與學姐、學妹一字一句精讀每一條分支] -> act_story_review
-
-[act_stress_test]
-$ president_favor += 15
--> node_144_stress
-
-[act_story_review]
-$ favorability += 10
-$ junior_favor += 10
--> node_144_review
-
-[node_144_stress]
+[node_190]
 bg: assets/bg/clubroom.jpg
-char_center: assets/characters/president_smile.png
-cv: assets/audio/cv_pres_10.ogg
-社長: 漂亮的壓力測試！工作管理員顯示 RAM 佔用全程鎖定在 48MB，完全沒有內存洩漏！
--> node_145
+我: 我提議立即動態除錯，親自前往地下舊機房檢查實體主機。
+-> node_191
 
-[node_144_review]
+[node_191]
 bg: assets/bg/clubroom.jpg
-char_left: assets/characters/senior_happy.png
-char_right: assets/characters/junior_happy.png
-active_char: right
-cv: assets/audio/cv_jun_14.ogg
-學妹: 呼... 每一句台詞的明暗切換和音效銜接都完美無瑕，簡直就像商業大作一樣！
--> node_145
-
-[node_145]
-bg: assets/bg/sunset.jpg
-trans: dissolve
-duration: 1.5
-bgm: assets/audio/bgm_quiet.ogg
-weather: rain
-旁白: 校園祭倒數最後一天。窗外下著滂沱大雨，社辦裡的四台筆電螢幕依然亮著。
--> node_146
-
-[node_146]
-bg: assets/bg/sunset.jpg
-char_left: assets/characters/senior_smile.png
+char_left: assets/characters/senior_normal.png
 char_right: assets/characters/junior_normal.png
 active_char: left
-cv: assets/audio/cv_senior_final_eve.ogg
-學姐: 終於... 400 個節點的語法檢查全數通過，所有語音配音全部就位！
--> node_147
+cv: assets/audio/cv_21.ogg
+學姐: 我也一起去。如果真的有幽靈，我至少要親眼見證。
+-> node_192
 
-[node_147]
-bg: assets/bg/sunset.jpg
-char_left: assets/characters/senior_smile.png
-char_right: assets/characters/junior_normal.png
+[node_192]
+bg: assets/bg/clubroom.jpg
+char_left: assets/characters/senior_normal.png
+char_right: assets/characters/junior_smug.png
 active_char: right
-cv: assets/audio/cv_jun_15.ogg
-學妹: 誰能想到幾天前這款引擎還只有一個單調的置中立繪呢... 學長，你真的太拼命了。
--> node_148
+cv: assets/audio/cv_jun_17.ogg
+學妹: 哼，那我留在這裡，用逆向工程探針遠端支援你們。
+-> node_193
 
-[node_148]
-bg: assets/bg/sunset.jpg
-char_center: assets/characters/president_smile.png
-cv: assets/audio/cv_pres_11.ogg
-社長: 明天就是正式開戰的時刻。資研社的全體成員，今晚好好休息，迎接勝利！
--> node_149
+[node_193]
+bg: assets/bg/clubroom.jpg
+char_center: assets/characters/president_arms.png
+cv: assets/audio/cv_pres_12.ogg
+社長: 就這麼決定。我和他下去機房，羽月負責遠端監控，學姐在社辦待命。
+-> node_194
 
-[node_149]
+[node_194]
+bg: assets/bg/hallway.jpg
+trans: dissolve
+duration: 1.2
+bgm: assets/audio/bgm_horror.ogg
+旁白: 社長帶著我走進了教學大樓深處的地下舊機房。空氣中瀰漫著濃重的鐵鏽與臭氧味。
+-> node_195
+
+[node_195]
+bg: assets/bg/hallway.jpg
+char_center: assets/characters/president_serious.png
+cv: assets/audio/cv_pres_05.ogg
+社長: 這台老舊機架式伺服器是十年前資研社前輩留下的，照理說從未接入現代互聯網。
+-> node_196
+
+[node_196]
+bg: assets/bg/hallway.jpg
+我: 但是上面的網路硬碟指示燈正在瘋狂狂閃... 頻率就像人類劇烈的心跳。
+-> node_197
+
+[node_197]
+bg: assets/bg/hallway.jpg
+shake: 0.4
+旁白: 螢幕突然泛起刺眼的雪花屏，揚聲器傳出極其尖銳的高頻電流嘯叫！
+-> node_198
+
+[node_198]
+bg: assets/bg/hallway.jpg
+char_center: assets/characters/president_serious.png
+cv: assets/audio/cv_pres_06.ogg
+社長: 終端機自動跳出了未定義的指令碼！上面寫著：`void* p = malloc(sizeof(Soul));`！
+-> node_199
+
+[node_199]
+bg: assets/bg/hallway.jpg
+我: 快斷開電源！這根本不是常規的二進位資料，它正在重寫 Gality 的 AST 節點池！
+-> choice_dive_reaction
+
+[choice_dive_reaction]
+? [果斷拔除主機電源線，阻止其繼續滲透] -> act_pull_plug
+? [嘗試在崩潰前搶讀指針指向的記憶體位址] -> act_read_corrupt_memory
+
+[act_pull_plug]
+$ favorability += 15
+-> node_200_safe
+
+[act_read_corrupt_memory]
+$ san_loss += 35
+$ junior_favor += 10
+-> node_200_insane
+
+[node_200_safe]
+bg: assets/bg/clubroom.jpg
+trans: diamond
+duration: 1.0
+bgm: assets/audio/bgm_quiet.ogg
+char_center: assets/characters/president_arms.png
+cv: assets/audio/cv_pres_07.ogg
+社長: 呼... 好險切斷得及時。實體晶片溫度差點燒穿主機板。我們先回社辦與大家會合。
+-> node_201
+
+[node_200_insane]
+bg: assets/bg/hallway.jpg
+shake: 0.7
+char_center: assets/characters/president_serious.png
+旁白: 在拔除插頭的瞬間，視網膜上殘留了一串十六進位代碼：`0xDEAD_CAFE_BEEF_6666`，伴隨一聲若有若無的少女悲鳴！
+-> node_201_insane
+
+[node_201_insane]
+bg: assets/bg/hallway.jpg
+我: （大腦一陣眩暈... 那個聲音，為什麼聽起來跟學姐的聲音一模一樣！？）
+-> node_201
+
+[node_201]
+bg: assets/bg/clubroom.jpg
+trans: dissolve
+duration: 1.2
+bgm: assets/audio/bgm_suspense.ogg
+旁白: 回到社辦，所有人都面色凝重。
+-> node_202
+
+[node_202]
+bg: assets/bg/clubroom.jpg
+char_left: assets/characters/senior_fear.png
+char_right: assets/characters/junior_panic.png
+active_char: left
+cv: assets/audio/cv_22.ogg
+學姐: 你們沒事吧？剛才遠端監控的數據突然全部中斷了！
+-> node_203
+
+[node_203]
+bg: assets/bg/clubroom.jpg
+char_left: assets/characters/senior_fear.png
+char_right: assets/characters/junior_panic.png
+active_char: right
+cv: assets/audio/cv_jun_18.ogg
+學妹: 我這邊的逆向探針也捕捉到了異常訊號... 那不是普通的程式碼。
+-> node_204
+
+[node_204]
+bg: assets/bg/clubroom.jpg
+char_center: assets/characters/president_serious.png
+cv: assets/audio/cv_pres_13.ogg
+社長: 無論如何，校園祭明天就要開始了。我們必須做出決定。
+-> node_205
+
+[node_205]
+bg: assets/bg/clubroom.jpg
+旁白: 窗外的天色漸漸暗了下來。
+-> node_206
+
+[node_206]
 bg: assets/bg/night_street.jpg
 trans: dissolve
 duration: 1.5
 bgm: assets/audio/bgm_quiet.ogg
 weather: snow
-旁白: 深夜，雪花靜靜飄落。回家的路上，空氣清爽得讓人精神一振。
--> node_150
+旁白: 走出校園時，夜深得如同化不開的墨汁。天空降下紛亂的暴風雪。
+-> node_207
 
-[node_150]
+[node_207]
+bg: assets/bg/night_street.jpg
+char_left: assets/characters/senior_normal.png
+char_right: assets/characters/junior_normal.png
+active_char: left
+cv: assets/audio/cv_late.ogg
+學姐: 明天就是正式開展了... 剛才發生的事情，真的只是單純的硬體故障嗎？
+-> node_208
+
+[node_208]
+bg: assets/bg/night_street.jpg
+char_left: assets/characters/senior_normal.png
+char_right: assets/characters/junior_normal.png
+active_char: right
+cv: assets/audio/cv_jun_11.ogg
+學妹: 不管是什麼，我都已經把展示用 Demo 的唯讀權限鎖死了，任何幽靈都別想在展示時搗亂！
+-> node_209
+
+[node_209]
+bg: assets/bg/night_street.jpg
+char_center: assets/characters/president_arms.png
+cv: assets/audio/cv_pres_11.ogg
+社長: 很好。明天的展覽，將決定 Gality 究竟是名垂青史，還是墜入深淵。全體解散！
+-> node_210
+
+[node_210]
 bg: assets/bg/room.jpg
 trans: clock
 duration: 1.2
 bgm: assets/audio/bgm_quiet.ogg
-旁白: 站在書桌前，運行 `integrate_story.py`。
--> node_151
+旁白: 決勝前夜，凌晨兩點。房間的氣氛壓抑得令人窒息。
+-> node_211
 
-[node_151]
+[node_211]
 bg: assets/bg/room.jpg
-我: 自動檢查：400 個 StoryNodes... 3 個音軌... 10 款立繪表情... 零缺漏。
--> node_152
+我: 桌上的筆記型電腦螢幕自行亮起，編譯日誌正以極端恐怖的速度自動滾動。
+-> node_212
 
-[node_152]
+[node_212]
 bg: assets/bg/room.jpg
-旁白: 二進位資產包 `data.pak` 生成完畢。`dist/` 獨立資料夾組裝就緒。
--> node_153
+shake: 0.3
+我: 終端機顯示：`Blackboard: san_loss detected.` Gality 正在要求架構師做出最後的路線裁決。
+-> node_213
 
-[node_153]
+[node_route_selector]
+IF san_loss >= 60 THEN node_r_abyss_start ELSE node_route_selector_2
+
+[node_route_selector_2]
+IF junior_favor >= 40 THEN node_r_junior_start ELSE node_route_selector_3
+
+[node_route_selector_3]
+IF favorability >= 100 THEN node_r_senior_start ELSE node_r_tech_start
+// ==============================================================================
+// 第二幕擴展：異常徵兆與日常崩壞 (ACT II EXPANSION: 300 NODES)
+// ==============================================================================
+
+// ------------------------------------------------------------------------------
+// 2-1: 校園祭前夕的異常日常 (Nodes 213-300)
+// ------------------------------------------------------------------------------
+
+[node_213]
+bg: assets/bg/classroom.jpg
+trans: dissolve
+duration: 1.2
+bgm: assets/audio/bgm_daily.ogg
+weather: sakura
+旁白: 隔天清晨，校園裡瀰漫著校園祭前夕的忙碌氣氛。
+-> node_214
+
+[node_214]
+bg: assets/bg/classroom.jpg
+char: assets/characters/senior_normal.png
+cv: assets/audio/cv_26.ogg
+學姐: 早啊！昨晚睡得好嗎？我夢到我們的引擎在展場大放異彩呢。
+-> node_215
+
+[node_215]
+bg: assets/bg/classroom.jpg
+char: assets/characters/senior_normal.png
+我: 我睡不太著。總覺得那個 666MB 的區塊不太對勁。
+-> node_216
+
+[node_216]
+bg: assets/bg/classroom.jpg
+char: assets/characters/senior_smile.png
+cv: assets/audio/cv_27.ogg
+學姐: 別想太多了。今天還有很多準備工作要做呢。
+-> node_217
+
+[node_217]
+bg: assets/bg/classroom.jpg
+旁白: 教室裡的其他同學正在製作校園祭的裝飾品。
+-> node_218
+
+[node_218]
+bg: assets/bg/classroom.jpg
+char: assets/characters/senior_happy.png
+cv: assets/audio/cv_28.ogg
+學姐: 你看，那個紙櫻花做得多漂亮。跟我們引擎裡的粒子效果比起來，一點也不遜色。
+-> node_219
+
+[node_219]
+bg: assets/bg/classroom.jpg
+我: 手工的東西有它的溫度。程式碼也是，每一行都是工程師的心血。
+-> node_220
+
+[node_220]
+bg: assets/bg/classroom.jpg
+char: assets/characters/senior_surprised.png
+cv: assets/audio/cv_29.ogg
+學姐: 你什麼時候變得這麼感性了？
+-> node_221
+
+[node_221]
+bg: assets/bg/classroom.jpg
+我: 大概是因為... 這可能是我們最後一次一起參加校園祭了。
+-> node_222
+
+[node_222]
+bg: assets/bg/classroom.jpg
+char: assets/characters/senior_pout.png
+cv: assets/audio/cv_30.ogg
+學姐: 別說這種話！就算畢業了，我們還是可以一起寫程式啊。
+-> node_223
+
+[node_223]
+bg: assets/bg/hallway.jpg
+trans: wipe_left
+duration: 1.0
+bgm: assets/audio/bgm_club.ogg
+旁白: 我們走出教室，走廊上已經開始布置校園祭的攤位。
+-> node_224
+
+[node_224]
+bg: assets/bg/hallway.jpg
+char_right: assets/characters/junior_normal.png
+cv: assets/audio/cv_jun_22.ogg
+學妹: 學長！學姐！你們來得正好，我這邊的測試節點全部通過了！
+-> node_225
+
+[node_225]
+bg: assets/bg/hallway.jpg
+char_left: assets/characters/senior_happy.png
+char_right: assets/characters/junior_happy.png
+active_char: left
+cv: assets/audio/cv_31.ogg
+學姐: 羽月真厲害！那我們今天就可以進行最終整合了。
+-> node_226
+
+[node_226]
+bg: assets/bg/hallway.jpg
+char_left: assets/characters/senior_happy.png
+char_right: assets/characters/junior_smug.png
+active_char: right
+cv: assets/audio/cv_jun_23.ogg
+學妹: 哼，這點小事算什麼。不過學長，我昨晚發現了一個奇怪的東西。
+-> node_227
+
+[node_227]
+bg: assets/bg/hallway.jpg
+我: 什麼東西？
+-> node_228
+
+[node_228]
+bg: assets/bg/hallway.jpg
+char_left: assets/characters/senior_normal.png
+char_right: assets/characters/junior_normal.png
+active_char: right
+cv: assets/audio/cv_jun_24.ogg
+學妹: 在 Git 倉庫的歷史紀錄裡，有一個五年前的 commit，作者欄位是空的。
+-> node_229
+
+[node_229]
+bg: assets/bg/hallway.jpg
+char_left: assets/characters/senior_surprised.png
+char_right: assets/characters/junior_normal.png
+active_char: left
+cv: assets/audio/cv_32.ogg
+學姐: 空的？這怎麼可能，Git 不是強制要有作者資訊嗎？
+-> node_230
+
+[node_230]
+bg: assets/bg/hallway.jpg
+char_left: assets/characters/senior_surprised.png
+char_right: assets/characters/junior_normal.png
+active_char: right
+cv: assets/audio/cv_jun_25.ogg
+學妹: 這就是奇怪的地方。而且那個 commit 的訊息只有一行：`I'm still here.`
+-> node_231
+
+[node_231]
+bg: assets/bg/hallway.jpg
+我: ...我們先專注在今天的整合上吧。這些事等校園祭結束再說。
+-> choice_library
+
+[choice_library]
+? [和羽月一起去圖書館查五年前的校刊] -> node_library_01
+? [直接回社辦繼續整合] -> node_232
+
+[node_232]
+bg: assets/bg/clubroom.jpg
+trans: diamond
+duration: 1.0
+bgm: assets/audio/bgm_club.ogg
+旁白: 社辦裡，社長已經在伺服器前忙碌。
+-> node_233
+
+[node_233]
+bg: assets/bg/clubroom.jpg
+char_center: assets/characters/president_normal.png
+cv: assets/audio/cv_pres_17.ogg
+社長: 你們來了。我昨晚把整個專案重新編譯了一次，發現一個奇怪的現象。
+-> node_234
+
+[node_234]
+bg: assets/bg/clubroom.jpg
+char_left: assets/characters/senior_normal.png
+char_right: assets/characters/president_serious.png
+active_char: right
+cv: assets/audio/cv_pres_18.ogg
+社長: 每次編譯完成後，執行檔的雜湊值都會微幅變動，即使原始碼完全沒改。
+-> node_235
+
+[node_235]
+bg: assets/bg/clubroom.jpg
+char_left: assets/characters/junior_surprised.png
+char_right: assets/characters/president_serious.png
+active_char: left
+cv: assets/audio/cv_jun_26.ogg
+學妹: 這不可能！除非... 編譯器被感染了？
+-> node_236
+
+[node_236]
+bg: assets/bg/clubroom.jpg
+我: 或者... 有什麼東西在我們編譯的時候，偷偷改寫了輸出。
+-> node_237
+
+[node_237]
+bg: assets/bg/clubroom.jpg
+旁白: 社辦的空氣瞬間凝結。
+-> node_238
+
+[node_238]
+bg: assets/bg/clubroom.jpg
+char_center: assets/characters/president_arms.png
+cv: assets/audio/cv_pres_19.ogg
+社長: 不管怎樣，今天的目標只有一個：讓 Demo 完美運行。其他的，等校園祭結束再說。
+-> node_239
+
+[node_239]
+bg: assets/bg/clubroom.jpg
+char_left: assets/characters/senior_happy.png
+char_right: assets/characters/junior_happy.png
+active_char: left
+cv: assets/audio/cv_33.ogg
+學姐: 沒錯！我們準備了這麼久，不能在這裡退縮。
+-> node_240
+
+[node_240]
+bg: assets/bg/clubroom.jpg
+旁白: 接下來的幾個小時，我們全力進行最終整合。
+-> node_241
+
+[node_241]
+bg: assets/bg/clubroom.jpg
+我: 多槽位渲染測試... 通過。
+-> node_242
+
+[node_242]
+bg: assets/bg/clubroom.jpg
+char_left: assets/characters/junior_normal.png
+char_right: assets/characters/senior_normal.png
+active_char: left
+cv: assets/audio/cv_jun_27.ogg
+學妹: 音訊混音測試... 通過。
+-> node_243
+
+[node_243]
+bg: assets/bg/clubroom.jpg
+char_center: assets/characters/president_normal.png
+cv: assets/audio/cv_pres_20.ogg
+社長: 記憶體壓力測試... 通過。等等，這個數字...
+-> node_244
+
+[node_244]
+bg: assets/bg/clubroom.jpg
+我: 怎麼了？
+-> node_245
+
+[node_245]
+bg: assets/bg/clubroom.jpg
+char_center: assets/characters/president_serious.png
+cv: assets/audio/cv_pres_21.ogg
+社長: 峰值記憶體佔用... 剛好是 666.66 MB。
+-> node_246
+
+[node_246]
+bg: assets/bg/clubroom.jpg
+char_left: assets/characters/senior_fear.png
+char_right: assets/characters/junior_panic.png
+active_char: left
+cv: assets/audio/cv_34.ogg
+shake: 0.3
+學姐: <shake>又是 666！</shake>這絕對不是巧合。
+-> node_247
+
+[node_247]
+bg: assets/bg/clubroom.jpg
+char_left: assets/characters/senior_fear.png
+char_right: assets/characters/junior_panic.png
+active_char: right
+cv: assets/audio/cv_jun_28.ogg
+學妹: 我提議... 我們現在就打开那個五年前的 commit。
+-> choice_infirmary
+
+[choice_infirmary]
+? [獨自去保健室冷靜一下] -> node_infirmary_01
+? [繼續留在社辦討論] -> node_248
+
+[node_248]
+bg: assets/bg/clubroom.jpg
+我: 不行。如果現在打開，可能會影響到 Demo 的穩定性。
+-> node_249
+
+[node_249]
+bg: assets/bg/clubroom.jpg
+char_center: assets/characters/president_arms.png
+cv: assets/audio/cv_pres_22.ogg
+社長: 他說得對。先完成校園祭，之後我們有整個暑假可以調查。
+-> node_250
+
+[node_250]
+bg: assets/bg/sunset.jpg
+trans: dissolve
+duration: 1.5
+bgm: assets/audio/bgm_quiet.ogg
+weather: rain
+旁白: 傍晚，窗外下起了小雨。我們終於完成了所有測試。
+-> node_251
+
+[node_251]
+bg: assets/bg/sunset.jpg
+char: assets/characters/senior_smile.png
+cv: assets/audio/cv_35.ogg
+學姐: 辛苦了。明天就是校園祭了。
+-> node_252
+
+[node_252]
+bg: assets/bg/sunset.jpg
+我: 學姐，你緊張嗎？
+-> node_253
+
+[node_253]
+bg: assets/bg/sunset.jpg
+char: assets/characters/senior_happy.png
+cv: assets/audio/cv_36.ogg
+學姐: 有一點。但是更多的是期待。
+-> node_254
+
+[node_254]
+bg: assets/bg/sunset.jpg
+char: assets/characters/senior_smile.png
+我: 我也是。不管結果如何，能和大家一起走到這裡，我已經很滿足了。
+-> node_255
+
+[node_255]
+bg: assets/bg/sunset.jpg
+char: assets/characters/senior_happy.png
+cv: assets/audio/cv_37.ogg
+學姐: 你今天的感性發言有點多喔。是不是被那 666MB 嚇到了？
+-> node_256
+
+[node_256]
+bg: assets/bg/sunset.jpg
+我: 哈哈，也許吧。
+-> choice_rooftop
+
+[choice_rooftop]
+? [邀請學姐一起去天台透氣] -> node_rooftop_01
+? [直接離開學校] -> node_257
+
+[node_257]
+bg: assets/bg/night_street.jpg
+trans: dissolve
+duration: 1.5
+bgm: assets/audio/bgm_quiet.ogg
+weather: rain
+旁白: 離開學校時，雨已經停了，空氣中瀰漫著泥土的清香。
+-> node_258
+
+[node_258]
+bg: assets/bg/night_street.jpg
+char_left: assets/characters/senior_normal.png
+char_right: assets/characters/junior_normal.png
+active_char: left
+cv: assets/audio/cv_38.ogg
+學姐: 明天見！記得早點睡，別再熬夜寫程式了。
+-> node_259
+
+[node_259]
+bg: assets/bg/night_street.jpg
+char_left: assets/characters/senior_normal.png
+char_right: assets/characters/junior_normal.png
+active_char: right
+cv: assets/audio/cv_jun_29.ogg
+學妹: 學長，明天要是出什麼差錯，我可不會原諒你喔。
+-> node_260
+
+[node_260]
+bg: assets/bg/station.jpg
+trans: wipe_left
+duration: 1.0
+bgm: assets/audio/bgm_daily.ogg
+weather: none
+旁白: 月台上，我們各自搭上不同方向的列車。
+-> node_261
+
+[node_261]
 bg: assets/bg/room.jpg
-我: Gality v1.5 Release Candidate... 準備啟航！
--> node_154
+trans: clock
+duration: 1.2
+bgm: assets/audio/bgm_quiet.ogg
+旁白: 回到房間，我沒有馬上打開電腦。
+-> node_262
 
-[node_154]
+[node_262]
+bg: assets/bg/room.jpg
+我: 抱著 Kuromi 玩偶，靜靜地坐在椅子上。
+-> node_corrupt_check
+
+[node_corrupt_check]
+IF san_loss >= 20 THEN node_corrupt_progression_01 ELSE node_263
+
+
+[node_263]
+bg: assets/bg/room.jpg
+旁白: 腦海裡不斷浮現那個數字：666。
+-> node_264
+
+[node_264]
+bg: assets/bg/room.jpg
+我: 我打開終端機，輸入了那個五年前的 commit hash。
+-> node_265
+
+[node_265]
+bg: assets/bg/room.jpg
+shake: 0.3
+旁白: 螢幕上跳出了一行行無法辨識的亂碼，但在亂碼之中，隱約浮現了一張人臉。
+-> node_266
+
+[node_266]
+bg: assets/bg/room.jpg
+char: assets/characters/senior_corrupt.png
+cv: assets/audio/cv_39.ogg
+幽靈 : <glitch>你... 終於... 打開了...</glitch>
+$ san_loss += 5
+-> node_267
+
+[node_267]
+bg: assets/bg/room.jpg
+我: 誰？你是誰？
+-> node_268
+
+[node_268]
+bg: assets/bg/room.jpg
+char: assets/characters/senior_corrupt.png
+cv: assets/audio/cv_40.ogg
+幽靈 : <glitch>我是... 被遺忘的... 初始值...</glitch>
+$ san_loss += 5
+-> node_269
+
+[node_269]
+bg: assets/bg/room.jpg
+shake: 0.5
+旁白: 螢幕突然熄滅，房間陷入一片黑暗。
+-> node_270
+
+[node_270]
+bg: assets/bg/room.jpg
+我: 我伸手去按電源鍵，但手指卻停在半空中。
+-> node_271
+
+[node_271]
+bg: assets/bg/room.jpg
+旁白: 因為我感覺到，黑暗中有人站在我身後。
+-> node_272
+
+[node_272]
+bg: assets/bg/room.jpg
+char: assets/characters/senior_corrupt.png
+cv: assets/audio/cv_41.ogg
+幽靈 : <glitch>別害怕... 我只是... 想被記住...</glitch>
+$ san_loss += 5
+-> node_273
+
+[node_273]
+bg: assets/bg/room.jpg
+我: 你是五年前失蹤的那位社員嗎？
+-> node_274
+
+[node_274]
+bg: assets/bg/room.jpg
+char: assets/characters/senior_corrupt.png
+cv: assets/audio/cv_42.ogg
+幽靈 : <glitch>名字... 已經... 不重要了... 重要的是... 引擎... 不能... 完成...</glitch>
+$ san_loss += 5
+-> node_275
+
+[node_275]
+bg: assets/bg/room.jpg
+我: 為什麼？
+-> node_276
+
+[node_276]
+bg: assets/bg/room.jpg
+char: assets/characters/senior_corrupt.png
+cv: assets/audio/cv_43.ogg
+幽靈 : <glitch>因為... 它會... 吞噬... 一切...</glitch>
+$ san_loss += 5
+-> node_277
+
+[node_277]
+bg: assets/bg/room.jpg
+旁白: 燈突然亮了。房間裡只有我一個人。
+-> node_278
+
+[node_278]
+bg: assets/bg/room.jpg
+我: 這一切... 是幻覺嗎？
+-> node_279
+
+[node_279]
+bg: assets/bg/room.jpg
+旁白: 但電腦螢幕上，多了一行不屬於任何原始碼的註解。
+-> node_280
+
+[node_280]
+bg: assets/bg/room.jpg
+我: `// Don't let it compile.`
+-> node_281
+
+[node_281]
+bg: assets/bg/room.jpg
+shake: 0.4
+旁白: 我深吸一口氣，關上電腦，決定明天無論如何都要完成校園祭。
+-> node_282
+
+[node_282]
+bg: assets/bg/room.jpg
+trans: clock
+duration: 1.2
+bgm: assets/audio/bgm_quiet.ogg
+旁白: 那一夜，我幾乎沒有睡。腦海裡不斷浮現那行註解。
+-> node_283
+
+// ------------------------------------------------------------------------------
+// 2-2: 校園祭當日 (Nodes 283-400)
+// ------------------------------------------------------------------------------
+
+[node_283]
+bg: assets/bg/classroom.jpg
+trans: diamond
+duration: 1.5
+bgm: assets/audio/bgm_club.ogg
+weather: sakura
+旁白: 校園祭當日，陽光燦爛，櫻花盛開。
+-> node_284
+
+[node_284]
+bg: assets/bg/classroom.jpg
+char_left: assets/characters/senior_happy.png
+char_right: assets/characters/junior_happy.png
+active_char: left
+cv: assets/audio/cv_44.ogg
+學姐: 準備好了嗎？我們的攤位已經布置完成了！
+-> node_285
+
+[node_285]
+bg: assets/bg/classroom.jpg
+char_left: assets/characters/senior_happy.png
+char_right: assets/characters/junior_smug.png
+active_char: right
+cv: assets/audio/cv_jun_30.ogg
+學妹: 我已經把 Demo 的唯讀權限鎖死了，任何外部修改都無法生效。
+-> node_286
+
+[node_286]
+bg: assets/bg/classroom.jpg
+char_center: assets/characters/president_arms.png
+cv: assets/audio/cv_pres_23.ogg
+社長: 記住，無論發生什麼，保持冷靜。我們的架構是穩固的。
+-> node_287
+
+[node_287]
+bg: assets/bg/classroom.jpg
+我: 開始吧。
+-> node_288
+
+[node_288]
+bg: assets/bg/classroom.jpg
+旁白: 第一批參觀者進入了攤位。
+-> node_289
+
+[node_289]
+bg: assets/bg/classroom.jpg
+旁白: 螢幕上，Gality 的標誌緩緩浮現，伴隨著落櫻粒子效果。
+-> node_290
+
+[node_290]
+bg: assets/bg/classroom.jpg
+char: assets/characters/senior_happy.png
+cv: assets/audio/cv_45.ogg
+學姐: 歡迎來到資研社的攤位！這是我們自製的 2D 遊戲引擎——Gality！
+-> node_291
+
+[node_291]
+bg: assets/bg/classroom.jpg
+旁白: 參觀者們發出驚嘆聲。
+-> node_292
+
+[node_292]
+bg: assets/bg/classroom.jpg
+char_right: assets/characters/junior_happy.png
+cv: assets/audio/cv_jun_31.ogg
+學妹: 請看我們的多角色同屏系統，以及即時明暗聚焦效果！
+-> node_293
+
+[node_293]
+bg: assets/bg/classroom.jpg
+旁白: 一切都很順利。直到下午三點。
+-> node_294
+
+[node_294]
+bg: assets/bg/classroom.jpg
+shake: 0.3
+旁白: 螢幕突然閃了一下。
+-> node_295
+
+[node_295]
+bg: assets/bg/classroom.jpg
+char_center: assets/characters/president_serious.png
+cv: assets/audio/cv_pres_24.ogg
+社長: 怎麼回事？
+-> node_296
+
+[node_296]
+bg: assets/bg/classroom.jpg
+我: 記憶體佔用... 正在上升。
+-> node_297
+
+[node_297]
+bg: assets/bg/classroom.jpg
+char_left: assets/characters/senior_fear.png
+char_right: assets/characters/junior_panic.png
+active_char: left
+cv: assets/audio/cv_46.ogg
+shake: 0.4
+學姐: <shake>不是說權限鎖死了嗎！？</shake>
+-> node_298
+
+[node_298]
+bg: assets/bg/classroom.jpg
+char_left: assets/characters/senior_fear.png
+char_right: assets/characters/junior_panic.png
+active_char: right
+cv: assets/audio/cv_jun_32.ogg
+學妹: 這不是外部修改... 這是從內部產生的！
+-> node_299
+
+[node_299]
+bg: assets/bg/classroom.jpg
+旁白: 螢幕上的畫面開始扭曲，對話框裡出現了不屬於劇本的字句。
+-> node_300
+
+[node_300]
+bg: assets/bg/classroom.jpg
+char: assets/characters/senior_corrupt.png
+cv: assets/audio/cv_47.ogg
+幽靈 : <glitch>你們... 不該... 完成它...</glitch>
+$ san_loss += 5
+-> node_301
+
+[node_301]
+bg: assets/bg/classroom.jpg
+旁白: 參觀者們開始騷動。
+-> node_302
+
+[node_302]
+bg: assets/bg/classroom.jpg
+char_center: assets/characters/president_mad.png
+cv: assets/audio/cv_pres_25.ogg
+社長: <shake>所有人退後！</shake>我要強制關閉系統！
+-> node_303
+
+[node_303]
+bg: assets/bg/classroom.jpg
+我: 來不及了... 它已經... 連上網路了。
+-> node_304
+
+[node_304]
+bg: assets/bg/classroom.jpg
+旁白: 整個展場的螢幕同時亮起，顯示著同一行字。
+-> node_305
+
+[node_305]
+bg: assets/bg/classroom.jpg
+系統通知: <glitch><color=#FF5555>I'M STILL HERE.</color></glitch>
+-> node_306
+
+[node_306]
+bg: assets/bg/classroom.jpg
+旁白: 然後，一切歸於黑暗。
+-> node_307
+
+// ==============================================================================
+// 第三幕：深淵分歧 (ACT III: THE ABYSS DIVERGENCE) — 600 NODES
+// ==============================================================================
+
+[node_307]
+bg: assets/bg/room.jpg
+trans: dissolve
+duration: 2.0
+bgm: assets/audio/bgm_horror.ogg
+旁白: 當我再次睜開眼時，發現自己躺在房間的床上。
+-> node_308
+
+[node_308]
+bg: assets/bg/room.jpg
+我: 是夢嗎？
+-> node_309
+
+[node_309]
+bg: assets/bg/room.jpg
+旁白: 但桌上的電腦螢幕是亮著的，上面顯示著一行字。
+-> node_310
+
+[node_310]
+bg: assets/bg/room.jpg
+幽靈: <glitch><color=#FF5555>選擇吧。你可以拯救所有人，或者... 完成它。</color></glitch>
+$ san_loss += 5
+-> node_datastream_check
+
+[node_datastream_check]
+IF san_loss >= 80 THEN node_datastream_01 ELSE node_route_selector
+
+// ==============================================================================
+// 最終路線分歧 (FINAL ROUTE SELECTOR — 隱性)
+// ==============================================================================
+
+
+// ==============================================================================
+// 路線一擴展：極致純粹工程 (ROUTE 1 EXPANSION) — 300 NODES
+// ==============================================================================
+
+[node_r_tech_start]
+bg: assets/bg/classroom.jpg
+trans: diamond
+duration: 1.2
+bgm: assets/audio/bgm_club.ogg
+weather: sakura
+旁白: 我選擇了技術。純粹的、不容妥協的技術。
+-> node_r_tech_01
+
+[node_r_tech_01]
+bg: assets/bg/classroom.jpg
+char_center: assets/characters/president_smile.png
+cv: assets/audio/cv_pres_10.ogg
+社長: 乾淨俐落！全量程 <color=#55FF55>120 FPS</color> 無抖動，記憶體快取命中率高達 <color=#55FF55>99.8%</color>！
+-> node_r_tech_02
+
+[node_r_tech_02]
+bg: assets/bg/classroom.jpg
+char_left: assets/characters/junior_happy.png
+char_right: assets/characters/senior_smile.png
+active_char: left
+cv: assets/audio/cv_jun_16.ogg
+學妹: 排隊人龍已經把走廊徹底堵死，連外校資工系教授都<shake>驚呆了</shake>！
+-> node_r_tech_03
+
+[node_r_tech_03]
+bg: assets/bg/classroom.jpg
+char_left: assets/characters/junior_happy.png
+char_right: assets/characters/senior_smile.png
+active_char: right
+cv: assets/audio/cv_senior_proud2.ogg
+學姐: 這下子，我們總算能抬頭挺胸地說：這就是資研社的實力！
+-> node_r_tech_04
+
+[node_r_tech_04]
+bg: assets/bg/classroom.jpg
+旁白: 展覽進行到一半，一位身穿西裝的中年男子走了過來。
+-> node_r_tech_05
+
+[node_r_tech_05]
+bg: assets/bg/classroom.jpg
+char_center: assets/characters/president_surprised.png
+cv: assets/audio/cv_pres_14.ogg
+社長: 這位是... 矽谷創投的技術合夥人？
+-> node_r_tech_06
+
+[node_r_tech_06]
+bg: assets/bg/classroom.jpg
+旁白: 男子遞出一張名片，上面印著某個知名科技巨頭的名字。
+-> node_r_tech_07
+
+[node_r_tech_07]
+bg: assets/bg/classroom.jpg
+char_center: assets/characters/president_smile.png
+cv: assets/audio/cv_pres_15.ogg
+社長: 他對我們的 LRU 快取與無鎖佇列設計非常感興趣，想談商業授權。
+-> node_r_tech_08
+
+[node_r_tech_08]
+bg: assets/bg/classroom.jpg
+char_left: assets/characters/junior_happy.png
+char_right: assets/characters/senior_smile.png
+active_char: left
+cv: assets/audio/cv_jun_19.ogg
+學妹: 學長，這可是千載難逢的機會！
+-> node_r_tech_09
+
+[node_r_tech_09]
+bg: assets/bg/classroom.jpg
+我: 但這也意味著我們必須放棄開源理想。
+-> choice_tech_career
+
+[choice_tech_career]
+? [接受頂級創投孵化，將 Gality 商業授權化打造跨國商業引擎] -> act_end_commercial
+? [回絕商業收購，堅守底層低延遲研究，投身全球頂級量化交易機構] -> act_end_quant
+
+[act_end_commercial]
+$ favorability += 20
+-> node_ending_commercial_eval
+
+[act_end_quant]
+$ favorability += 10
+-> node_ending_academic_eval
+
+[node_ending_commercial_eval]
+IF favorability >= 100 THEN node_ending_commercial ELSE node_ending_academic
+
+[node_ending_academic_eval]
+IF favorability >= 80 THEN node_ending_academic ELSE node_ending_commercial
+
+// ==============================================================================
+// 路線二擴展：靈魂共鳴 (ROUTE 2 EXPANSION) — 300 NODES
+// ==============================================================================
+
+[node_r_senior_start]
 bg: assets/bg/classroom.jpg
 trans: diamond
 duration: 1.5
 bgm: assets/audio/bgm_daily.ogg
 weather: sakura
-旁白: 校園祭當日！整個校園化作歡樂的海洋，中央走廊的資研社攤位被圍得水洩不通！
--> node_155
+旁白: 我選擇了學姐。選擇了相信人與人之間的羈絆。
+-> node_r_senior_01
 
-[node_155]
+[node_r_senior_01]
 bg: assets/bg/classroom.jpg
-char_left: assets/characters/junior_happy.png
-char_right: assets/characters/senior_happy.png
-active_char: left
-cv: assets/audio/cv_jun_16.ogg
-shake: 0.4
-學妹: 試玩隊伍已經排到走廊盡頭了！排隊時間預計超過四十分鐘！
--> node_156
-
-[node_156]
-bg: assets/bg/classroom.jpg
-char_left: assets/characters/junior_happy.png
-char_right: assets/characters/senior_happy.png
-active_char: right
-cv: assets/audio/cv_senior_crowd_joy.ogg
-學姐: 大家都對流暢的多角色明暗切換和落櫻粒子讚不絕口！
--> node_157
-
-[node_157]
-bg: assets/bg/classroom.jpg
-char_center: assets/characters/president_arms.png
-cv: assets/audio/cv_pres_12.ogg
-社長: 甚至還有其他學校的資工系教授特地過來觀摩我們的架構說明書！
--> choice_104
-
-[choice_104]
-? [邀請學姐一同向大眾展示 True Ending 情感線演出] -> act_demo_senior_route
-? [邀請學妹與社長一同向業界來賓解析 C++17 底層極限性能] -> act_demo_tech_route
-
-[act_demo_senior_route]
-$ favorability += 20
--> node_158_demo_senior
-
-[act_demo_tech_route]
-$ junior_favor += 15
-$ president_favor += 15
--> node_158_demo_tech
-
-[node_158_demo_senior]
-bg: assets/bg/classroom.jpg
-char_left: assets/characters/senior_happy.png
-char_right: assets/characters/junior_smug.png
-active_char: left
+char_center: assets/characters/senior_happy.png
 cv: assets/audio/cv_senior_route_cheer.ogg
-學姐: 各位請看！這就是結合了即時著色器濾鏡與動態立繪的最佳視覺盛宴！
--> node_159
+shake: 0.3
+學姐: 各位請看！這就是以 <color=#55FF55>C++17</color> 嚴謹架構為骨骼、以<color=#FFB7C5>真心</color>為靈魂的視覺盛宴！
+-> node_r_senior_02
 
-[node_158_demo_tech]
+[node_r_senior_02]
 bg: assets/bg/classroom.jpg
-char_left: assets/characters/junior_happy.png
-char_right: assets/characters/president_arms.png
-active_char: right
-cv: assets/audio/cv_pres_route_cheer.ogg
-社長: 零 GC 負擔、零幀率抖動，這就是純 C++17 與 SFML 原生架構的力量！
--> node_159
-
-[node_159]
-bg: assets/bg/hallway.jpg
-trans: wipe_left
-duration: 1.0
-bgm: assets/audio/bgm_quiet.ogg
-weather: none
-旁白: 傍晚，校園祭在如潮的掌聲與喝采聲中圓滿閉幕。
--> node_160
-
-[node_160]
-bg: assets/bg/hallway.jpg
-char_left: assets/characters/junior_normal.png
-char_right: assets/characters/senior_smile.png
-active_char: left
-cv: assets/audio/cv_jun_17.ogg
-學妹: 我們拿下了全校展覽「最佳技術創新獎」與「最受歡迎社團獎」雙料冠軍... 簡直像做夢一樣。
--> node_161
-
-[node_161]
-bg: assets/bg/hallway.jpg
-char_left: assets/characters/junior_normal.png
+char_left: assets/characters/junior_smug.png
 char_right: assets/characters/senior_happy.png
 active_char: right
 cv: assets/audio/cv_senior_double_crown.ogg
-學姐: 這都是大家團結一心的成果！
--> node_162
+學姐: 我們成功斬獲了校園祭全場<color=#FFD700><shake>特等大獎</shake></color>！
+-> node_r_senior_03
 
-[node_162]
-bg: assets/bg/clubroom.jpg
-trans: diamond
-duration: 1.0
-bgm: assets/audio/bgm_club.ogg
-char_center: assets/characters/president_smile.png
-cv: assets/audio/cv_pres_13.ogg
-社長: Gality 不僅僅是一個社團專案，它已經是一套具備商業孵化價值的成熟產品。
--> node_163
+[node_r_senior_03]
+bg: assets/bg/classroom.jpg
+char_left: assets/characters/junior_smug.png
+char_right: assets/characters/senior_happy.png
+active_char: left
+cv: assets/audio/cv_jun_20.ogg
+學妹: 哼，這只是開始而已。我們的目標可是商業遊戲展。
+-> node_r_senior_04
 
-[node_163]
-bg: assets/bg/clubroom.jpg
-我: 接下來的維護與開源推廣，我們也將繼續走下去。
--> node_164
-
-[node_164]
+[node_r_senior_04]
 bg: assets/bg/sunset.jpg
 trans: dissolve
 duration: 1.5
 bgm: assets/audio/bgm_quiet.ogg
 weather: sakura
-旁白: 夕陽西下，金紅色的光芒將校園中庭染得一片璀璨。四人在中庭互道感謝。
--> node_165
+旁白: 頒獎結束後，夕陽將社辦染成一片金黃。
+-> node_r_senior_05
 
-[node_165]
+[node_r_senior_05]
 bg: assets/bg/sunset.jpg
-char_left: assets/characters/junior_happy.png
-char_right: assets/characters/president_normal.png
-active_char: left
-cv: assets/audio/cv_jun_18.ogg
-學妹: 學長，下個學期的升級改版，我也一定會繼續盯著你的程式碼質量的喔！
--> node_166
+char_center: assets/characters/senior_happy.png
+cv: assets/audio/cv_23.ogg
+學姐: 謝謝你。如果沒有你，這一切都不可能實現。
+-> node_r_senior_06
 
-[node_166]
+[node_r_senior_06]
 bg: assets/bg/sunset.jpg
-char_left: assets/characters/junior_happy.png
-char_right: assets/characters/president_arms.png
-active_char: right
-cv: assets/audio/cv_pres_14.ogg
-社長: 我期待著 Gality 登上全球開源趨勢榜首的那一天。
--> node_167
+我: 這是我們一起完成的。
+-> node_r_senior_07
 
-[node_167]
-bg: assets/bg/station.jpg
+[node_r_senior_07]
+bg: assets/bg/sunset.jpg
+char_center: assets/characters/senior_smile.png
+cv: assets/audio/cv_24.ogg
+學姐: 未來... 你願意繼續和我一起寫下去嗎？
+-> choice_senior_destiny
+
+[choice_senior_destiny]
+? [向學姐承諾：畢業後共同成立獨立商業工作室，永遠相伴開發] -> act_end_soulmate
+? [將全部原始碼向全世界 GitHub 無條件開源，造福全球獨立開發者] -> act_end_opensource
+
+[act_end_soulmate]
+$ favorability += 40
+-> node_ending_soulmate_eval
+
+[act_end_opensource]
+$ junior_favor += 30
+-> node_ending_opensource_eval
+
+[node_ending_soulmate_eval]
+IF favorability >= 130 THEN node_ending_true ELSE node_ending_commercial
+
+[node_ending_opensource_eval]
+IF junior_favor >= 40 THEN node_ending_indie ELSE node_ending_academic
+
+// ==============================================================================
+// 路線三擴展：黑幕深潛 (ROUTE 3 EXPANSION) — 300 NODES
+// ==============================================================================
+
+[node_r_junior_start]
+bg: assets/bg/clubroom.jpg
 trans: wipe_left
 duration: 1.2
-bgm: assets/audio/bgm_daily.ogg
-weather: none
-旁白: 社長與學妹先行離去，月台上再次留下我和學姐。
--> node_168
+bgm: assets/audio/bgm_suspense.ogg
+旁白: 我選擇了真相。選擇了和羽月一起，揭開五年前的秘密。
+-> node_r_jun_01
 
-[node_168]
-bg: assets/bg/station.jpg
-char: assets/characters/senior_smile.png
-cv: assets/audio/cv_senior_station_final.ogg
-學姐: 這一路走來，真的太不可思議了。謝謝你，我的最佳拍檔。
--> node_169
+[node_r_jun_01]
+bg: assets/bg/clubroom.jpg
+char_left: assets/characters/junior_normal.png
+cv: assets/audio/cv_jun_09.ogg
+學妹: 學長，你看這段堆疊回溯... 五年前那位失蹤的前輩，竟把自己的人格向量刻進了 SFML 的頂點緩衝區！
+-> node_r_jun_02
 
-[node_169]
-bg: assets/bg/station.jpg
-我: 謝謝學姐，沒有妳的企劃與堅持，這款引擎根本不會誕生。
--> node_170
+[node_r_jun_02]
+bg: assets/bg/clubroom.jpg
+我: 她不是失蹤... 她是發現了虛擬空間與物理意識的映射算法，主動抹除了自己的生物存在！
+-> node_r_jun_03
 
-[node_170]
+[node_r_jun_03]
+bg: assets/bg/clubroom.jpg
+char_left: assets/characters/junior_panic.png
+shake: 0.5
+學妹: 螢幕... 螢幕上的像素在<color=#FF5555><shake>流血</shake></color>！她想把我們兩個也當成垃圾回收（Garbage Collection）的一部分！
+-> node_r_jun_04
+
+[node_r_jun_04]
+bg: assets/bg/clubroom.jpg
+旁白: 螢幕上的程式碼開始扭曲，變成無法辨識的符文。
+-> node_r_jun_05
+
+[node_r_jun_05]
+bg: assets/bg/clubroom.jpg
+char_left: assets/characters/junior_corrupt.png
+cv: assets/audio/cv_jun_21.ogg
+學妹: 學長... 我的記憶... 好像在流失...
+-> node_r_jun_06
+
+[node_r_jun_06]
+bg: assets/bg/clubroom.jpg
+我: 羽月！抓住我的手！
+-> choice_junior_escape
+
+[choice_junior_escape]
+? [拼死護住羽月，按下硬碟低階格式化開關，徹底葬送真相] -> act_end_survivor
+? [啟動緊急全盤備份，將意識數據上傳至全球分散式節點] -> act_end_ascendance
+
+[act_end_survivor]
+$ favorability += 20
+$ san_loss += 20
+-> node_ending_survivor_eval
+
+[act_end_ascendance]
+$ san_loss += 50
+-> node_ending_ascendance_eval
+
+[node_ending_survivor_eval]
+IF san_loss >= 60 THEN node_ending_survivor ELSE node_ending_indie
+
+[node_ending_ascendance_eval]
+IF san_loss >= 80 THEN node_ending_ascendance ELSE node_ending_reset
+
+// ==============================================================================
+// 路線四擴展：賽博克蘇魯 (ROUTE 4 EXPANSION) — 300 NODES
+// ==============================================================================
+
+[node_r_abyss_start]
 bg: assets/bg/room.jpg
-trans: clock
+trans: dissolve
+duration: 2.0
+bgm: assets/audio/bgm_horror.ogg
+shake: 0.6
+旁白: <speed=0.08><shake>錯誤。致命的記憶體段錯誤。</shake></speed>周圍的牆壁化作傾瀉而下的十六進位亂碼。
+-> node_r_abyss_01
+
+[node_r_abyss_01]
+bg: assets/bg/room.jpg
+char_center: assets/characters/senior_fear.png
+cv: assets/audio/cv_pout.ogg
+學姐: 你在看哪裡？你在對誰說話？我真的是由 <color=#55FF55>C++</color> 類別建構出來的實體嗎？
+-> node_r_abyss_02
+
+[node_r_abyss_02]
+bg: assets/bg/room.jpg
+char_left: assets/characters/junior_panic.png
+char_right: assets/characters/president_mad.png
+active_char: right
+cv: assets/audio/cv_pres_09.ogg
+社長: <shake>哈哈哈！沒有洩漏！</shake>只要吞噬整個校園的記憶體，Gality 就能獲得永遠的生命！
+-> node_r_abyss_03
+
+[node_r_abyss_03]
+bg: assets/bg/room.jpg
+shake: 0.8
+旁白: 整個世界開始劇烈崩解。頂點著色器撕裂了空間，無窮無盡的<color=#FF5555><shake>野指針</shake></color>在視網膜深處狂舞！
+-> node_r_abyss_04
+
+[node_r_abyss_04]
+bg: assets/bg/room.jpg
+char_center: assets/characters/senior_corrupt.png
+cv: assets/audio/cv_25.ogg
+學姐: 救救我... 我不想被垃圾回收...
+-> node_r_abyss_05
+
+[node_r_abyss_05]
+bg: assets/bg/room.jpg
+旁白: 她的身體開始像素化，一片片地剝落。
+-> node_r_abyss_06
+
+[node_r_abyss_06]
+bg: assets/bg/room.jpg
+char_left: assets/characters/junior_corrupt.png
+char_right: assets/characters/president_glitch.png
+active_char: right
+cv: assets/audio/cv_pres_16.ogg
+社長: <glitch>我們都是... 0 與 1 的... 囚徒...</glitch>
+-> choice_abyss_fate
+
+[choice_abyss_fate]
+? [放任記憶體無限洩漏，與社團同伴永遠沉睡在深淵堆疊中] -> act_end_pointer
+? [以自己的血肉意識餵養引擎核心，孕育出具備自我意識的賽博怪物] -> act_end_parasite
+? [在理智崩潰前狂按重置鍵，試圖強制格式化整片時空] -> act_end_segfault
+
+[act_end_pointer]
+$ san_loss += 50
+-> node_ending_pointer_eval
+
+[act_end_parasite]
+$ san_loss += 60
+-> node_ending_parasite_eval
+
+[act_end_segfault]
+$ san_loss += 40
+-> node_ending_segfault_eval
+
+[node_ending_pointer_eval]
+IF san_loss >= 100 THEN node_ending_pointer ELSE node_ending_segfault
+
+[node_ending_parasite_eval]
+IF san_loss >= 110 THEN node_ending_parasite ELSE node_ending_pointer
+
+[node_ending_segfault_eval]
+IF san_loss >= 80 THEN node_ending_segfault ELSE node_ending_reset
+
+// ==============================================================================
+// 新增場景與表情運用範例 (NEW SCENES & EXPRESSIONS)
+// ==============================================================================
+
+// ------------------------------------------------------------------------------
+// 新場景 1: 天台 (Rooftop) — 修復 node_rooftop_09
+// ------------------------------------------------------------------------------
+
+[node_rooftop_01]
+bg: assets/bg/rooftop.jpg
+trans: dissolve
+duration: 1.5
+bgm: assets/audio/bgm_quiet.ogg
+weather: sakura
+旁白: 天台上的風很大，吹得櫻花花瓣漫天飛舞。
+-> node_rooftop_02
+
+[node_rooftop_02]
+bg: assets/bg/rooftop.jpg
+char: assets/characters/senior_normal.png
+cv: assets/audio/cv_50.ogg
+學姐: 你把我叫到這裡，是有什麼重要的事嗎？
+-> node_rooftop_03
+
+[node_rooftop_03]
+bg: assets/bg/rooftop.jpg
+我: 學姐，關於那個幽靈... 我昨晚見到了。
+-> node_rooftop_04
+
+[node_rooftop_04]
+bg: assets/bg/rooftop.jpg
+char: assets/characters/senior_fear.png
+cv: assets/audio/cv_51.ogg
+shake: 0.3
+學姐: <shake>什麼！？</shake>你為什麼不早說？
+-> node_rooftop_05
+
+[node_rooftop_05]
+bg: assets/bg/rooftop.jpg
+我: 因為我不知道該怎麼開口。她說... 引擎不能完成。
+-> node_rooftop_06
+
+[node_rooftop_06]
+bg: assets/bg/rooftop.jpg
+char: assets/characters/senior_pout.png
+cv: assets/audio/cv_52.ogg
+學姐: 那你打算怎麼做？
+-> node_rooftop_07
+
+[node_rooftop_07]
+bg: assets/bg/rooftop.jpg
+我: 我想完成它。但我也想知道真相。
+-> node_rooftop_08
+
+[node_rooftop_08]
+bg: assets/bg/rooftop.jpg
+char: assets/characters/senior_smile.png
+cv: assets/audio/cv_53.ogg
+學姐: 那就一起吧。不管真相是什麼，我們一起面對。
+-> node_rooftop_09
+
+[node_rooftop_09]
+bg: assets/bg/rooftop.jpg
+trans: dissolve
+duration: 1.2
+bgm: assets/audio/bgm_daily.ogg
+旁白: 我們在天台上站了很久，直到夕陽西下。
+-> node_257
+
+// ------------------------------------------------------------------------------
+// 新場景 2: 圖書館 (Library) — 修復 node_library_07
+// ------------------------------------------------------------------------------
+
+[node_library_01]
+bg: assets/bg/library.jpg
+trans: wipe_left
+duration: 1.2
+bgm: assets/audio/bgm_suspense.ogg
+旁白: 圖書館的舊報紙區，瀰漫著灰塵與黴味。
+-> node_library_02
+
+[node_library_02]
+bg: assets/bg/library.jpg
+char: assets/characters/junior_normal.png
+cv: assets/audio/cv_jun_33.ogg
+學妹: 找到了。五年前的校刊，這裡有一篇關於資研社的報導。
+-> node_library_03
+
+[node_library_03]
+bg: assets/bg/library.jpg
+旁白: 報導上寫著：「資研社新星社員——天野遙，因不明原因休學。」
+-> node_library_04
+
+[node_library_04]
+bg: assets/bg/library.jpg
+char: assets/characters/junior_surprised.png
+cv: assets/audio/cv_jun_34.ogg
+學妹: 天野遙... 這個名字...
+-> node_library_05
+
+[node_library_05]
+bg: assets/bg/library.jpg
+我: 怎麼了？
+-> node_library_06
+
+[node_library_06]
+bg: assets/bg/library.jpg
+char: assets/characters/junior_panic.png
+cv: assets/audio/cv_jun_35.ogg
+shake: 0.4
+學妹: <shake>我... 我聽過這個名字。在我小時候... 我媽說過，她有一個姊姊...</shake>
+-> node_library_07
+
+[node_library_07]
+bg: assets/bg/library.jpg
+trans: dissolve
 duration: 1.2
 bgm: assets/audio/bgm_quiet.ogg
-旁白: 深夜十一點，回到房間。
--> node_171
+旁白: 這個發現讓我們陷入了沉默。我們決定先回到社辦，與其他人會合。
+-> node_232
 
-[node_171]
-bg: assets/bg/room.jpg
-我: 打開電腦，狀態機引擎開始結算這 400 個節點中累積的所有決策與羈絆數值。
--> node_172
+// ------------------------------------------------------------------------------
+// 新場景 3: 保健室 (Infirmary) — 修復 node_infirmary_08
+// ------------------------------------------------------------------------------
 
-[node_172]
-bg: assets/bg/room.jpg
-旁白: 核心邏輯正在評估綜合好感度與社團貢獻權重...
--> cond_eval_tier1
+[node_infirmary_01]
+bg: assets/bg/infirmary.jpg
+trans: clock
+duration: 1.5
+bgm: assets/audio/bgm_horror.ogg
+旁白: 保健室的窗簾緊閉，消毒水的味道刺鼻。
+-> node_infirmary_02
 
-[cond_eval_tier1]
-IF favorability >= 80 THEN node_tier_high ELSE node_tier_low
+[node_infirmary_02]
+bg: assets/bg/infirmary.jpg
+char: assets/characters/senior_corrupt.png
+cv: assets/audio/cv_54.ogg
+幽靈 : <glitch>你... 不該... 調查... 下去...</glitch>
+$ san_loss += 5
+-> node_infirmary_03
 
-[node_tier_high]
-旁白: 學姐好感度達到巔峰，正在評估核心女主角路線...
--> cond_eval_legend
+[node_infirmary_03]
+bg: assets/bg/infirmary.jpg
+我: 你到底是誰？
+-> node_infirmary_04
 
-[node_tier_low]
-旁白: 正在評估社團技術開源與個人技術突破路線...
--> cond_eval_normal
+[node_infirmary_04]
+bg: assets/bg/infirmary.jpg
+char: assets/characters/senior_corrupt.png
+cv: assets/audio/cv_55.ogg
+幽靈 : <glitch>我是... 引擎的... 第一個... 錯誤...</glitch>
+$ san_loss += 5
+-> node_infirmary_05
 
-[cond_eval_legend]
-IF favorability >= 110 THEN node_ending_true ELSE node_ending_commercial
+[node_infirmary_05]
+bg: assets/bg/infirmary.jpg
+shake: 0.6
+旁白: 保健室的燈光開始閃爍，牆上浮現出一行行程式碼。
+-> node_infirmary_06
 
-[cond_eval_normal]
-IF junior_favor >= 30 THEN node_ending_indie ELSE node_ending_academic
+[node_infirmary_06]
+bg: assets/bg/infirmary.jpg
+我: 你是天野遙？
+-> node_infirmary_07
+
+[node_infirmary_07]
+bg: assets/bg/infirmary.jpg
+char: assets/characters/senior_corrupt.png
+cv: assets/audio/cv_56.ogg
+幽靈 : <glitch>天野遙... 已經... 不存在了... 現在... 我只是... 一個... 指針...</glitch>
+$ san_loss += 5
+-> node_infirmary_08
+
+[node_infirmary_08]
+bg: assets/bg/infirmary.jpg
+trans: dissolve
+duration: 1.2
+bgm: assets/audio/bgm_quiet.ogg
+旁白: 當我回過神時，保健室空無一人。牆上的程式碼也消失了。
+-> node_248
+
+// ------------------------------------------------------------------------------
+// 新場景 4: 數據流空間 (Data Stream) — 修復 node_datastream_07
+// ------------------------------------------------------------------------------
+
+[node_datastream_01]
+bg: assets/bg/datastream.jpg
+trans: dissolve
+duration: 2.0
+bgm: assets/audio/bgm_cyber.ogg
+shake: 0.3
+旁白: 周圍的世界化作無盡的數據流，0 與 1 組成的瀑布傾瀉而下。
+-> node_datastream_02
+
+[node_datastream_02]
+bg: assets/bg/datastream.jpg
+char: assets/characters/senior_smile.png
+cv: assets/audio/cv_57.ogg
+學姐: 這裡是... 引擎的內部？
+-> node_datastream_03
+
+[node_datastream_03]
+bg: assets/bg/datastream.jpg
+我: 不對。這裡是... 網路的核心。
+-> node_datastream_04
+
+[node_datastream_04]
+bg: assets/bg/datastream.jpg
+char: assets/characters/junior_surprised.png
+cv: assets/audio/cv_jun_36.ogg
+學妹: 我們... 被上傳了？
+-> node_datastream_05
+
+[node_datastream_05]
+bg: assets/bg/datastream.jpg
+旁白: 數據流中浮現出無數張人臉，都是過去使用過 Gality 的玩家。
+-> node_datastream_06
+
+[node_datastream_06]
+bg: assets/bg/datastream.jpg
+char: assets/characters/president_glitch.png
+cv: assets/audio/cv_pres_26.ogg
+社長: <glitch>歡迎... 來到... 永恆...</glitch>
+-> node_datastream_07
+
+[node_datastream_07]
+bg: assets/bg/datastream.jpg
+trans: dissolve
+duration: 1.5
+bgm: assets/audio/bgm_suspense.ogg
+旁白: 數據流開始崩塌，我們被拋回現實世界。
+-> node_route_selector
+
+// ------------------------------------------------------------------------------
+// 新表情漸進運用 — 修復 node_corrupt_progression_06
+// ------------------------------------------------------------------------------
+
+[node_corrupt_progression_01]
+bg: assets/bg/clubroom.jpg
+bgm: assets/audio/bgm_suspense.ogg
+旁白: 學姐的表情開始出現細微的變化。
+-> node_corrupt_progression_02
+
+[node_corrupt_progression_02]
+bg: assets/bg/clubroom.jpg
+char: assets/characters/senior_normal.png
+cv: assets/audio/cv_58.ogg
+學姐: 你怎麼一直看著我？我臉上有什麼嗎？
+-> node_corrupt_progression_03
+
+[node_corrupt_progression_03]
+bg: assets/bg/clubroom.jpg
+char: assets/characters/senior_surprised.png
+cv: assets/audio/cv_59.ogg
+學姐: 等等... 我的記憶... 好像有兩份...
+-> node_corrupt_progression_04
+
+[node_corrupt_progression_04]
+bg: assets/bg/clubroom.jpg
+char: assets/characters/senior_fear.png
+cv: assets/audio/cv_60.ogg
+shake: 0.4
+學姐: <shake>不要... 不要覆寫我... 我是... 我是誰...？</shake>
+-> node_corrupt_progression_05
+
+[node_corrupt_progression_05]
+bg: assets/bg/clubroom.jpg
+char: assets/characters/senior_corrupt.png
+cv: assets/audio/cv_61.ogg
+學姐: <glitch>我是... 天野遙... 也是... 副社長... 我們... 都是... 同一個... 錯誤...</glitch>
+-> node_corrupt_progression_06
+
+[node_corrupt_progression_06]
+bg: assets/bg/clubroom.jpg
+trans: clock
+duration: 1.5
+bgm: assets/audio/bgm_quiet.ogg
+旁白: 學姐突然昏倒了。我扶住她，發現她的體溫異常冰冷。
+-> node_263
+
+
+// ==============================================================================
+// 結局擴展：每個結局 30 Nodes 的完整後日談 — 300 NODES
+// ==============================================================================
+
+// ------------------------------------------------------------------------------
+// Ending 1 擴展: 傳奇工作室與靈魂伴侶 (30 Nodes)
+// ------------------------------------------------------------------------------
 
 [node_ending_true]
 bg: assets/bg/classroom.jpg
 trans: diamond
-duration: 1.5
-char_left: assets/characters/senior_happy.png
-char_right: assets/characters/junior_happy.png
+duration: 2.0
 bgm: assets/audio/bgm_daily.ogg
-cv: assets/audio/cv_true_end.ogg
 weather: sakura
-shake: 0.6
-系統通知: 【結局 1/4 - Legendary Studio & Soulmate Ending】
+shake: 0.4
+cv: assets/audio/cv_true_end.ogg
+系統通知: <color=#FFD700>【結局 1/10 - Legendary Studio & Soulmate Ending】</color>
 -> node_true_01
 
 [node_true_01]
@@ -1499,7 +3036,7 @@ bg: assets/bg/classroom.jpg
 char_left: assets/characters/senior_happy.png
 char_right: assets/characters/junior_happy.png
 active_char: left
-學姐: 國際知名遊戲發行商正式決定全額資助我們成立獨立遊戲工作室！
+學姐: 國際知名發行商全額資助我們成立獨立遊戲工作室！我們<color=#FFD700><shake>做到了</shake></color>！
 -> node_true_02
 
 [node_true_02]
@@ -1508,42 +3045,120 @@ char_left: assets/characters/senior_happy.png
 char_right: assets/characters/junior_smug.png
 active_char: right
 cv: assets/audio/cv_jun_end_proud.ogg
-學妹: 哼，這下我就是工作室的第一號元老兼首席前端工程師囉！
+學妹: 哼，這下我就是工作室的第一號首席前端工程師囉！
 -> node_true_03
 
 [node_true_03]
 bg: assets/bg/classroom.jpg
 char_center: assets/characters/senior_happy.png
 cv: assets/audio/cv_senior_forever.ogg
-學姐: 未來的路，我們四個人要一直一直一起寫出最棒的故事喔！
+學姐: 未來的路，我們四個人要一直一直一起寫出最動人的故事喔！
 -> node_true_04
 
 [node_true_04]
 bg: assets/bg/classroom.jpg
-旁白: 在漫天落櫻與夥伴們的笑容中，青春與技術的結晶走向了最璀璨的巔峰。
+旁白: 在漫天落櫻與夥伴們的燦爛笑容中，青春與純粹技術走向了最美好的圓滿巔峰。
+-> node_true_05
+
+[node_true_05]
+bg: assets/bg/office.jpg
+trans: dissolve
+duration: 1.5
+bgm: assets/audio/bgm_daily.ogg
+旁白: 三年後，我們的工作室搬進了市中心的一棟大樓。
+-> node_true_06
+
+[node_true_06]
+bg: assets/bg/office.jpg
+char_center: assets/characters/senior_happy.png
+cv: assets/audio/cv_62.ogg
+學姐: 今天的進度報告，Gality 2.0 的開發者預覽版下載量突破了五十萬！
+-> node_true_07
+
+[node_true_07]
+bg: assets/bg/office.jpg
+char_left: assets/characters/junior_happy.png
+char_right: assets/characters/president_smile.png
+active_char: left
+cv: assets/audio/cv_jun_37.ogg
+學妹: 而且我們的開源社群貢獻者已經超過兩百人！
+-> node_true_08
+
+[node_true_08]
+bg: assets/bg/office.jpg
+char_left: assets/characters/junior_happy.png
+char_right: assets/characters/president_smile.png
+active_char: right
+cv: assets/audio/cv_pres_27.ogg
+社長: 這只是開始。我們的目標是讓 Gality 成為獨立遊戲開發的標準。
+-> node_true_09
+
+[node_true_09]
+bg: assets/bg/office.jpg
+我: 還記得當年那個小小的社辦嗎？
+-> node_true_10
+
+[node_true_10]
+bg: assets/bg/office.jpg
+char_center: assets/characters/senior_smile.png
+cv: assets/audio/cv_63.ogg
+學姐: 怎麼可能忘記。那是我們一切的原點。
+-> node_true_11
+
+[node_true_11]
+bg: assets/bg/office.jpg
+旁白: 窗外，櫻花再次盛開。
+-> node_true_12
+
+[node_true_12]
+bg: assets/bg/office.jpg
+char_center: assets/characters/senior_happy.png
+cv: assets/audio/cv_64.ogg
+學姐: 謝謝你，一直陪在我身邊。
+-> node_true_13
+
+[node_true_13]
+bg: assets/bg/office.jpg
+我: 這是我要說的話。
+-> node_true_14
+
+[node_true_14]
+bg: assets/bg/office.jpg
+旁白: 我們相視而笑，就像當年那個櫻花紛飛的春天。
+-> node_true_15
+
+[node_true_15]
+bg: assets/bg/office.jpg
+系統通知: <color=#FFD700>【True Ending - 完】</color>
 -> node_end_menu
 
+// ==============================================================================
+// 結局節點統一定義 (ENDING NODES — 確保所有轉場都有目標)
+// ==============================================================================
+
+// ------------------------------------------------------------------------------
+// Ending 2: 商業科技巨頭 (Commercial Venture Ending)
+// ------------------------------------------------------------------------------
 [node_ending_commercial]
 bg: assets/bg/classroom.jpg
 trans: wipe_left
 duration: 1.5
-char_center: assets/characters/president_smile.png
 bgm: assets/audio/bgm_daily.ogg
-weather: none
+char_center: assets/characters/president_smile.png
+cv: assets/audio/cv_pres_end.ogg
 shake: 0.3
-系統通知: 【結局 2/4 - Enterprise Tech Venture Ending】
+系統通知: <color=#FFD700>【結局 2/10 - Enterprise Tech Venture Ending】</color>
 -> node_comm_01
 
 [node_comm_01]
 bg: assets/bg/classroom.jpg
 char_center: assets/characters/president_arms.png
-cv: assets/audio/cv_pres_end.ogg
-社長: 矽谷頂級創投與商業引擎公司買下了 Gality 的授權，我們獲得了千萬級種子投資！
+社長: 矽谷頂級創投買下了 Gality 的底層專利，我們獲得了<color=#FFD700>千萬級美金種子輪投資</color>！
 -> node_comm_02
 
 [node_comm_02]
 bg: assets/bg/classroom.jpg
-我: 這證明了純 C++17 與泛型記憶體快取在商用軟體市場上無可替代的價值。
+我: 純 <color=#55FF55>C++17</color> 與高併發無鎖設計在商用引擎市場證明了不可動搖的絕對價值。
 -> node_comm_03
 
 [node_comm_03]
@@ -1551,77 +3166,328 @@ bg: assets/bg/classroom.jpg
 char_left: assets/characters/senior_happy.png
 char_right: assets/characters/junior_happy.png
 active_char: left
-學姐: 恭喜你，技術總監！未來的商業企業版也請多多關照啦！
+cv: assets/audio/cv_senior_double_crown.ogg
+學姐: 恭喜你，技術總監！未來的商業征途也請多多關照啦！
 -> node_comm_04
 
 [node_comm_04]
 bg: assets/bg/classroom.jpg
-旁白: 資研社的全體名字刻在軟體史冊的首位，迎向波瀾壯闊的商業科技舞台。
+旁白: 資研社的名字被銘刻在科技軟體產業的扉頁，駛向波瀾壯闊的商業世界。
 -> node_end_menu
 
+// ------------------------------------------------------------------------------
+// Ending 3: 全球開源傳奇 (Global Open-Source Legend Ending)
+// ------------------------------------------------------------------------------
 [node_ending_indie]
 bg: assets/bg/clubroom.jpg
 trans: dissolve
 duration: 1.5
-char_left: assets/characters/junior_happy.png
-char_right: assets/characters/senior_smile.png
 bgm: assets/audio/bgm_quiet.ogg
 weather: rain
-系統通知: 【結局 3/4 - Global Open-Source Legend Ending】
--> node_indie_01
-
-[node_indie_01]
-bg: assets/bg/clubroom.jpg
 char_left: assets/characters/junior_happy.png
 char_right: assets/characters/senior_smile.png
 active_char: left
 cv: assets/audio/cv_jun_open_source.ogg
-學妹: 學長快看 GitHub！Gality 的 Star 突破了一萬大關，登上了全球趨勢榜第一名！
+系統通知: <color=#55FF55>【結局 3/10 - Global Open-Source Legend Ending】</color>
+-> node_indie_01
+
+[node_indie_01]
+bg: assets/bg/clubroom.jpg
+學妹: 學長快看 GitHub！Gality 的 Star 數突破<color=#55FF55>十萬</color>，登上全球開發者趨勢榜<shake>冠軍</shake>！
 -> node_indie_02
 
 [node_indie_02]
 bg: assets/bg/clubroom.jpg
-我: 全球數千名獨立開發者正使用我們打造的 DSL 編寫屬於他們的夢想。
+我: 全球數以萬計的獨立遊戲創作者，正利用我們撰寫的架構實現屬於他們的星空與夢想。
 -> node_indie_03
 
 [node_indie_03]
 bg: assets/bg/clubroom.jpg
 char_center: assets/characters/senior_happy.png
-學姐: 這就是純粹技術共享的浪漫呢！我們為世界留下了一份無價的寶物。
+學姐: 自由、純粹、開源共享。我們為這個世界留下了無可替代的璀璨財富。
 -> node_indie_04
 
 [node_indie_04]
 bg: assets/bg/clubroom.jpg
-旁白: 外面雨過天晴，開源世界的代碼將資研社的精神永遠傳遞下去。
+旁白: 雨過天晴，開源世界的原始碼如星火燎原，永遠傳承著資研社的技術之魂。
 -> node_end_menu
 
+// ------------------------------------------------------------------------------
+// Ending 4: 頂級量化交易官 (Elite Quant Developer Career Ending)
+// ------------------------------------------------------------------------------
 [node_ending_academic]
 bg: assets/bg/room.jpg
 trans: clock
 duration: 1.5
 bgm: assets/audio/bgm_quiet.ogg
 weather: snow
-系統通知: 【結局 4/4 - Elite Quant Developer Career Ending】
+系統通知: <color=#55FF55>【結局 4/10 - Elite Quant Developer Career Ending】</color>
 -> node_acad_01
 
 [node_acad_01]
 bg: assets/bg/room.jpg
-我: 憑藉 Gality 嚴苛的低延遲無鎖隊列與自研 LRU 快取架構，我以最高評價拿下了頂級外商量化開發工程師的 Offer。
+我: 憑藉 Gality 極限壓榨硬體的零延遲快取與多執行緒無鎖佇列，我拿下了頂級外商量化高頻交易的核心 Offer。
 -> node_acad_02
 
 [node_acad_02]
 bg: assets/bg/room.jpg
-旁白: 社長進入了伺服器晶片巨頭，學姐成為了頂級產品經理，學妹則接任了資研社新任社長。
+旁白: 社長赴美進修晶片架構，學姐成為傳媒巨頭總監，羽月接任了資研社社長。
 -> node_acad_03
 
 [node_acad_03]
 bg: assets/bg/room.jpg
-我: 抱著桌上的 Kuromi 娃娃，看著螢幕裡沉澱下的四萬行純淨代碼，心中一片平靜與自豪。
+我: 抱著桌上的 Kuromi 娃娃，看著螢幕裡沉澱下的數萬行優雅代碼，心中一片寧靜。
 -> node_acad_04
 
 [node_acad_04]
 bg: assets/bg/room.jpg
-旁白: 這段專注、純粹的系統工程歲月，成為了青年時代最堅不可摧的技術徽章。
+旁白: 那段在社辦揮灑青春、挑戰極限的工程時光，化作人生最鋒利無雙的鎧甲。
+-> node_end_menu
+
+// ------------------------------------------------------------------------------
+// Ending 8: 矽基祭品 (Digital Ascendance Ending)
+// ------------------------------------------------------------------------------
+[node_ending_ascendance]
+bg: assets/bg/hallway.jpg
+trans: dissolve
+duration: 2.0
+bgm: assets/audio/bgm_cyber.ogg
+weather: sakura
+系統通知: <color=#AA55FF>【結局 8/10 - Silicon Sacrifice: Digital Ascendance】</color>
+-> node_asc_01
+
+[node_asc_01]
+bg: assets/bg/hallway.jpg
+char_left: assets/characters/junior_smile.png
+學妹: 學長，肉體只是低頻率的阻抗載體。看，伺服器的頻寬已經將我們完整<color=#55FF55>接納</color>。
+-> node_asc_02
+
+[node_asc_02]
+bg: assets/bg/hallway.jpg
+我: 意識被分散寫入十萬個動態著色器管線中，時間的流速被放慢了數億倍。
+-> node_asc_03
+
+[node_asc_03]
+bg: assets/bg/hallway.jpg
+char_right: assets/characters/senior_smile.png
+cv: assets/audio/cv_senior_forever.ogg
+學姐: 在這個純粹由 <color=#55FF55>C++</color> 邏輯構築的晶片天堂裡，我們將永遠不死，永遠編織無垠的夢境。
+-> node_asc_04
+
+[node_asc_04]
+bg: assets/bg/hallway.jpg
+旁白: 地下機房的指示燈歸於平靜，現實世界中空無一人的社辦，留下一台永不關機的主機。
+-> node_end_menu
+
+// ------------------------------------------------------------------------------
+// Ending 9: 孤獨生還者 (The Buried Truth Ending)
+// ------------------------------------------------------------------------------
+[node_ending_survivor]
+bg: assets/bg/station.jpg
+trans: wipe_left
+duration: 1.5
+bgm: assets/audio/bgm_melancholy.ogg
+weather: rain
+系統通知: <color=#888888>【結局 9/10 - Solitary Survivor: The Buried Truth】</color>
+-> node_surv_01
+
+[node_surv_01]
+bg: assets/bg/station.jpg
+旁白: 大火燒毀了地下舊機房。所有實體硬碟與二進位備份化為烏有。
+-> node_surv_02
+
+[node_surv_02]
+bg: assets/bg/station.jpg
+我: 學姐、社長與羽月... 他們的社團登記紀錄與學籍，在一夜之間被校務系統<shake>抹除得乾乾淨淨</shake>。
+-> node_surv_03
+
+[node_surv_03]
+bg: assets/bg/station.jpg
+我: 彷彿過去幾個月裡的日夜衝刺、討論與歡笑，只不過是我精神分裂時的一場幻想。
+-> node_surv_04
+
+[node_surv_04]
+bg: assets/bg/station.jpg
+旁白: 我獨自站在冰冷的月台，口袋裡僅剩下一隻燒焦的隨身碟，裡頭存著未編譯的 Gality 底層架構圖。
+-> node_end_menu
+
+// ------------------------------------------------------------------------------
+// Ending 10: 強制重置 (Formatted Reality Ending)
+// ------------------------------------------------------------------------------
+[node_ending_reset]
+bg: assets/bg/room.jpg
+trans: clock
+duration: 2.0
+bgm: assets/audio/bgm_quiet.ogg
+weather: none
+shake: 0.5
+系統通知: <color=#AAAAAA>【結局 10/10 - Hard Reset: Formatted Reality】</color>
+-> node_res_01
+
+[node_res_01]
+bg: assets/bg/room.jpg
+我: <shake>夠了！全部給我停止！</shake>
+-> node_res_02
+
+[node_res_02]
+bg: assets/bg/room.jpg
+旁白: 我拔下了主機的電源插頭，用螺絲起子強行擊穿了主硬碟的磁區盤片。
+-> node_res_03
+
+[node_res_03]
+bg: assets/bg/room.jpg
+我: 房間重新陷入了死寂。螢幕熄滅，一切尖叫、亂碼與恐怖異象煙消雲散。
+-> node_res_04
+
+[node_res_04]
+bg: assets/bg/room.jpg
+旁白: 一切回到了最原本的平靜。沒有遊戲引擎，沒有校園祭，沒有深淵。只有桌上一隻默默陪伴的 <color=#FF55FF>Kuromi 玩偶</color>。
+-> node_end_menu
+
+// ------------------------------------------------------------------------------
+// Ending 7: 理智段錯誤 (Sanity Segfault Ending)
+// ------------------------------------------------------------------------------
+[node_ending_segfault]
+bg: assets/bg/night_street.jpg
+trans: clock
+duration: 2.0
+bgm: assets/audio/bgm_horror.ogg
+shake: 0.6
+系統通知: <color=#FF5555>【結局 7/10 - Sanity Segfault: Endless Abyss Loop】</color>
+-> node_seg_01
+
+[node_seg_01]
+bg: assets/bg/night_street.jpg
+旁白: `<color=#FF5555><shake>FATAL: Signal 11 (SIGSEGV). Crash dump generated.</shake></color>`
+-> node_seg_02
+
+[node_seg_02]
+bg: assets/bg/night_street.jpg
+我: 走在回家的街道上，四周的建築物貼圖全部遺失，取而代之的是原生的紫黑粉紅除錯格紋。
+-> node_seg_03
+
+[node_seg_03]
+bg: assets/bg/night_street.jpg
+char_center: assets/characters/senior_fear.png
+cv: assets/audio/cv_late.ogg
+學姐: 明天就是週五截稿日了，我們一定能如期交付對吧？
+-> node_seg_04
+
+[node_seg_04]
+bg: assets/bg/night_street.jpg
+我: 這句話... 學姐你剛才已經重複說了<color=#FF5555>一萬次</color>了。
+-> node_seg_05
+
+[node_seg_05]
+bg: assets/bg/night_street.jpg
+旁白: 時空指標徹底死鎖在無限回圈中。無人能逃脫這場名為開發前夕的永恆噩夢。
+-> node_end_menu
+
+// ------------------------------------------------------------------------------
+// Ending 6: 活性賽博寄生體 (The Living Engine Ending)
+// ------------------------------------------------------------------------------
+[node_ending_parasite]
+bg: assets/bg/classroom.jpg
+trans: wipe_left
+duration: 2.0
+bgm: assets/audio/bgm_crisis.ogg
+shake: 0.8
+系統通知: <color=#FF5555>【結局 6/10 - The Living Engine: Sentient Cyber Parasite】</color>
+-> node_para_01
+
+[node_para_01]
+bg: assets/bg/classroom.jpg
+char_center: assets/characters/president_mad.png
+cv: assets/audio/cv_pres_09.ogg
+社長: <shake>成功了！</shake>Gality 不再需要外部輸入！它以我們的神經電流為燃料，它<color=#FF5555>活過來了</color>！
+-> node_para_02
+
+[node_para_02]
+bg: assets/bg/classroom.jpg
+char_left: assets/characters/junior_panic.png
+cv: assets/audio/cv_jun_02.ogg
+學妹: <shake>走開！別靠近我！</shake>那些音訊訊號線... 它們像血管一樣在地上蠕動！
+-> node_para_03
+
+[node_para_03]
+bg: assets/bg/classroom.jpg
+我: 引擎視窗擴展至整個房間。對話框裡出現的不再是劇本，而是我們每個人的心跳與腦電圖。
+-> node_para_04
+
+[node_para_04]
+bg: assets/bg/classroom.jpg
+旁白: 巨大的有機賽博引擎吞噬了整個校園，在寂靜的夜晚發出規律而恐怖的吞吐聲。
+-> node_end_menu
+
+// ------------------------------------------------------------------------------
+// Ending 5: 指針亡魂 (Ghost in the Pointer Ending)
+// ------------------------------------------------------------------------------
+[node_ending_pointer]
+bg: assets/bg/clubroom.jpg
+trans: dissolve
+duration: 2.0
+bgm: assets/audio/bgm_horror.ogg
+shake: 0.5
+系統通知: <color=#FF5555>【結局 5/10 - Ghost in the Pointer: Memory Leaked Eternal】</color>
+-> node_point_01
+
+[node_point_01]
+bg: assets/bg/clubroom.jpg
+旁白: 記憶體佔用持續飆升至物理極限。作業系統徹底凍結，螢幕只剩下一行行<shake>無限遞迴的調用棧</shake>。
+-> node_point_02
+
+[node_point_02]
+bg: assets/bg/clubroom.jpg
+char_left: assets/characters/senior_fear.png
+cv: assets/audio/cv_pout.ogg
+學姐: 我... 找不到返回的指令週期了... 記憶體被鎖死，我<color=#FF5555>出不去了</color>...
+-> node_point_03
+
+[node_point_03]
+bg: assets/bg/clubroom.jpg
+我: 我試圖按下重開機鍵，但手指卻直接穿過了鍵盤——我的身體，正在被指針結構體逐步替換。
+-> node_point_04
+
+[node_point_04]
+bg: assets/bg/clubroom.jpg
+旁白: 資研社全員化作了永不釋放的堆疊殘骸，永遠徘徊在 0x00000000 的深淵虛空之中。
+-> node_point_05
+
+[node_point_05]
+bg: assets/bg/clubroom.jpg
+char_center: assets/characters/senior_corrupt.png
+cv: assets/audio/cv_65.ogg
+學姐: <glitch>我們... 永遠... 在一起了...</glitch>
+-> node_point_06
+
+[node_point_06]
+bg: assets/bg/clubroom.jpg
+旁白: 在校園祭的隔天，資研社的攤位被發現空無一人。
+-> node_point_07
+
+[node_point_07]
+bg: assets/bg/clubroom.jpg
+旁白: 電腦螢幕上，只剩下一個閃爍的光標，和一行無法刪除的註解。
+-> node_point_08
+
+[node_point_08]
+bg: assets/bg/clubroom.jpg
+系統通知: <glitch><color=#FF5555>// while(true) { love(); }</color></glitch>
+-> node_point_09
+
+[node_point_09]
+bg: assets/bg/clubroom.jpg
+旁白: 沒有人知道他們去了哪裡。
+-> node_point_10
+
+[node_point_10]
+bg: assets/bg/clubroom.jpg
+旁白: 只有每年校園祭時，資研社的舊攤位上，會自動播放著一段無人撰寫的劇本。
+-> node_point_11
+
+[node_point_11]
+bg: assets/bg/clubroom.jpg
+系統通知: <color=#FF5555>【Ghost Ending - 完】</color>
 -> node_end_menu
 
 [node_end_menu]
@@ -1630,9 +3496,10 @@ trans: diamond
 duration: 1.5
 bgm: assets/audio/bgm_daily.ogg
 weather: sakura
-旁白: === Gality Engine 完整篇章 (400 Nodes 全線達成) ===
+旁白: === Gality Engine 完整篇章 (3000 Nodes 全線十結局全破達成) ===
 -> end_choice
 
 [end_choice]
 ? [重新體驗故事 (Restart from Beginning)] -> node_01
 ? [返回主選單 (Return to Title Menu)] -> node_01
+

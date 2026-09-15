@@ -186,9 +186,9 @@ public:
         float posX = 0.0f;
         if (slot.has_value()) {
             switch (slot.value()) {
-                case CharSlot::Left:   posX = -3.0f; break;
+                case CharSlot::Left:   posX = -1.0f; break;
                 case CharSlot::Center: posX =  0.0f; break;
-                case CharSlot::Right:  posX =  3.0f; break;
+                case CharSlot::Right:  posX =  1.0f; break;
             }
         }
 

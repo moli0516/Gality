@@ -108,6 +108,9 @@ public:
                     currentNode = currentNode->defaultNext;
                 }
             } else {
+                if (!currentNode->mutations.empty() && currentNode->actionFunc) {
+                    currentNode->actionFunc(blackboard);
+                }
                 break;
             }
         }

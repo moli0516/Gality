@@ -116,7 +116,7 @@ public:
 
             // 節點型別嚴格推導
             std::string typeStr = item.value("type", "");
-            if (typeStr == "action" || !node->mutations.empty()) {
+            if (typeStr == "action") {
                 node->type = NodeType::Action;
             } else if (typeStr == "choice" || !node->choices.empty()) {
                 node->type = NodeType::Choice;
@@ -125,7 +125,6 @@ public:
             } else {
                 node->type = NodeType::Dialogue;
             }
-
             if (node->type == NodeType::Action) {
                 node->actionFunc = [node](Blackboard& bb) {
                     for (const auto& mut : node->mutations) {

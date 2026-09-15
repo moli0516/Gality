@@ -18,4 +18,8 @@ imgui.ini
 packed_code.md
 data.pak
 devtools/*
+
 !devtools/scripts/
+demo_1.0/
+demo_2.0/
+assets copy/
