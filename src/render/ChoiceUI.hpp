@@ -22,6 +22,22 @@ private:
     std::vector<std::uint8_t> fontDataBuffer;
     ChoiceUIStyle style;
 
+    // 移除 <...> 標籤
+    static std::string stripTags(const std::string& input) {
+        std::string result;
+        bool inTag = false;
+        for (char c : input) {
+            if (c == '<') {
+                inTag = true;
+            } else if (c == '>') {
+                inTag = false;
+            } else if (!inTag) {
+                result += c;
+            }
+        }
+        return result;
+    }
+
 public:
     ChoiceUI() = default;
 
@@ -42,7 +58,7 @@ public:
 
         for (size_t i = 0; i < options.size(); ++i) {
             OptionButton btn(font);
-            
+
             float posX = (1920.f - style.width) * 0.5f;
             float posY = style.startY + static_cast<float>(i) * (style.height + style.spacing);
 
@@ -55,8 +71,11 @@ public:
             btn.text.setFont(font);
             btn.text.setCharacterSize(style.fontSize);
             btn.text.setFillColor(style.textColor);
-            btn.text.setString(sf::String::fromUtf8(options[i].text.begin(), options[i].text.end()));
-            
+
+            // 移除標籤
+            std::string cleanText = stripTags(options[i].text);
+            btn.text.setString(sf::String::fromUtf8(cleanText.begin(), cleanText.end()));
+
             sf::FloatRect textBounds = btn.text.getLocalBounds();
             btn.text.setPosition(sf::Vector2f(
                 posX + (style.width - textBounds.size.x) * 0.5f,

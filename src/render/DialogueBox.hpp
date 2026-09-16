@@ -19,18 +19,20 @@
 struct GlyphStyle {
     sf::Color color = sf::Color::White;
     bool isShaking = false;
-    float customSpeed = -1.0f; // < 0 表示繼承全域 ConfigManager 設定
+    bool isGlitching = false;
+    float customSpeed = -1.0f;
 };
 
 struct FormattedGlyph {
     char32_t codepoint = 0;
     sf::Vector2f position{0.0f, 0.0f};
     GlyphStyle style;
-    float pauseDuration = 0.0f; // 該字元顯示完後的停頓時間 (秒)
+    float pauseDuration = 0.0f;
+    float glitchSeed = 0.0f;
 };
 
 // ============================================================================
-// 2. DialogueBox 類別實作 (純 SFML 原生向量排版，零 ImGui 依賴)
+// 2. DialogueBox 類別
 // ============================================================================
 class DialogueBox {
 private:
@@ -39,7 +41,6 @@ private:
     sf::Font font;
     sf::Text nameText;
 
-    // 持久保存字體二進位緩衝區，杜絕 FreeType 野指標光柵化失敗
     std::vector<std::uint8_t> fontDataBuffer;
     std::vector<std::uint8_t> soundDataBuffer;
 
@@ -48,6 +49,7 @@ private:
     size_t visibleCharCount = 0;
 
     sf::Clock timer;
+    sf::Clock glitchClock;
     float currentPauseRemaining = 0.0f;
     bool isCompleted = false;
 
@@ -58,22 +60,22 @@ private:
     DialogueBoxStyle style;
 
     // ------------------------------------------------------------------------
-    // CJK Kinsoku Shori (避頭尾禁則字元集合)
+    // CJK Kinsoku Shori (避頭尾禁則)
     // ------------------------------------------------------------------------
     static bool isProhibitedAtLineStart(char32_t cp) {
-        static const std::unordered_set<char32_t> lineStartProhibited = {
+        static const std::unordered_set<char32_t> prohibited = {
             U'，', U'。', U'！', U'？', U'：', U'；', U'、', U'）', U'」', U'』',
             U'”', U'’', U'>', U'·', U'…', U'—', U'~', U'～',
             U',', U'.', U'!', U'?', U':', U';', U')', U']', U'}'
         };
-        return lineStartProhibited.find(cp) != lineStartProhibited.end();
+        return prohibited.find(cp) != prohibited.end();
     }
 
     static bool isProhibitedAtLineEnd(char32_t cp) {
-        static const std::unordered_set<char32_t> lineEndProhibited = {
+        static const std::unordered_set<char32_t> prohibited = {
             U'（', U'「', U'『', U'“', U'‘', U'《', U'<', U'(', U'[', U'{'
         };
-        return lineEndProhibited.find(cp) != lineEndProhibited.end();
+        return prohibited.find(cp) != prohibited.end();
     }
 
     sf::Color hexToColor(const std::string& hexStr) {
@@ -90,11 +92,15 @@ private:
         ssG >> std::hex >> g;
         ssB >> std::hex >> b;
 
-        return sf::Color(static_cast<std::uint8_t>(r), static_cast<std::uint8_t>(g), static_cast<std::uint8_t>(b));
+        return sf::Color(
+            static_cast<std::uint8_t>(r),
+            static_cast<std::uint8_t>(g),
+            static_cast<std::uint8_t>(b)
+        );
     }
 
     // ------------------------------------------------------------------------
-    // Tokenizer & Parser: 解析行內標籤並提取字元屬性
+    // Tokenizer & Parser
     // ------------------------------------------------------------------------
     struct ParsedChar {
         char32_t codepoint;
@@ -109,6 +115,7 @@ private:
 
         std::vector<sf::Color> colorStack = { sf::Color::White };
         std::vector<bool> shakeStack = { false };
+        std::vector<bool> glitchStack = { false };
         std::vector<float> speedStack = { -1.0f };
 
         size_t idx = 0;
@@ -118,7 +125,6 @@ private:
             if (u32Str[idx] == U'<') {
                 size_t tagEnd = u32Str.find(U'>', idx);
                 if (tagEnd != std::u32string::npos) {
-                    // 將 ASCII 標籤直接轉換為 std::string，避開 SFML 3.x sf::U8String 型別限制
                     std::string tag;
                     tag.reserve(tagEnd - idx - 1);
                     for (size_t t = idx + 1; t < tagEnd; ++t) {
@@ -142,6 +148,14 @@ private:
                         continue;
                     } else if (tag == "/shake") {
                         if (shakeStack.size() > 1) shakeStack.pop_back();
+                        idx = tagEnd + 1;
+                        continue;
+                    } else if (tag == "glitch") {
+                        glitchStack.push_back(true);
+                        idx = tagEnd + 1;
+                        continue;
+                    } else if (tag == "/glitch") {
+                        if (glitchStack.size() > 1) glitchStack.pop_back();
                         idx = tagEnd + 1;
                         continue;
                     } else if (tag.rfind("speed=", 0) == 0) {
@@ -180,6 +194,7 @@ private:
             pc.codepoint = u32Str[idx];
             pc.style.color = colorStack.back();
             pc.style.isShaking = shakeStack.back();
+            pc.style.isGlitching = glitchStack.back();
             pc.style.customSpeed = speedStack.back();
             result.push_back(pc);
             idx++;
@@ -188,7 +203,7 @@ private:
     }
 
     // ------------------------------------------------------------------------
-    // Layout Shaper Pass: 執行字形測量、避頭尾斷行與座標計算
+    // Layout Shaper Pass
     // ------------------------------------------------------------------------
     void buildLayout(const std::vector<ParsedChar>& parsedList) {
         glyphs.clear();
@@ -229,7 +244,9 @@ private:
                 char32_t nextCp = parsedList[i + 1].codepoint;
                 if (isProhibitedAtLineStart(nextCp)) {
                     const auto& nextGlyph = font.getGlyph(nextCp, style.dialogueFontSize, false);
-                    float nextAdvance = (nextGlyph.advance > 0.0f) ? nextGlyph.advance : static_cast<float>(style.dialogueFontSize);
+                    float nextAdvance = (nextGlyph.advance > 0.0f)
+                        ? nextGlyph.advance
+                        : static_cast<float>(style.dialogueFontSize);
                     if (currX + advanceX + nextAdvance > maxX) {
                         shouldWrap = true;
                     }
@@ -252,6 +269,13 @@ private:
             fg.position = sf::Vector2f(currX, currY);
             fg.style = item.style;
             fg.pauseDuration = item.pause;
+
+            if (item.style.isGlitching) {
+                fg.glitchSeed = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
+            } else {
+                fg.glitchSeed = 0.0f;
+            }
+
             glyphs.push_back(fg);
 
             currX += advanceX;
@@ -313,7 +337,7 @@ public:
 
     void setText(const std::string& speaker, const std::string& text) {
         nameText.setString(sf::String::fromUtf8(speaker.begin(), speaker.end()));
-        
+
         auto parsedList = parseInlineTags(text);
         buildLayout(parsedList);
 
@@ -333,7 +357,8 @@ public:
         }
 
         float stepInterval = ConfigManager::config.textSpeed;
-        if (visibleCharCount < totalCharCount && glyphs[visibleCharCount].style.customSpeed >= 0.0f) {
+        if (visibleCharCount < totalCharCount &&
+            glyphs[visibleCharCount].style.customSpeed >= 0.0f) {
             stepInterval = glyphs[visibleCharCount].style.customSpeed;
         }
 
@@ -347,7 +372,9 @@ public:
                 visibleCharCount++;
 
                 if (hasSound && typeSound && visibleCharCount % 2 == 0) {
-                    float finalSfxVol = 30.0f * (ConfigManager::config.sfxVolume / 100.0f) * (ConfigManager::config.masterVolume / 100.0f);
+                    float finalSfxVol = 30.0f
+                        * (ConfigManager::config.sfxVolume / 100.0f)
+                        * (ConfigManager::config.masterVolume / 100.0f);
                     typeSound->setVolume(finalSfxVol);
                     typeSound->play();
                 }
@@ -375,12 +402,14 @@ public:
         }
 
         size_t charsToRender = std::min(visibleCharCount, totalCharCount);
+        float time = glitchClock.getElapsedTime().asSeconds();
 
         for (size_t i = 0; i < charsToRender; ++i) {
             const auto& fg = glyphs[i];
 
             sf::Vector2f drawPos = fg.position;
 
+            // 一般抖動
             if (fg.style.isShaking) {
                 float ox = (-1.0f + static_cast<float>(rand()) / (RAND_MAX / 2.0f)) * 2.0f;
                 float oy = (-1.0f + static_cast<float>(rand()) / (RAND_MAX / 2.0f)) * 2.0f;
@@ -389,6 +418,29 @@ public:
 
             std::u32string singleCharStr(1, fg.codepoint);
             sf::String sfChar(singleCharStr);
+
+            // glitch 效果
+            if (fg.style.isGlitching) {
+                float glitchTime = time * 10.0f + fg.glitchSeed * 100.0f;
+                float trigger = std::sin(glitchTime * 2.0f);
+
+                if (trigger > 0.7f) {
+                    float glitchX = std::sin(glitchTime * 50.0f) * 3.0f;
+                    float glitchY = std::cos(glitchTime * 40.0f) * 2.0f;
+                    drawPos.x += glitchX;
+                    drawPos.y += glitchY;
+
+                    sf::Text redText(font, sfChar, style.dialogueFontSize);
+                    redText.setFillColor(sf::Color(255, 0, 0, 128));
+                    redText.setPosition(drawPos + sf::Vector2f(-2.0f, 0.0f));
+                    target.draw(redText);
+
+                    sf::Text cyanText(font, sfChar, style.dialogueFontSize);
+                    cyanText.setFillColor(sf::Color(0, 255, 255, 128));
+                    cyanText.setPosition(drawPos + sf::Vector2f(2.0f, 0.0f));
+                    target.draw(cyanText);
+                }
+            }
 
             sf::Text charText(font, sfChar, style.dialogueFontSize);
             charText.setFillColor(fg.style.color);
