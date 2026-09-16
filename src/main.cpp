@@ -44,7 +44,6 @@
 #include "core/AudioManager.hpp"
 #include "core/SaveManager.hpp"
 
-// 開發版專屬模組
 #ifdef GALITY_DEV_BUILD
 #include "core/HotReloader.hpp"
 #include "render/DebugOverlay.hpp"
@@ -53,9 +52,6 @@
 
 namespace fs = std::filesystem;
 
-// ============================================================================
-// 建置模式
-// ============================================================================
 #ifdef GALITY_DEV_BUILD
 constexpr bool IS_DEV_BUILD = true;
 constexpr const char* BUILD_NAME = "DEVELOP";
@@ -64,14 +60,11 @@ constexpr bool IS_DEV_BUILD = false;
 constexpr const char* BUILD_NAME = "PRODUCT";
 #endif
 
-// ============================================================================
-// 邏輯視窗解析度
-// ============================================================================
 constexpr unsigned int LOGICAL_WIDTH = 1920;
 constexpr unsigned int LOGICAL_HEIGHT = 1080;
 
 // ============================================================================
-// Letterbox 視口計算
+// Letterbox
 // ============================================================================
 sf::View calculateLetterboxView(sf::Vector2u windowSize) {
     float windowRatio = static_cast<float>(windowSize.x) / static_cast<float>(windowSize.y);
@@ -95,9 +88,6 @@ sf::View calculateLetterboxView(sf::Vector2u windowSize) {
     return view;
 }
 
-// ============================================================================
-// 時間戳記輔助
-// ============================================================================
 std::string getTimestamp() {
     auto now = std::chrono::system_clock::now();
     auto timestamp = std::chrono::system_clock::to_time_t(now);
@@ -116,7 +106,6 @@ std::string getTimestamp() {
 // GalityApp
 // ============================================================================
 struct GalityApp {
-    // ===== 核心 =====
     sf::RenderWindow window;
     sf::View letterboxView;
     sf::RenderTexture sceneBuffer;
@@ -126,7 +115,6 @@ struct GalityApp {
     LRUCache<std::string, std::shared_ptr<sf::Texture>> textureCache;
     StoryExecutor executor;
 
-    // ===== UI =====
     DialogueBox dialogueBox;
     ChoiceUI choiceUI;
     LayerRenderer layerRenderer;
@@ -140,14 +128,12 @@ struct GalityApp {
     TitleMenu titleMenu;
     UITheme uiTheme;
 
-    // ===== 開發版專屬 =====
 #ifdef GALITY_DEV_BUILD
     std::unique_ptr<HotReloader> hotReloader;
     DebugOverlay debugOverlay;
     NodeGraphViewer nodeGraphViewer;
 #endif
 
-    // ===== 狀態 =====
     std::unordered_map<std::string, std::shared_ptr<StoryNode>> nodeIndexMap;
     std::shared_ptr<StoryNode> rootNode;
 
@@ -180,7 +166,6 @@ struct GalityApp {
     bool initialize() {
         std::cout << "[Boot] Initializing Gality Engine [" << BUILD_NAME << "]" << std::endl;
 
-        // 1. 視窗
 #ifdef __EMSCRIPTEN__
         window.create(sf::VideoMode({1280, 720}), "Gality Engine");
 #else
@@ -196,7 +181,6 @@ struct GalityApp {
 
         letterboxView = calculateLetterboxView(window.getSize());
 
-        // 2. RenderTexture
         if (!sceneBuffer.resize(sf::Vector2u(LOGICAL_WIDTH, LOGICAL_HEIGHT))) {
             std::cerr << "[Boot Error] Failed to create sceneBuffer!" << std::endl;
             return false;
@@ -206,7 +190,6 @@ struct GalityApp {
             return false;
         }
 
-        // 3. 目錄
 #ifndef __EMSCRIPTEN__
         fs::create_directories("saves");
         fs::create_directories("screenshots");
@@ -214,16 +197,14 @@ struct GalityApp {
         fs::create_directories("assets/masks");
 #endif
 
-        // 4. 配置
         ConfigManager::load();
 
-        // 5. 劇本
         rootNode = ScriptLoader::loadFromFile("assets/scripts/demo_long.json");
         if (!rootNode) {
             std::cerr << "[Boot Error] Failed to load script!" << std::endl;
 #ifdef _WIN32
 #ifndef __EMSCRIPTEN__
-            MessageBoxW(NULL, L"Cannot open script file", L"Error", MB_ICONERROR | MB_OK);
+            MessageBoxW(NULL, L"腳本載入失敗", L"錯誤", MB_ICONERROR | MB_OK);
 #endif
 #endif
             return false;
@@ -233,7 +214,6 @@ struct GalityApp {
             nodeIndexMap[id] = nodePtr;
         }
 
-        // 6. 字型
         if (!dialogueBox.loadFont("assets/fonts/font.ttf") ||
             !choiceUI.loadFont("assets/fonts/font.ttf") ||
             !backlogUI.loadFont("assets/fonts/font.ttf") ||
@@ -253,15 +233,12 @@ struct GalityApp {
         std::cout << "[Boot] Debug tools loaded (DEVELOP build)" << std::endl;
 #endif
 
-        // 7. 打字音效
         dialogueBox.loadTypeSound("assets/audio/typewriter.wav");
 
-        // 8. UI 主題
         uiTheme.loadFromFile("assets/config/ui_theme.json");
-        dialogueBox.applyTheme(uiTheme.dialogueStyle);
+        dialogueBox.applyTheme(uiTheme.dialogueStyle, uiTheme.dialogueButtonsStyle);
         choiceUI.applyTheme(uiTheme.choiceStyle);
 
-        // 9. HotReloader（僅開發版）
 #ifdef GALITY_DEV_BUILD
 #ifndef __EMSCRIPTEN__
         hotReloader = std::make_unique<HotReloader>(
@@ -271,7 +248,7 @@ struct GalityApp {
 #endif
 #endif
 
-        // 10. SettingsUI 回呼
+        // ===== SettingsUI 回呼 =====
         settingsUI.setExitCallback([this]() {
             std::cout << "[Settings] Exiting..." << std::endl;
             isRunning = false;
@@ -288,7 +265,7 @@ struct GalityApp {
             titleMenu.setVisible(true);
         });
 
-        // 11. TitleMenu BGM 回呼
+        // ===== TitleMenu BGM 回呼 =====
         titleMenu.setBGMRequestCallback([this](const std::string& path, float volume, bool loop, float fadeIn) {
             audioManager.playBGM(path, volume, loop, fadeIn);
         });
@@ -297,7 +274,34 @@ struct GalityApp {
             audioManager.stopBGM();
         });
 
-        // 12. TitleMenu 配置與動作
+        // ===== DialogueBox 按鈕回呼 =====
+        dialogueBox.setBacklogCallback([this]() {
+            backlogUI.toggle();
+        });
+
+        dialogueBox.setSaveCallback([this]() {
+            saveLoadUI.open(SaveLoadMode::Save, sf::Vector2u(LOGICAL_WIDTH, LOGICAL_HEIGHT),
+                            [this](int slot) { saveToSlot(slot); },
+                            [this](int slot) { loadFromSlot(slot); });
+        });
+
+        dialogueBox.setLoadCallback([this]() {
+            saveLoadUI.open(SaveLoadMode::Load, sf::Vector2u(LOGICAL_WIDTH, LOGICAL_HEIGHT),
+                            [this](int slot) { saveToSlot(slot); },
+                            [this](int slot) { loadFromSlot(slot); });
+        });
+
+        dialogueBox.setMenuCallback([this]() {
+            settingsUI.setVisible(true);
+        });
+
+        dialogueBox.setAdvanceCallback([this]() {
+            audioManager.stopVoice();
+            executor.advance();
+            syncCurrentNodeState(true, true);
+        });
+
+        // ===== TitleMenu 動作 =====
         titleMenu.loadConfig("assets/config/title_menu.json");
 
         titleMenu.registerAction("start", [this]() {
@@ -305,6 +309,7 @@ struct GalityApp {
             titleMenu.setVisible(false);
             blackboard = Blackboard();
             backlogUI.clear();
+            dialogueBox.resetModes();
             executor.start(rootNode);
             syncCurrentNodeState(true, false);
         });
@@ -369,6 +374,22 @@ struct GalityApp {
         auto currentNode = executor.getCurrentNode();
         if (!currentNode) return;
 
+        // ⚠️ Skip 停止條件
+        if (dialogueBox.isSkipHeld()) {
+            // 停止條件 1：遇到選項
+            if (currentNode->type == NodeType::Choice) {
+                dialogueBox.stopSkip();
+                std::cout << "[Skip] Stopped at choice: " << currentNode->id << std::endl;
+            }
+
+            // 停止條件 2：遇到結局
+            if (currentNode->id.find("node_ending_") == 0 ||
+                currentNode->id.find("node_end_") == 0) {
+                dialogueBox.stopSkip();
+                std::cout << "[Skip] Stopped at ending: " << currentNode->id << std::endl;
+            }
+        }
+
         if (currentNode->type == NodeType::Dialogue) {
             dialogueBox.setText(currentNode->speaker, currentNode->text);
 
@@ -431,6 +452,11 @@ struct GalityApp {
 
             executor.updatePresentationState(previousBgPath, currentSlots, currentActiveSlot,
                                              currentWeatherStr, currentPlayingBgm);
+
+            // 切換節點時重置隱藏模式
+            if (dialogueBox.isHiddenMode()) {
+                dialogueBox.setHiddenMode(false);
+            }
 
         } else if (currentNode->type == NodeType::Choice) {
             choiceUI.setChoices(currentNode->choices);
@@ -505,6 +531,7 @@ struct GalityApp {
         blackboard.setAllInts(snapshot.intFlags);
         executor.jumpToNode(nodeIndexMap[snapshot.currentNodeId]);
         titleMenu.setVisible(false);
+        dialogueBox.resetModes();
 
         previousBgPath = snapshot.bgImagePath;
         layerRenderer.setBackground(snapshot.bgImagePath, sf::Vector2u(LOGICAL_WIDTH, LOGICAL_HEIGHT));
@@ -537,7 +564,6 @@ struct GalityApp {
     // ========================================================================
     void handleEvents() {
         while (const auto event = window.pollEvent()) {
-            // 視窗關閉
             if (event->is<sf::Event::Closed>()) {
                 isRunning = false;
 #ifdef __EMSCRIPTEN__
@@ -547,13 +573,11 @@ struct GalityApp {
                 return;
             }
 
-            // Resize
             if (const auto* resizeEvt = event->getIf<sf::Event::Resized>()) {
                 letterboxView = calculateLetterboxView(resizeEvt->size);
                 settingsUI.onResize(resizeEvt->size);
             }
 
-            // 邏輯滑鼠座標
             sf::Vector2i pixelMousePos = sf::Mouse::getPosition(window);
             sf::Vector2f logicalMousePosF = window.mapPixelToCoords(pixelMousePos, letterboxView);
             sf::Vector2i logicalMousePosI(
@@ -562,24 +586,29 @@ struct GalityApp {
             );
 
             // =================================================================
+            // ⚠️ 全域滑鼠放開事件（處理 Skip 停止）
+            // =================================================================
+            if (const auto* mouseRel = event->getIf<sf::Event::MouseButtonReleased>()) {
+                if (mouseRel->button == sf::Mouse::Button::Left) {
+                    dialogueBox.handleButtonRelease();
+                }
+            }
+
+            // =================================================================
             // 全域快捷鍵
             // =================================================================
             if (const auto* keyBtn = event->getIf<sf::Event::KeyPressed>()) {
-                // F12 ：截圖（所有版本都支援）
                 if (keyBtn->code == sf::Keyboard::Key::F12) {
                     captureScreenshot();
                     continue;
                 }
 
 #ifdef GALITY_DEV_BUILD
-                // F1 / ~ ：DebugOverlay
                 if (keyBtn->code == sf::Keyboard::Key::F1 ||
                     keyBtn->code == sf::Keyboard::Key::Grave) {
                     debugOverlay.toggle();
                     continue;
                 }
-
-                // F2 ：NodeGraphViewer
                 if (keyBtn->code == sf::Keyboard::Key::F2) {
                     if (debugOverlay.getIsVisible()) {
                         debugOverlay.toggle();
@@ -589,7 +618,6 @@ struct GalityApp {
                 }
 #endif
 
-                // F5 / F9 ：存讀檔
                 if (keyBtn->code == sf::Keyboard::Key::F5) {
                     saveLoadUI.open(SaveLoadMode::Save, sf::Vector2u(LOGICAL_WIDTH, LOGICAL_HEIGHT),
                                     [this](int slot) { saveToSlot(slot); },
@@ -652,9 +680,6 @@ struct GalityApp {
             }
 
 #ifdef GALITY_DEV_BUILD
-            // =================================================================
-            // NodeGraphViewer
-            // =================================================================
             if (nodeGraphViewer.getIsVisible()) {
                 nodeGraphViewer.handleEvent(*event, window);
                 if (const auto* keyBtn = event->getIf<sf::Event::KeyPressed>()) {
@@ -672,9 +697,6 @@ struct GalityApp {
                 continue;
             }
 
-            // =================================================================
-            // DebugOverlay
-            // =================================================================
             if (debugOverlay.getIsVisible()) {
                 if (const auto* keyBtn = event->getIf<sf::Event::KeyPressed>()) {
                     if (keyBtn->code == sf::Keyboard::Key::Escape) {
@@ -768,6 +790,25 @@ struct GalityApp {
             // =================================================================
             auto currentNode = executor.getCurrentNode();
 
+            // 隱藏模式下，任意輸入恢復
+            if (dialogueBox.isHiddenMode()) {
+                bool restore = false;
+                if (const auto* mouseBtn = event->getIf<sf::Event::MouseButtonPressed>()) {
+                    if (mouseBtn->button == sf::Mouse::Button::Left) restore = true;
+                }
+                if (const auto* keyBtn = event->getIf<sf::Event::KeyPressed>()) {
+                    if (keyBtn->code == sf::Keyboard::Key::Escape ||
+                        keyBtn->code == sf::Keyboard::Key::Enter ||
+                        keyBtn->code == sf::Keyboard::Key::Space) {
+                        restore = true;
+                    }
+                }
+                if (restore) {
+                    dialogueBox.setHiddenMode(false);
+                }
+                continue;
+            }
+
             if (const auto* keyBtn = event->getIf<sf::Event::KeyPressed>()) {
                 if (keyBtn->code == sf::Keyboard::Key::Escape) {
                     settingsUI.setVisible(true);
@@ -788,7 +829,6 @@ struct GalityApp {
 #endif
             }
 
-            // 滾輪
             if (const auto* wheelEvt = event->getIf<sf::Event::MouseWheelScrolled>()) {
                 if (wheelEvt->wheel == sf::Mouse::Wheel::Vertical) {
                     if (wheelEvt->delta > 0.0f) {
@@ -827,9 +867,30 @@ struct GalityApp {
                     }
                 }
             } else if (currentNode->type == NodeType::Dialogue) {
+                // 按鈕 hover
+                if (event->is<sf::Event::MouseMoved>()) {
+                    dialogueBox.updateButtonHover(logicalMousePosF);
+                }
+
+                // ⚠️ 按鈕按下（使用 handleButtonPress）
+                if (const auto* mouseBtn = event->getIf<sf::Event::MouseButtonPressed>()) {
+                    if (mouseBtn->button == sf::Mouse::Button::Left) {
+                        if (dialogueBox.handleButtonPress(logicalMousePosF)) {
+                            continue;
+                        }
+                    }
+                }
+
+                // 若 Skip 按住中，不處理一般推進
+                if (dialogueBox.isSkipHeld()) {
+                    continue;
+                }
+
+                // 一般推進對話
                 bool triggerAdvance = false;
                 if (const auto* keyBtn = event->getIf<sf::Event::KeyPressed>()) {
-                    if (keyBtn->code == sf::Keyboard::Key::Enter || keyBtn->code == sf::Keyboard::Key::Space) {
+                    if (keyBtn->code == sf::Keyboard::Key::Enter ||
+                        keyBtn->code == sf::Keyboard::Key::Space) {
                         triggerAdvance = true;
                     }
                 }

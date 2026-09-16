@@ -25,6 +25,7 @@ dist-dev/
 vcpkg_installed/
 .agent.md
 screenshots/
+*.zip
 build-dev/
 assets copy/
 test/

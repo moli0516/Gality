@@ -5,10 +5,42 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <vector>
 #include "../core/AssetPack.hpp"
 
 using json = nlohmann::json;
 
+// ============================================================================
+// 對話按鈕設定
+// ============================================================================
+struct DialogueButtonConfig {
+    std::string id;
+    std::string text;
+    bool enabled = true;
+};
+
+struct DialogueButtonsStyle {
+    bool enabled = true;
+    std::string position = "bottom-right";
+    float buttonWidth = 90.0f;
+    float buttonHeight = 36.0f;
+    float spacing = 8.0f;
+    unsigned int fontSize = 14;
+    float skipInterval = 0.05f;   // Skip 每 N 秒推進一次
+
+    sf::Color normalBgColor{40, 45, 60, 220};
+    sf::Color hoverBgColor{70, 90, 140, 240};
+    sf::Color activeBgColor{100, 130, 200, 250};
+    sf::Color outlineColor{80, 90, 110, 255};
+    sf::Color hoverOutlineColor{140, 180, 255, 255};
+    sf::Color textColor{220, 225, 235, 255};
+
+    std::vector<DialogueButtonConfig> buttons;
+};
+
+// ============================================================================
+// 對話框 / 選項樣式
+// ============================================================================
 struct DialogueBoxStyle {
     float posX = 80.f, posY = 740.f;
     float width = 1760.f, height = 280.f;
@@ -39,80 +71,95 @@ struct ChoiceUIStyle {
     sf::Color textColor{255, 255, 255, 255};
 };
 
+// ============================================================================
+// UITheme
+// ============================================================================
 class UITheme {
 private:
     static sf::Color parseColor(const json& arr) {
         if (arr.is_array() && arr.size() >= 4) {
-            return sf::Color(arr[0].get<uint8_t>(), arr[1].get<uint8_t>(), arr[2].get<uint8_t>(), arr[3].get<uint8_t>());
+            return sf::Color(
+                static_cast<std::uint8_t>(arr[0].get<int>()),
+                static_cast<std::uint8_t>(arr[1].get<int>()),
+                static_cast<std::uint8_t>(arr[2].get<int>()),
+                static_cast<std::uint8_t>(arr[3].get<int>())
+            );
+        }
+        if (arr.is_array() && arr.size() == 3) {
+            return sf::Color(
+                static_cast<std::uint8_t>(arr[0].get<int>()),
+                static_cast<std::uint8_t>(arr[1].get<int>()),
+                static_cast<std::uint8_t>(arr[2].get<int>())
+            );
         }
         return sf::Color::White;
+    }
+
+    void parseDialogueButtons(const json& j) {
+        if (!j.contains("dialogueButtons")) {
+            dialogueButtonsStyle.enabled = true;
+            dialogueButtonsStyle.buttons = {
+                {"auto",    "AUTO", true},
+                {"skip",    "SKIP", true},
+                {"backlog", "LOG",  true},
+                {"hide",    "HIDE", true},
+                {"menu",    "MENU", true}
+            };
+            return;
+        }
+
+        const auto& db = j["dialogueButtons"];
+        dialogueButtonsStyle.enabled = db.value("enabled", true);
+        dialogueButtonsStyle.position = db.value("position", "bottom-right");
+        dialogueButtonsStyle.buttonWidth = db.value("buttonWidth", 90.0f);
+        dialogueButtonsStyle.buttonHeight = db.value("buttonHeight", 36.0f);
+        dialogueButtonsStyle.spacing = db.value("spacing", 8.0f);
+        dialogueButtonsStyle.fontSize = db.value("fontSize", 14);
+        dialogueButtonsStyle.skipInterval = db.value("skipInterval", 0.05f);
+
+        if (db.contains("normalBgColor"))     dialogueButtonsStyle.normalBgColor = parseColor(db["normalBgColor"]);
+        if (db.contains("hoverBgColor"))      dialogueButtonsStyle.hoverBgColor = parseColor(db["hoverBgColor"]);
+        if (db.contains("activeBgColor"))     dialogueButtonsStyle.activeBgColor = parseColor(db["activeBgColor"]);
+        if (db.contains("outlineColor"))      dialogueButtonsStyle.outlineColor = parseColor(db["outlineColor"]);
+        if (db.contains("hoverOutlineColor")) dialogueButtonsStyle.hoverOutlineColor = parseColor(db["hoverOutlineColor"]);
+        if (db.contains("textColor"))         dialogueButtonsStyle.textColor = parseColor(db["textColor"]);
+
+        if (db.contains("buttons") && db["buttons"].is_array()) {
+            dialogueButtonsStyle.buttons.clear();
+            for (const auto& btn : db["buttons"]) {
+                DialogueButtonConfig cfg;
+                cfg.id = btn.value("id", "");
+                cfg.text = btn.value("text", "");
+                cfg.enabled = btn.value("enabled", true);
+                if (!cfg.id.empty()) {
+                    dialogueButtonsStyle.buttons.push_back(cfg);
+                }
+            }
+        }
     }
 
 public:
     DialogueBoxStyle dialogueStyle;
     ChoiceUIStyle choiceStyle;
+    DialogueButtonsStyle dialogueButtonsStyle;
 
     bool loadFromFile(const std::string& filePath) {
         std::string payload;
-        if (AssetPack::readTextFile(filePath, payload, "data.pak")) {
-            try {
-                std::istringstream stream(payload);
-                json j;
-                stream >> j;
+        bool fromPak = AssetPack::readTextFile(filePath, payload, "data.pak");
 
-                if (j.contains("dialogueBox")) {
-                    const auto& db = j["dialogueBox"];
-                    dialogueStyle.posX = db.value("posX", 80.f);
-                    dialogueStyle.posY = db.value("posY", 740.f);
-                    dialogueStyle.width = db.value("width", 1760.f);
-                    dialogueStyle.height = db.value("height", 280.f);
-                    dialogueStyle.bgColor = parseColor(db["bgColor"]);
-                    dialogueStyle.borderColor = parseColor(db["borderColor"]);
-
-                    dialogueStyle.nameBoxPosX = db.value("nameBoxPosX", 80.f);
-                    dialogueStyle.nameBoxPosY = db.value("nameBoxPosY", 670.f);
-                    dialogueStyle.nameBoxWidth = db.value("nameBoxWidth", 320.f);
-                    dialogueStyle.nameBoxHeight = db.value("nameBoxHeight", 60.f);
-                    dialogueStyle.nameBoxBgColor = parseColor(db["nameBoxBgColor"]);
-
-                    dialogueStyle.nameTextColor = parseColor(db["nameTextColor"]);
-                    dialogueStyle.dialogueTextColor = parseColor(db["dialogueTextColor"]);
-                    dialogueStyle.nameFontSize = db.value("nameFontSize", 28);
-                    dialogueStyle.dialogueFontSize = db.value("dialogueFontSize", 32);
-                }
-
-                if (j.contains("choiceUI")) {
-                    const auto& c = j["choiceUI"];
-                    choiceStyle.width = c.value("width", 1100.f);
-                    choiceStyle.height = c.value("height", 70.f);
-                    choiceStyle.spacing = c.value("spacing", 25.f);
-                    choiceStyle.startY = c.value("startY", 340.f);
-                    choiceStyle.fontSize = c.value("fontSize", 28);
-
-                    choiceStyle.normalBgColor = parseColor(c["normalBgColor"]);
-                    choiceStyle.hoverBgColor = parseColor(c["hoverBgColor"]);
-                    choiceStyle.normalOutlineColor = parseColor(c["normalOutlineColor"]);
-                    choiceStyle.hoverOutlineColor = parseColor(c["hoverOutlineColor"]);
-                    choiceStyle.textColor = parseColor(c["textColor"]);
-                }
-
-                std::cout << "[UITheme] Loaded UI configuration successfully from archive." << std::endl;
-                return true;
-            } catch (const std::exception& e) {
-                std::cerr << "[UITheme] Parse error: " << e.what() << std::endl;
+        if (!fromPak) {
+            std::ifstream file(filePath);
+            if (!file.is_open()) {
+                std::cerr << "[UITheme] Failed to open: " << filePath << std::endl;
                 return false;
             }
-        }
-
-        std::ifstream file(filePath);
-        if (!file.is_open()) {
-            std::cerr << "[UITheme] Failed to open theme file: " << filePath << ", using 1080p defaults." << std::endl;
-            return false;
+            std::stringstream ss;
+            ss << file.rdbuf();
+            payload = ss.str();
         }
 
         try {
-            json j;
-            file >> j;
+            json j = json::parse(payload);
 
             if (j.contains("dialogueBox")) {
                 const auto& db = j["dialogueBox"];
@@ -120,17 +167,17 @@ public:
                 dialogueStyle.posY = db.value("posY", 740.f);
                 dialogueStyle.width = db.value("width", 1760.f);
                 dialogueStyle.height = db.value("height", 280.f);
-                dialogueStyle.bgColor = parseColor(db["bgColor"]);
-                dialogueStyle.borderColor = parseColor(db["borderColor"]);
+                if (db.contains("bgColor")) dialogueStyle.bgColor = parseColor(db["bgColor"]);
+                if (db.contains("borderColor")) dialogueStyle.borderColor = parseColor(db["borderColor"]);
 
                 dialogueStyle.nameBoxPosX = db.value("nameBoxPosX", 80.f);
                 dialogueStyle.nameBoxPosY = db.value("nameBoxPosY", 670.f);
                 dialogueStyle.nameBoxWidth = db.value("nameBoxWidth", 320.f);
                 dialogueStyle.nameBoxHeight = db.value("nameBoxHeight", 60.f);
-                dialogueStyle.nameBoxBgColor = parseColor(db["nameBoxBgColor"]);
+                if (db.contains("nameBoxBgColor")) dialogueStyle.nameBoxBgColor = parseColor(db["nameBoxBgColor"]);
 
-                dialogueStyle.nameTextColor = parseColor(db["nameTextColor"]);
-                dialogueStyle.dialogueTextColor = parseColor(db["dialogueTextColor"]);
+                if (db.contains("nameTextColor")) dialogueStyle.nameTextColor = parseColor(db["nameTextColor"]);
+                if (db.contains("dialogueTextColor")) dialogueStyle.dialogueTextColor = parseColor(db["dialogueTextColor"]);
                 dialogueStyle.nameFontSize = db.value("nameFontSize", 28);
                 dialogueStyle.dialogueFontSize = db.value("dialogueFontSize", 32);
             }
@@ -143,14 +190,16 @@ public:
                 choiceStyle.startY = c.value("startY", 340.f);
                 choiceStyle.fontSize = c.value("fontSize", 28);
 
-                choiceStyle.normalBgColor = parseColor(c["normalBgColor"]);
-                choiceStyle.hoverBgColor = parseColor(c["hoverBgColor"]);
-                choiceStyle.normalOutlineColor = parseColor(c["normalOutlineColor"]);
-                choiceStyle.hoverOutlineColor = parseColor(c["hoverOutlineColor"]);
-                choiceStyle.textColor = parseColor(c["textColor"]);
+                if (c.contains("normalBgColor")) choiceStyle.normalBgColor = parseColor(c["normalBgColor"]);
+                if (c.contains("hoverBgColor")) choiceStyle.hoverBgColor = parseColor(c["hoverBgColor"]);
+                if (c.contains("normalOutlineColor")) choiceStyle.normalOutlineColor = parseColor(c["normalOutlineColor"]);
+                if (c.contains("hoverOutlineColor")) choiceStyle.hoverOutlineColor = parseColor(c["hoverOutlineColor"]);
+                if (c.contains("textColor")) choiceStyle.textColor = parseColor(c["textColor"]);
             }
 
-            std::cout << "[UITheme] Loaded UI configuration successfully." << std::endl;
+            parseDialogueButtons(j);
+
+            std::cout << "[UITheme] Loaded successfully" << std::endl;
             return true;
         } catch (const std::exception& e) {
             std::cerr << "[UITheme] Parse error: " << e.what() << std::endl;

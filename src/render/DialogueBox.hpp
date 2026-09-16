@@ -7,6 +7,7 @@
 #include <memory>
 #include <algorithm>
 #include <unordered_set>
+#include <functional>
 #include <cmath>
 #include <cstdlib>
 #include "UITheme.hpp"
@@ -14,7 +15,7 @@
 #include "../core/AssetPack.hpp"
 
 // ============================================================================
-// 1. 排版與富文字標籤資料結構
+// 排版與富文字標籤資料結構
 // ============================================================================
 struct GlyphStyle {
     sf::Color color = sf::Color::White;
@@ -32,9 +33,21 @@ struct FormattedGlyph {
 };
 
 // ============================================================================
-// 2. DialogueBox 類別
+// DialogueBox
 // ============================================================================
 class DialogueBox {
+public:
+    enum class ButtonAction {
+        None,
+        Auto,
+        Skip,
+        Backlog,
+        Save,
+        Load,
+        Hide,
+        Menu
+    };
+
 private:
     sf::RectangleShape boxShape;
     sf::RectangleShape nameBoxShape;
@@ -59,8 +72,42 @@ private:
 
     DialogueBoxStyle style;
 
+    // ===== 功能按鈕 =====
+    struct FunctionButton {
+        sf::RectangleShape shape;
+        std::unique_ptr<sf::Text> text;
+        std::string id;
+        ButtonAction action = ButtonAction::None;
+        bool isHovered = false;
+        bool isActive = false;
+    };
+    std::vector<FunctionButton> functionButtons;
+    DialogueButtonsStyle buttonsStyle;
+    bool buttonsEnabled = false;
+
+    // ===== 模式狀態 =====
+    bool autoMode = false;
+    float autoDelay = 1.5f;
+    float autoTimer = 0.0f;
+
+    // ===== Skip 按住狀態 =====
+    bool skipHeld = false;
+    float skipTimer = 0.0f;
+    float skipInterval = 0.05f;
+    float skipWarmup = 0.0f;
+    const float skipWarmupDuration = 0.15f;
+
+    bool hiddenMode = false;
+
+    // ===== 回呼 =====
+    std::function<void()> onBacklogCallback;
+    std::function<void()> onSaveCallback;
+    std::function<void()> onLoadCallback;
+    std::function<void()> onMenuCallback;
+    std::function<void()> onAdvanceCallback;
+
     // ------------------------------------------------------------------------
-    // CJK Kinsoku Shori (避頭尾禁則)
+    // CJK Kinsoku Shori
     // ------------------------------------------------------------------------
     static bool isProhibitedAtLineStart(char32_t cp) {
         static const std::unordered_set<char32_t> prohibited = {
@@ -100,7 +147,7 @@ private:
     }
 
     // ------------------------------------------------------------------------
-    // Tokenizer & Parser
+    // 解析行內標籤
     // ------------------------------------------------------------------------
     struct ParsedChar {
         char32_t codepoint;
@@ -203,13 +250,14 @@ private:
     }
 
     // ------------------------------------------------------------------------
-    // Layout Shaper Pass
+    // 排版
     // ------------------------------------------------------------------------
     void buildLayout(const std::vector<ParsedChar>& parsedList) {
         glyphs.clear();
         totalCharCount = parsedList.size();
         visibleCharCount = 0;
         isCompleted = false;
+        autoTimer = 0.0f;
 
         float padding = 25.0f;
         float startX = boxShape.getPosition().x + padding;
@@ -272,16 +320,88 @@ private:
 
             if (item.style.isGlitching) {
                 fg.glitchSeed = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
-            } else {
-                fg.glitchSeed = 0.0f;
             }
 
             glyphs.push_back(fg);
-
             currX += advanceX;
         }
 
         totalCharCount = glyphs.size();
+    }
+
+    // ------------------------------------------------------------------------
+    // 按鈕建立
+    // ------------------------------------------------------------------------
+    static ButtonAction stringToAction(const std::string& id) {
+        if (id == "auto") return ButtonAction::Auto;
+        if (id == "skip") return ButtonAction::Skip;
+        if (id == "backlog") return ButtonAction::Backlog;
+        if (id == "save") return ButtonAction::Save;
+        if (id == "load") return ButtonAction::Load;
+        if (id == "hide") return ButtonAction::Hide;
+        if (id == "menu") return ButtonAction::Menu;
+        return ButtonAction::None;
+    }
+
+    void buildFunctionButtons() {
+        functionButtons.clear();
+        if (!buttonsEnabled) return;
+
+        float panelRight = style.posX + style.width;
+        float panelBottom = style.posY;
+
+        float baseX = panelRight;
+        float baseY = panelBottom - buttonsStyle.buttonHeight - 8.0f;
+
+        if (buttonsStyle.position == "top-right") {
+            baseY = style.posY + 8.0f;
+        } else if (buttonsStyle.position == "bottom-left") {
+            baseX = style.posX + 8.0f;
+        } else if (buttonsStyle.position == "top-left") {
+            baseX = style.posX + 8.0f;
+            baseY = style.posY + 8.0f;
+        }
+
+        size_t enabledCount = 0;
+        for (const auto& cfg : buttonsStyle.buttons) {
+            if (cfg.enabled) enabledCount++;
+        }
+
+        if (enabledCount == 0) return;
+
+        float totalWidth = enabledCount * buttonsStyle.buttonWidth
+                         + (enabledCount - 1) * buttonsStyle.spacing;
+
+        float startX = baseX - totalWidth - 8.0f;
+        float startY = baseY;
+
+        for (const auto& cfg : buttonsStyle.buttons) {
+            if (!cfg.enabled) continue;
+
+            FunctionButton btn;
+            btn.id = cfg.id;
+            btn.action = stringToAction(cfg.id);
+
+            btn.shape.setSize(sf::Vector2f(buttonsStyle.buttonWidth, buttonsStyle.buttonHeight));
+            btn.shape.setPosition(sf::Vector2f(startX, startY));
+            btn.shape.setFillColor(buttonsStyle.normalBgColor);
+            btn.shape.setOutlineThickness(1.5f);
+            btn.shape.setOutlineColor(buttonsStyle.outlineColor);
+
+            btn.text = std::make_unique<sf::Text>(font);
+            btn.text->setString(sf::String::fromUtf8(cfg.text.begin(), cfg.text.end()));
+            btn.text->setCharacterSize(buttonsStyle.fontSize);
+            btn.text->setFillColor(buttonsStyle.textColor);
+
+            sf::FloatRect tb = btn.text->getLocalBounds();
+            btn.text->setPosition(sf::Vector2f(
+                startX + (buttonsStyle.buttonWidth - tb.size.x) * 0.5f,
+                startY + (buttonsStyle.buttonHeight - tb.size.y) * 0.5f - 4.0f
+            ));
+
+            functionButtons.push_back(std::move(btn));
+            startX += buttonsStyle.buttonWidth + buttonsStyle.spacing;
+        }
     }
 
 public:
@@ -318,8 +438,15 @@ public:
         }
     }
 
-    void applyTheme(const DialogueBoxStyle& st) {
+    void applyTheme(const DialogueBoxStyle& st, const DialogueButtonsStyle& btnStyle) {
         style = st;
+        buttonsStyle = btnStyle;
+        buttonsEnabled = btnStyle.enabled;
+
+        // 從樣式讀取 skipInterval
+        skipInterval = btnStyle.skipInterval;
+        if (skipInterval <= 0.0f) skipInterval = 0.05f;
+
         boxShape.setSize(sf::Vector2f(style.width, style.height));
         boxShape.setFillColor(style.bgColor);
         boxShape.setOutlineThickness(2.f);
@@ -333,6 +460,13 @@ public:
         nameText.setCharacterSize(style.nameFontSize);
         nameText.setFillColor(style.nameTextColor);
         nameText.setPosition(sf::Vector2f(style.nameBoxPosX + 15.f, style.nameBoxPosY + 8.f));
+
+        buildFunctionButtons();
+    }
+
+    void applyTheme(const DialogueBoxStyle& st) {
+        DialogueButtonsStyle defaultBtnStyle;
+        applyTheme(st, defaultBtnStyle);
     }
 
     void setText(const std::string& speaker, const std::string& text) {
@@ -345,9 +479,50 @@ public:
         timer.restart();
     }
 
+    // ========================================================================
+    // 更新
+    // ========================================================================
     void update() {
-        if (isCompleted) return;
+        // ⚠️ Skip 按住模式：自動快速推進
+        if (skipHeld && !hiddenMode) {
+            float dt = timer.getElapsedTime().asSeconds();
+            timer.restart();
 
+            // 立即顯示全部文字
+            visibleCharCount = totalCharCount;
+            isCompleted = true;
+
+            // 暖機階段（避免誤觸）
+            skipWarmup += dt;
+            if (skipWarmup < skipWarmupDuration) {
+                return;
+            }
+
+            // 暖機完成，開始快速推進
+            skipTimer += dt;
+            if (skipTimer >= skipInterval) {
+                skipTimer = 0.0f;
+                if (onAdvanceCallback) {
+                    onAdvanceCallback();
+                }
+            }
+            return;
+        }
+
+        // 自動模式
+        if (isCompleted) {
+            if (autoMode && !hiddenMode) {
+                autoTimer += timer.getElapsedTime().asSeconds();
+                timer.restart();
+                if (autoTimer >= autoDelay) {
+                    autoTimer = 0.0f;
+                    if (onAdvanceCallback) onAdvanceCallback();
+                }
+            }
+            return;
+        }
+
+        // 一般打字機效果
         float dt = timer.getElapsedTime().asSeconds();
 
         if (currentPauseRemaining > 0.0f) {
@@ -357,6 +532,7 @@ public:
         }
 
         float stepInterval = ConfigManager::config.textSpeed;
+
         if (visibleCharCount < totalCharCount &&
             glyphs[visibleCharCount].style.customSpeed >= 0.0f) {
             stepInterval = glyphs[visibleCharCount].style.customSpeed;
@@ -380,11 +556,20 @@ public:
                 }
             } else {
                 isCompleted = true;
+                autoTimer = 0.0f;
             }
         }
     }
 
     bool onInteract() {
+        // 按住 Skip 時，忽略一般點擊
+        if (skipHeld) return false;
+
+        if (hiddenMode) {
+            hiddenMode = false;
+            return false;
+        }
+
         if (!isCompleted) {
             visibleCharCount = totalCharCount;
             currentPauseRemaining = 0.0f;
@@ -394,7 +579,133 @@ public:
         return true;
     }
 
+    // ========================================================================
+    // 按鈕互動
+    // ========================================================================
+    void updateButtonHover(sf::Vector2f mousePosF) {
+        if (!buttonsEnabled || hiddenMode) return;
+        for (auto& btn : functionButtons) {
+            btn.isHovered = btn.shape.getGlobalBounds().contains(mousePosF);
+        }
+    }
+
+    // 按下
+    bool handleButtonPress(sf::Vector2f mousePosF) {
+        if (!buttonsEnabled || hiddenMode) return false;
+
+        for (auto& btn : functionButtons) {
+            if (btn.shape.getGlobalBounds().contains(mousePosF)) {
+                switch (btn.action) {
+                    case ButtonAction::Auto:
+                        autoMode = !autoMode;
+                        btn.isActive = autoMode;
+                        autoTimer = 0.0f;
+                        break;
+
+                    case ButtonAction::Skip:
+                        // ⚠️ 開始按住快進
+                        skipHeld = true;
+                        skipWarmup = 0.0f;
+                        skipTimer = 0.0f;
+                        btn.isActive = true;
+                        break;
+
+                    case ButtonAction::Backlog:
+                        if (onBacklogCallback) onBacklogCallback();
+                        break;
+
+                    case ButtonAction::Save:
+                        if (onSaveCallback) onSaveCallback();
+                        break;
+
+                    case ButtonAction::Load:
+                        if (onLoadCallback) onLoadCallback();
+                        break;
+
+                    case ButtonAction::Hide:
+                        hiddenMode = true;
+                        break;
+
+                    case ButtonAction::Menu:
+                        if (onMenuCallback) onMenuCallback();
+                        break;
+
+                    default:
+                        break;
+                }
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // 放開
+    void handleButtonRelease() {
+        if (skipHeld) {
+            skipHeld = false;
+            skipTimer = 0.0f;
+            skipWarmup = 0.0f;
+
+            for (auto& btn : functionButtons) {
+                if (btn.action == ButtonAction::Skip) {
+                    btn.isActive = false;
+                }
+            }
+        }
+    }
+
+    // ========================================================================
+    // 回呼設定
+    // ========================================================================
+    void setBacklogCallback(std::function<void()> cb) { onBacklogCallback = cb; }
+    void setSaveCallback(std::function<void()> cb) { onSaveCallback = cb; }
+    void setLoadCallback(std::function<void()> cb) { onLoadCallback = cb; }
+    void setMenuCallback(std::function<void()> cb) { onMenuCallback = cb; }
+    void setAdvanceCallback(std::function<void()> cb) { onAdvanceCallback = cb; }
+
+    // ========================================================================
+    // 狀態存取
+    // ========================================================================
+    bool isAutoMode() const { return autoMode; }
+    bool isSkipHeld() const { return skipHeld; }
+    bool isHiddenMode() const { return hiddenMode; }
+
+    void setAutoMode(bool enabled) { autoMode = enabled; }
+    void setHiddenMode(bool enabled) { hiddenMode = enabled; }
+    void setAutoDelay(float seconds) { autoDelay = seconds; }
+    void setSkipInterval(float seconds) {
+        skipInterval = std::max(0.01f, seconds);
+    }
+
+    void stopSkip() {
+        skipHeld = false;
+        skipTimer = 0.0f;
+        skipWarmup = 0.0f;
+        for (auto& btn : functionButtons) {
+            if (btn.action == ButtonAction::Skip) {
+                btn.isActive = false;
+            }
+        }
+    }
+
+    void resetModes() {
+        autoMode = false;
+        skipHeld = false;
+        hiddenMode = false;
+        autoTimer = 0.0f;
+        skipTimer = 0.0f;
+        skipWarmup = 0.0f;
+        for (auto& btn : functionButtons) {
+            btn.isActive = false;
+        }
+    }
+
+    // ========================================================================
+    // 繪製
+    // ========================================================================
     void draw(sf::RenderTarget& target) {
+        if (hiddenMode) return;
+
         target.draw(boxShape);
         if (!nameText.getString().isEmpty()) {
             target.draw(nameBoxShape);
@@ -409,7 +720,6 @@ public:
 
             sf::Vector2f drawPos = fg.position;
 
-            // 一般抖動
             if (fg.style.isShaking) {
                 float ox = (-1.0f + static_cast<float>(rand()) / (RAND_MAX / 2.0f)) * 2.0f;
                 float oy = (-1.0f + static_cast<float>(rand()) / (RAND_MAX / 2.0f)) * 2.0f;
@@ -419,7 +729,6 @@ public:
             std::u32string singleCharStr(1, fg.codepoint);
             sf::String sfChar(singleCharStr);
 
-            // glitch 效果
             if (fg.style.isGlitching) {
                 float glitchTime = time * 10.0f + fg.glitchSeed * 100.0f;
                 float trigger = std::sin(glitchTime * 2.0f);
@@ -447,5 +756,27 @@ public:
             charText.setPosition(drawPos);
             target.draw(charText);
         }
+
+        drawFunctionButtons(target);
     }
-};
+
+    void drawFunctionButtons(sf::RenderTarget& target) {
+        if (!buttonsEnabled) return;
+
+        for (auto& btn : functionButtons) {
+            if (btn.isActive) {
+                btn.shape.setFillColor(buttonsStyle.activeBgColor);
+                btn.shape.setOutlineColor(buttonsStyle.hoverOutlineColor);
+            } else if (btn.isHovered) {
+                btn.shape.setFillColor(buttonsStyle.hoverBgColor);
+                btn.shape.setOutlineColor(buttonsStyle.hoverOutlineColor);
+            } else {
+                btn.shape.setFillColor(buttonsStyle.normalBgColor);
+                btn.shape.setOutlineColor(buttonsStyle.outlineColor);
+            }
+
+            target.draw(btn.shape);
+            if (btn.text) target.draw(*btn.text);
+        }
+    }
+};  

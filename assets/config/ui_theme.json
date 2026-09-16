@@ -16,6 +16,30 @@
     "nameFontSize": 28,
     "dialogueFontSize": 32
   },
+  "dialogueButtons": {
+    "enabled": true,
+    "position": "bottom-right",
+    "buttonWidth": 90.0,
+    "buttonHeight": 36.0,
+    "spacing": 8.0,
+    "fontSize": 14,
+    "skipInterval": 0.05,
+    "normalBgColor": [40, 45, 60, 220],
+    "hoverBgColor": [70, 90, 140, 240],
+    "activeBgColor": [100, 130, 200, 250],
+    "outlineColor": [80, 90, 110, 255],
+    "hoverOutlineColor": [140, 180, 255, 255],
+    "textColor": [220, 225, 235, 255],
+    "buttons": [
+      { "id": "auto",    "text": "AUTO", "enabled": true },
+      { "id": "skip",    "text": "SKIP", "enabled": true },
+      { "id": "backlog", "text": "LOG",  "enabled": true },
+      { "id": "save",    "text": "SAVE", "enabled": false },
+      { "id": "load",    "text": "LOAD", "enabled": false },
+      { "id": "hide",    "text": "HIDE", "enabled": true },
+      { "id": "menu",    "text": "MENU", "enabled": true }
+    ]
+  },
   "choiceUI": {
     "width": 1100.0,
     "height": 70.0,
