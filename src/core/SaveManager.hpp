@@ -11,6 +11,7 @@
 #include <iomanip>
 #include <sstream>
 #include "Blackboard.hpp"
+#include "SafeTime.hpp"
 #include "../story/StoryNode.hpp"
 
 using json = nlohmann::json;
@@ -19,24 +20,19 @@ struct SaveSnapshot {
     std::string currentNodeId;
     std::unordered_map<std::string, int> intFlags;
 
-    // 舞台渲染與演出快照
     std::string bgImagePath;
     std::map<CharSlot, std::string> slotTextures;
     std::optional<CharSlot> activeSlot;
     std::string weather = "none";
 
-    // 音訊狀態快照
     std::string bgmPath;
 
-    // 💡 新增：時間戳記中繼資料
     std::string timestamp = "";
 
     void updateTimestamp() {
         auto now = std::chrono::system_clock::now();
         std::time_t in_time_t = std::chrono::system_clock::to_time_t(now);
-        std::stringstream ss;
-        ss << std::put_time(std::localtime(&in_time_t), "%Y-%m-%d %H:%M:%S");
-        timestamp = ss.str();
+        timestamp = SafeTime::formatLocalTime(in_time_t);
     }
 };
 
@@ -72,9 +68,8 @@ public:
 
             std::ofstream file(filePath);
             if (!file.is_open()) return false;
-
             file << saveJson.dump(4);
-            std::cout << "[SaveManager] Successfully saved to " << filePath << std::endl;
+            std::cout << "[SaveManager] Saved: " << filePath << std::endl;
             return true;
         } catch (const std::exception& e) {
             std::cerr << "[SaveManager] Save failed: " << e.what() << std::endl;

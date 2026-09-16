@@ -26,7 +26,7 @@ struct DialogueButtonsStyle {
     float buttonHeight = 36.0f;
     float spacing = 8.0f;
     unsigned int fontSize = 14;
-    float skipInterval = 0.05f;   // Skip 每 N 秒推進一次
+    float skipInterval = 0.05f;
 
     sf::Color normalBgColor{40, 45, 60, 220};
     sf::Color hoverBgColor{70, 90, 140, 240};
@@ -39,15 +39,25 @@ struct DialogueButtonsStyle {
 };
 
 // ============================================================================
+// 角色縮放設定
+// ============================================================================
+struct CharacterScalingStyle {
+    float single = 0.85f;
+    float doubleSlot = 0.75f;
+    float triple = 0.65f;
+    float bottomOffset = 15.0f;
+};
+
+// ============================================================================
 // 對話框 / 選項樣式
 // ============================================================================
 struct DialogueBoxStyle {
-    float posX = 80.f, posY = 740.f;
+    float posX = 80.f, posY = 620.f;
     float width = 1760.f, height = 280.f;
     sf::Color bgColor{0, 0, 0, 215};
     sf::Color borderColor{255, 255, 255, 100};
 
-    float nameBoxPosX = 80.f, nameBoxPosY = 670.f;
+    float nameBoxPosX = 80.f, nameBoxPosY = 550.f;
     float nameBoxWidth = 320.f, nameBoxHeight = 60.f;
     sf::Color nameBoxBgColor{40, 40, 90, 235};
 
@@ -61,11 +71,11 @@ struct ChoiceUIStyle {
     float width = 1100.f;
     float height = 70.f;
     float spacing = 25.f;
-    float startY = 340.f;
+    float startY = 220.f;
     unsigned int fontSize = 28;
 
-    sf::Color normalBgColor{30, 30, 50, 220};
-    sf::Color hoverBgColor{70, 70, 130, 240};
+    sf::Color normalBgColor{30, 30, 50, 240};
+    sf::Color hoverBgColor{70, 70, 130, 255};
     sf::Color normalOutlineColor{100, 100, 180, 255};
     sf::Color hoverOutlineColor{255, 215, 0, 255};
     sf::Color textColor{255, 255, 255, 255};
@@ -138,10 +148,21 @@ private:
         }
     }
 
+    void parseCharacterScaling(const json& j) {
+        if (!j.contains("characterScaling")) return;
+
+        const auto& cs = j["characterScaling"];
+        characterScaling.single = cs.value("single", 0.85f);
+        characterScaling.doubleSlot = cs.value("double", 0.75f);
+        characterScaling.triple = cs.value("triple", 0.65f);
+        characterScaling.bottomOffset = cs.value("bottomOffset", 15.0f);
+    }
+
 public:
     DialogueBoxStyle dialogueStyle;
     ChoiceUIStyle choiceStyle;
     DialogueButtonsStyle dialogueButtonsStyle;
+    CharacterScalingStyle characterScaling;
 
     bool loadFromFile(const std::string& filePath) {
         std::string payload;
@@ -164,14 +185,14 @@ public:
             if (j.contains("dialogueBox")) {
                 const auto& db = j["dialogueBox"];
                 dialogueStyle.posX = db.value("posX", 80.f);
-                dialogueStyle.posY = db.value("posY", 740.f);
+                dialogueStyle.posY = db.value("posY", 620.f);
                 dialogueStyle.width = db.value("width", 1760.f);
                 dialogueStyle.height = db.value("height", 280.f);
                 if (db.contains("bgColor")) dialogueStyle.bgColor = parseColor(db["bgColor"]);
                 if (db.contains("borderColor")) dialogueStyle.borderColor = parseColor(db["borderColor"]);
 
                 dialogueStyle.nameBoxPosX = db.value("nameBoxPosX", 80.f);
-                dialogueStyle.nameBoxPosY = db.value("nameBoxPosY", 670.f);
+                dialogueStyle.nameBoxPosY = db.value("nameBoxPosY", 550.f);
                 dialogueStyle.nameBoxWidth = db.value("nameBoxWidth", 320.f);
                 dialogueStyle.nameBoxHeight = db.value("nameBoxHeight", 60.f);
                 if (db.contains("nameBoxBgColor")) dialogueStyle.nameBoxBgColor = parseColor(db["nameBoxBgColor"]);
@@ -187,7 +208,7 @@ public:
                 choiceStyle.width = c.value("width", 1100.f);
                 choiceStyle.height = c.value("height", 70.f);
                 choiceStyle.spacing = c.value("spacing", 25.f);
-                choiceStyle.startY = c.value("startY", 340.f);
+                choiceStyle.startY = c.value("startY", 220.f);
                 choiceStyle.fontSize = c.value("fontSize", 28);
 
                 if (c.contains("normalBgColor")) choiceStyle.normalBgColor = parseColor(c["normalBgColor"]);
@@ -198,6 +219,7 @@ public:
             }
 
             parseDialogueButtons(j);
+            parseCharacterScaling(j);
 
             std::cout << "[UITheme] Loaded successfully" << std::endl;
             return true;

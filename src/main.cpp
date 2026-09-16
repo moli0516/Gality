@@ -52,6 +52,9 @@
 
 namespace fs = std::filesystem;
 
+// ============================================================================
+// 建置模式
+// ============================================================================
 #ifdef GALITY_DEV_BUILD
 constexpr bool IS_DEV_BUILD = true;
 constexpr const char* BUILD_NAME = "DEVELOP";
@@ -60,11 +63,14 @@ constexpr bool IS_DEV_BUILD = false;
 constexpr const char* BUILD_NAME = "PRODUCT";
 #endif
 
+// ============================================================================
+// 邏輯視窗解析度
+// ============================================================================
 constexpr unsigned int LOGICAL_WIDTH = 1920;
 constexpr unsigned int LOGICAL_HEIGHT = 1080;
 
 // ============================================================================
-// Letterbox
+// Letterbox 視口計算
 // ============================================================================
 sf::View calculateLetterboxView(sf::Vector2u windowSize) {
     float windowRatio = static_cast<float>(windowSize.x) / static_cast<float>(windowSize.y);
@@ -88,6 +94,9 @@ sf::View calculateLetterboxView(sf::Vector2u windowSize) {
     return view;
 }
 
+// ============================================================================
+// 時間戳記輔助
+// ============================================================================
 std::string getTimestamp() {
     auto now = std::chrono::system_clock::now();
     auto timestamp = std::chrono::system_clock::to_time_t(now);
@@ -106,6 +115,7 @@ std::string getTimestamp() {
 // GalityApp
 // ============================================================================
 struct GalityApp {
+    // ===== 核心 =====
     sf::RenderWindow window;
     sf::View letterboxView;
     sf::RenderTexture sceneBuffer;
@@ -115,6 +125,7 @@ struct GalityApp {
     LRUCache<std::string, std::shared_ptr<sf::Texture>> textureCache;
     StoryExecutor executor;
 
+    // ===== UI =====
     DialogueBox dialogueBox;
     ChoiceUI choiceUI;
     LayerRenderer layerRenderer;
@@ -128,12 +139,14 @@ struct GalityApp {
     TitleMenu titleMenu;
     UITheme uiTheme;
 
+    // ===== 開發版專屬 =====
 #ifdef GALITY_DEV_BUILD
     std::unique_ptr<HotReloader> hotReloader;
     DebugOverlay debugOverlay;
     NodeGraphViewer nodeGraphViewer;
 #endif
 
+    // ===== 狀態 =====
     std::unordered_map<std::string, std::shared_ptr<StoryNode>> nodeIndexMap;
     std::shared_ptr<StoryNode> rootNode;
 
@@ -166,6 +179,7 @@ struct GalityApp {
     bool initialize() {
         std::cout << "[Boot] Initializing Gality Engine [" << BUILD_NAME << "]" << std::endl;
 
+        // 1. 視窗
 #ifdef __EMSCRIPTEN__
         window.create(sf::VideoMode({1280, 720}), "Gality Engine");
 #else
@@ -181,6 +195,7 @@ struct GalityApp {
 
         letterboxView = calculateLetterboxView(window.getSize());
 
+        // 2. RenderTexture
         if (!sceneBuffer.resize(sf::Vector2u(LOGICAL_WIDTH, LOGICAL_HEIGHT))) {
             std::cerr << "[Boot Error] Failed to create sceneBuffer!" << std::endl;
             return false;
@@ -190,6 +205,7 @@ struct GalityApp {
             return false;
         }
 
+        // 3. 目錄
 #ifndef __EMSCRIPTEN__
         fs::create_directories("saves");
         fs::create_directories("screenshots");
@@ -197,8 +213,10 @@ struct GalityApp {
         fs::create_directories("assets/masks");
 #endif
 
+        // 4. 配置
         ConfigManager::load();
 
+        // 5. 劇本
         rootNode = ScriptLoader::loadFromFile("assets/scripts/demo_long.json");
         if (!rootNode) {
             std::cerr << "[Boot Error] Failed to load script!" << std::endl;
@@ -214,6 +232,7 @@ struct GalityApp {
             nodeIndexMap[id] = nodePtr;
         }
 
+        // 6. 字型
         if (!dialogueBox.loadFont("assets/fonts/font.ttf") ||
             !choiceUI.loadFont("assets/fonts/font.ttf") ||
             !backlogUI.loadFont("assets/fonts/font.ttf") ||
@@ -233,12 +252,24 @@ struct GalityApp {
         std::cout << "[Boot] Debug tools loaded (DEVELOP build)" << std::endl;
 #endif
 
+        // 7. 打字音效
         dialogueBox.loadTypeSound("assets/audio/typewriter.wav");
 
+        // 8. UI 主題
         uiTheme.loadFromFile("assets/config/ui_theme.json");
         dialogueBox.applyTheme(uiTheme.dialogueStyle, uiTheme.dialogueButtonsStyle);
         choiceUI.applyTheme(uiTheme.choiceStyle);
 
+        // ⚠️ 套用對話框保留高度與角色縮放係數
+        layerRenderer.setDialogueBoxReservedHeight(uiTheme.dialogueStyle.height);
+        layerRenderer.setScaleFactors(
+            uiTheme.characterScaling.single,
+            uiTheme.characterScaling.doubleSlot,
+            uiTheme.characterScaling.triple,
+            uiTheme.characterScaling.bottomOffset
+        );
+
+        // 9. HotReloader（僅開發版）
 #ifdef GALITY_DEV_BUILD
 #ifndef __EMSCRIPTEN__
         hotReloader = std::make_unique<HotReloader>(
@@ -248,7 +279,9 @@ struct GalityApp {
 #endif
 #endif
 
-        // ===== SettingsUI 回呼 =====
+        // ====================================================================
+        // 10. SettingsUI 回呼
+        // ====================================================================
         settingsUI.setExitCallback([this]() {
             std::cout << "[Settings] Exiting..." << std::endl;
             isRunning = false;
@@ -265,7 +298,9 @@ struct GalityApp {
             titleMenu.setVisible(true);
         });
 
-        // ===== TitleMenu BGM 回呼 =====
+        // ====================================================================
+        // 11. TitleMenu BGM 回呼
+        // ====================================================================
         titleMenu.setBGMRequestCallback([this](const std::string& path, float volume, bool loop, float fadeIn) {
             audioManager.playBGM(path, volume, loop, fadeIn);
         });
@@ -274,7 +309,9 @@ struct GalityApp {
             audioManager.stopBGM();
         });
 
-        // ===== DialogueBox 按鈕回呼 =====
+        // ====================================================================
+        // 12. DialogueBox 按鈕回呼
+        // ====================================================================
         dialogueBox.setBacklogCallback([this]() {
             backlogUI.toggle();
         });
@@ -301,7 +338,9 @@ struct GalityApp {
             syncCurrentNodeState(true, true);
         });
 
-        // ===== TitleMenu 動作 =====
+        // ====================================================================
+        // 13. TitleMenu 配置與動作
+        // ====================================================================
         titleMenu.loadConfig("assets/config/title_menu.json");
 
         titleMenu.registerAction("start", [this]() {
@@ -376,13 +415,11 @@ struct GalityApp {
 
         // ⚠️ Skip 停止條件
         if (dialogueBox.isSkipHeld()) {
-            // 停止條件 1：遇到選項
             if (currentNode->type == NodeType::Choice) {
                 dialogueBox.stopSkip();
                 std::cout << "[Skip] Stopped at choice: " << currentNode->id << std::endl;
             }
 
-            // 停止條件 2：遇到結局
             if (currentNode->id.find("node_ending_") == 0 ||
                 currentNode->id.find("node_end_") == 0) {
                 dialogueBox.stopSkip();
@@ -564,6 +601,7 @@ struct GalityApp {
     // ========================================================================
     void handleEvents() {
         while (const auto event = window.pollEvent()) {
+            // ===== 視窗關閉 =====
             if (event->is<sf::Event::Closed>()) {
                 isRunning = false;
 #ifdef __EMSCRIPTEN__
@@ -573,11 +611,13 @@ struct GalityApp {
                 return;
             }
 
+            // ===== Resize =====
             if (const auto* resizeEvt = event->getIf<sf::Event::Resized>()) {
                 letterboxView = calculateLetterboxView(resizeEvt->size);
                 settingsUI.onResize(resizeEvt->size);
             }
 
+            // 邏輯滑鼠座標
             sf::Vector2i pixelMousePos = sf::Mouse::getPosition(window);
             sf::Vector2f logicalMousePosF = window.mapPixelToCoords(pixelMousePos, letterboxView);
             sf::Vector2i logicalMousePosI(
@@ -609,6 +649,7 @@ struct GalityApp {
                     debugOverlay.toggle();
                     continue;
                 }
+
                 if (keyBtn->code == sf::Keyboard::Key::F2) {
                     if (debugOverlay.getIsVisible()) {
                         debugOverlay.toggle();
@@ -680,6 +721,9 @@ struct GalityApp {
             }
 
 #ifdef GALITY_DEV_BUILD
+            // =================================================================
+            // NodeGraphViewer
+            // =================================================================
             if (nodeGraphViewer.getIsVisible()) {
                 nodeGraphViewer.handleEvent(*event, window);
                 if (const auto* keyBtn = event->getIf<sf::Event::KeyPressed>()) {
@@ -697,6 +741,9 @@ struct GalityApp {
                 continue;
             }
 
+            // =================================================================
+            // DebugOverlay
+            // =================================================================
             if (debugOverlay.getIsVisible()) {
                 if (const auto* keyBtn = event->getIf<sf::Event::KeyPressed>()) {
                     if (keyBtn->code == sf::Keyboard::Key::Escape) {
@@ -829,6 +876,7 @@ struct GalityApp {
 #endif
             }
 
+            // 滾輪
             if (const auto* wheelEvt = event->getIf<sf::Event::MouseWheelScrolled>()) {
                 if (wheelEvt->wheel == sf::Mouse::Wheel::Vertical) {
                     if (wheelEvt->delta > 0.0f) {

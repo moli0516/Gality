@@ -12,14 +12,22 @@
 class LayerRenderer {
 private:
     LRUCache<std::string, std::shared_ptr<sf::Texture>>* textureCachePtr = nullptr;
-    sf::Texture emptyTexture; 
+    sf::Texture emptyTexture;
     std::string currentBgPath;
-    
-    // sf::Sprite 在 SFML 3.x 沒有預設建構子，必須在建構時初始化
+
     sf::Sprite bgSprite;
 
     std::map<CharSlot, sf::Sprite> characterSprites;
     std::map<CharSlot, std::string> currentSlotPaths;
+
+    // ===== 對話框佔用的高度（僅用於參考，不再限制立繪大小） =====
+    float dialogueBoxReservedHeight = 280.0f;
+
+    // ===== 縮放係數（以畫面高度為基準） =====
+    float scaleSingle = 0.85f;
+    float scaleDouble = 0.78f;
+    float scaleTriple = 0.70f;
+    float characterBottomOffset = 0.0f;
 
     float getSlotCenterX(CharSlot slot, float windowWidth) {
         switch (slot) {
@@ -32,7 +40,7 @@ private:
 
     std::shared_ptr<sf::Texture> getOrLoadTexture(const std::string& path) {
         if (!textureCachePtr) return nullptr;
-        
+
         if (textureCachePtr->contains(path)) {
             return textureCachePtr->get(path);
         } else {
@@ -55,13 +63,20 @@ private:
         }
     }
 
+    float getScaleFactor() const {
+        size_t count = characterSprites.size();
+        if (count >= 3) return scaleTriple;
+        if (count == 2) return scaleDouble;
+        if (count == 1) return scaleSingle;
+        return scaleSingle;
+    }
+
 public:
-    // 💡 修正 1：在初始化清單中明確綁定 emptyTexture 給 bgSprite
     LayerRenderer() : emptyTexture(), bgSprite(emptyTexture) {
         (void)emptyTexture.resize(sf::Vector2u(1, 1));
     }
 
-    LayerRenderer(LRUCache<std::string, std::shared_ptr<sf::Texture>>& cache) 
+    LayerRenderer(LRUCache<std::string, std::shared_ptr<sf::Texture>>& cache)
         : textureCachePtr(&cache), emptyTexture(), bgSprite(emptyTexture) {
         (void)emptyTexture.resize(sf::Vector2u(1, 1));
     }
@@ -69,6 +84,28 @@ public:
     void setCache(LRUCache<std::string, std::shared_ptr<sf::Texture>>& cache) {
         textureCachePtr = &cache;
     }
+
+    // ===== 設定對話框保留高度（保留 API，但僅供參考） =====
+    void setDialogueBoxReservedHeight(float height) {
+        dialogueBoxReservedHeight = height;
+    }
+
+    float getDialogueBoxReservedHeight() const {
+        return dialogueBoxReservedHeight;
+    }
+
+    // ===== 設定縮放係數 =====
+    void setScaleFactors(float single, float doubleSlot, float triple, float bottomOffset = 0.0f) {
+        scaleSingle = single;
+        scaleDouble = doubleSlot;
+        scaleTriple = triple;
+        characterBottomOffset = bottomOffset;
+    }
+
+    float getScaleSingle() const { return scaleSingle; }
+    float getScaleDouble() const { return scaleDouble; }
+    float getScaleTriple() const { return scaleTriple; }
+    float getCharacterBottomOffset() const { return characterBottomOffset; }
 
     void update(float /*dt*/) {}
 
@@ -101,8 +138,9 @@ public:
         updateCharacters(slots, CharSlot::Center);
     }
 
-    void updateCharacters(const std::map<CharSlot, std::string>& newSlots, 
+    void updateCharacters(const std::map<CharSlot, std::string>& newSlots,
                           std::optional<CharSlot> activeSlot) {
+        // 移除不再使用的槽位
         for (auto it = currentSlotPaths.begin(); it != currentSlotPaths.end(); ) {
             if (newSlots.find(it->first) == newSlots.end() || newSlots.at(it->first).empty()) {
                 characterSprites.erase(it->first);
@@ -112,6 +150,7 @@ public:
             }
         }
 
+        // 新增或更新槽位
         for (const auto& [slot, path] : newSlots) {
             if (path.empty() || path == "none" || path == "clear") {
                 characterSprites.erase(slot);
@@ -125,14 +164,14 @@ public:
                 if (texPtr) {
                     sf::Sprite sprite(*texPtr);
                     auto bounds = sprite.getLocalBounds();
+                    // 原點設在底部中心
                     sprite.setOrigin(sf::Vector2f(bounds.size.x * 0.5f, bounds.size.y));
-                    
-                    // 💡 修正 2：使用 insert_or_assign 避開 std::map 的預設建構限制
                     characterSprites.insert_or_assign(slot, sprite);
                 }
             }
         }
 
+        // 更新 activeSlot 的暗調
         for (auto& [slot, sprite] : characterSprites) {
             if (!activeSlot.has_value() || activeSlot.value() == slot) {
                 sprite.setColor(sf::Color(255, 255, 255, 255));
@@ -142,28 +181,33 @@ public:
         }
     }
 
+    // ===== 主繪製 =====
     void draw(sf::RenderTarget& target) {
+        // ===== 背景 =====
         if (!currentBgPath.empty()) {
             target.draw(bgSprite);
         }
-        float windowWidth = static_cast<float>(target.getSize().x);
-        float baselineY = static_cast<float>(target.getSize().y);
 
+        float windowWidth = static_cast<float>(target.getSize().x);
+        float windowHeight = static_cast<float>(target.getSize().y);
+
+        // ⚠️ 以「畫面高度」為基準（非對話框上方空間）
+        float scaleFactor = getScaleFactor();
+
+        // ===== 角色立繪 =====
         for (auto& [slot, sprite] : characterSprites) {
             float posX = getSlotCenterX(slot, windowWidth);
-            
-            // --- 💡 修復：加入自動縮放邏輯 (Auto Scaling) ---
-            // 讀取原始圖片高度
+
             float currentHeight = sprite.getLocalBounds().size.y;
             if (currentHeight > 0) {
-                // 將目標高度設定為視窗高度的 95% (保留一點頂部空間)
-                // 如果覺得太大或太小，可以微調 0.95f 這個係數 (例如 0.85f)
-                float targetHeight = baselineY * 0.95f; 
+                // 目標高度 = 畫面高度 × 縮放係數
+                float targetHeight = windowHeight * scaleFactor;
                 float scale = targetHeight / currentHeight;
                 sprite.setScale(sf::Vector2f(scale, scale));
             }
 
-            sprite.setPosition(sf::Vector2f(posX, baselineY));
+            // 底部對齊畫面底部（讓角色進入對話框）
+            sprite.setPosition(sf::Vector2f(posX, windowHeight + characterBottomOffset));
             target.draw(sprite);
         }
     }
