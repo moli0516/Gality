@@ -6,6 +6,7 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <unordered_map>
 #include "../core/AssetPack.hpp"
 
 using json = nlohmann::json;
@@ -61,7 +62,34 @@ struct CharacterScalingStyle {
 };
 
 // ============================================================================
-// 對話框 / 選項樣式
+// ⚠️ 新增：文字陰影
+// ============================================================================
+struct TextShadowStyle {
+    bool enabled = false;
+    float offsetX = 2.0f;
+    float offsetY = 2.0f;
+    sf::Color color{0, 0, 0, 180};
+};
+
+// ============================================================================
+// ⚠️ 新增：文字描邊
+// ============================================================================
+struct TextOutlineStyle {
+    bool enabled = false;
+    float thickness = 1.5f;
+    sf::Color color{0, 0, 0, 255};
+};
+
+// ============================================================================
+// ⚠️ 新增：字型配置
+// ============================================================================
+struct FontConfig {
+    std::string defaultName = "regular";
+    std::unordered_map<std::string, std::string> available;
+};
+
+// ============================================================================
+// 對話框樣式
 // ============================================================================
 struct DialogueBoxStyle {
     float posX = 80.f, posY = 720.f;
@@ -78,7 +106,15 @@ struct DialogueBoxStyle {
     unsigned int nameFontSize = 28;
     unsigned int dialogueFontSize = 32;
 
-    // ⚠️ 九宮格圖片
+    // ⚠️ 字型名稱
+    std::string dialogueFont = "regular";
+    std::string nameFont = "regular";
+
+    // ⚠️ 文字效果
+    TextShadowStyle textShadow;
+    TextOutlineStyle textOutline;
+
+    // 九宮格圖片
     NineSliceConfig backgroundImage;
     NineSliceConfig nameBoxImage;
 };
@@ -96,7 +132,6 @@ struct ChoiceUIStyle {
     sf::Color hoverOutlineColor{255, 215, 0, 255};
     sf::Color textColor{255, 255, 255, 255};
 
-    // ⚠️ 九宮格圖片
     NineSliceConfig normalImage;
     NineSliceConfig hoverImage;
 };
@@ -194,6 +229,7 @@ public:
     ChoiceUIStyle choiceStyle;
     DialogueButtonsStyle dialogueButtonsStyle;
     CharacterScalingStyle characterScaling;
+    FontConfig fonts;
 
     bool loadFromFile(const std::string& filePath) {
         std::string payload;
@@ -212,6 +248,17 @@ public:
 
         try {
             json j = json::parse(payload);
+
+            // ⚠️ 字型配置
+            if (j.contains("fonts")) {
+                const auto& f = j["fonts"];
+                fonts.defaultName = f.value("default", "regular");
+                if (f.contains("available") && f["available"].is_object()) {
+                    for (auto& [key, val] : f["available"].items()) {
+                        fonts.available[key] = val.get<std::string>();
+                    }
+                }
+            }
 
             if (j.contains("dialogueBox")) {
                 const auto& db = j["dialogueBox"];
@@ -233,7 +280,31 @@ public:
                 dialogueStyle.nameFontSize = db.value("nameFontSize", 28);
                 dialogueStyle.dialogueFontSize = db.value("dialogueFontSize", 32);
 
-                // ⚠️ 解析九宮格
+                // ⚠️ 字型名稱
+                dialogueStyle.dialogueFont = db.value("dialogueFont", "regular");
+                dialogueStyle.nameFont = db.value("nameFont", "regular");
+
+                // ⚠️ 文字陰影
+                if (db.contains("textShadow")) {
+                    const auto& ts = db["textShadow"];
+                    dialogueStyle.textShadow.enabled = ts.value("enabled", false);
+                    dialogueStyle.textShadow.offsetX = ts.value("offsetX", 2.0f);
+                    dialogueStyle.textShadow.offsetY = ts.value("offsetY", 2.0f);
+                    if (ts.contains("color")) {
+                        dialogueStyle.textShadow.color = parseColor(ts["color"]);
+                    }
+                }
+
+                // ⚠️ 文字描邊
+                if (db.contains("textOutline")) {
+                    const auto& to = db["textOutline"];
+                    dialogueStyle.textOutline.enabled = to.value("enabled", false);
+                    dialogueStyle.textOutline.thickness = to.value("thickness", 1.5f);
+                    if (to.contains("color")) {
+                        dialogueStyle.textOutline.color = parseColor(to["color"]);
+                    }
+                }
+
                 if (db.contains("backgroundImage")) {
                     dialogueStyle.backgroundImage = parseNineSlice(
                         db["backgroundImage"], dialogueStyle.backgroundImage);
@@ -258,7 +329,6 @@ public:
                 if (c.contains("hoverOutlineColor")) choiceStyle.hoverOutlineColor = parseColor(c["hoverOutlineColor"]);
                 if (c.contains("textColor")) choiceStyle.textColor = parseColor(c["textColor"]);
 
-                // ⚠️ 解析九宮格
                 if (c.contains("normalImage")) {
                     choiceStyle.normalImage = parseNineSlice(
                         c["normalImage"], choiceStyle.normalImage);

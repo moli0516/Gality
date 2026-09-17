@@ -1,4 +1,10 @@
 {
+  "fonts": {
+    "default": "regular",
+    "available": {
+      "regular": "assets/fonts/font.ttf"
+    }
+  },
   "dialogueBox": {
     "posX": 80.0,
     "posY": 700.0,

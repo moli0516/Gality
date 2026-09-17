@@ -24,6 +24,7 @@
 #include <emscripten/html5.h>
 #endif
 
+#include "core/FontManager.hpp"
 #include "core/ConfigManager.hpp"
 #include "core/AssetPack.hpp"
 #include "story/ScriptLoader.hpp"
@@ -233,8 +234,7 @@ struct GalityApp {
         }
 
         // 6. 字型
-        if (!dialogueBox.loadFont("assets/fonts/font.ttf") ||
-            !choiceUI.loadFont("assets/fonts/font.ttf") ||
+        if (!choiceUI.loadFont("assets/fonts/font.ttf") ||
             !backlogUI.loadFont("assets/fonts/font.ttf") ||
             !titleMenu.loadFont("assets/fonts/font.ttf") ||
             !settingsUI.loadFont("assets/fonts/font.ttf") ||
@@ -257,8 +257,17 @@ struct GalityApp {
 
         // 8. UI 主題
         uiTheme.loadFromFile("assets/config/ui_theme.json");
+        // ⚠️ 初始化 FontManager
+        FontManager::instance().initialize(
+            uiTheme.fonts.available,
+            uiTheme.fonts.defaultName
+        );
+
         dialogueBox.applyTheme(uiTheme.dialogueStyle, uiTheme.dialogueButtonsStyle);
         choiceUI.applyTheme(uiTheme.choiceStyle);
+
+        // ⚠️ 設定字型
+        dialogueBox.setFont(uiTheme.dialogueStyle.dialogueFont);
 
         // ⚠️ 套用對話框保留高度與角色縮放係數
         layerRenderer.setDialogueBoxReservedHeight(uiTheme.dialogueStyle.height);
@@ -429,6 +438,12 @@ struct GalityApp {
 
         if (currentNode->type == NodeType::Dialogue) {
             dialogueBox.setText(currentNode->speaker, currentNode->text);
+
+            // ⚠️ 設定強制觀看
+            dialogueBox.setForcedRead(
+                currentNode->noSkip,
+                currentNode->noSkipWait
+            );
 
             if (recordHistory) {
                 backlogUI.addEntry(currentNode->speaker, currentNode->text, currentNode->voicePath);

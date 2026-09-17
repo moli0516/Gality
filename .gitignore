@@ -18,6 +18,10 @@ imgui.ini
 packed_code.md
 data.pak
 devtools/*
+build-test/
+build_test.bat
+dist-test/
+test.gality
 
 !devtools/scripts/
 game/

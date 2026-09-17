@@ -14,6 +14,7 @@
 #include "NineSliceSprite.hpp"
 #include "../core/ConfigManager.hpp"
 #include "../core/AssetPack.hpp"
+#include "../core/FontManager.hpp"
 
 // ============================================================================
 // 排版與富文字標籤資料結構
@@ -22,6 +23,8 @@ struct GlyphStyle {
     sf::Color color = sf::Color::White;
     bool isShaking = false;
     bool isGlitching = false;
+    bool isWaving = false;
+    bool isRainbow = false;
     float customSpeed = -1.0f;
 };
 
@@ -53,16 +56,18 @@ private:
     // ===== 對話框本體 =====
     sf::RectangleShape boxShape;
     sf::RectangleShape nameBoxShape;
-    sf::Font font;
+
+    // ⚠️ 改為指標，由 FontManager 持有
+    const sf::Font* fontPtr = nullptr;
+
     sf::Text nameText;
 
-    // ⚠️ 九宮格
+    // 九宮格
     NineSliceSprite boxNineSlice;
     NineSliceSprite nameBoxNineSlice;
     std::shared_ptr<sf::Texture> boxTexture;
     std::shared_ptr<sf::Texture> nameBoxTexture;
 
-    std::vector<std::uint8_t> fontDataBuffer;
     std::vector<std::uint8_t> soundDataBuffer;
 
     std::vector<FormattedGlyph> glyphs;
@@ -71,6 +76,7 @@ private:
 
     sf::Clock timer;
     sf::Clock glitchClock;
+    sf::Clock animationClock;
     float currentPauseRemaining = 0.0f;
     bool isCompleted = false;
 
@@ -98,7 +104,6 @@ private:
     float autoDelay = 1.5f;
     float autoTimer = 0.0f;
 
-    // ===== Skip 按住狀態 =====
     bool skipHeld = false;
     float skipTimer = 0.0f;
     float skipInterval = 0.05f;
@@ -106,6 +111,10 @@ private:
     const float skipWarmupDuration = 0.15f;
 
     bool hiddenMode = false;
+
+    // ⚠️ 強制觀看
+    bool isForcedRead = false;
+    float forcedWaitRemaining = 0.0f;
 
     // ===== 回呼 =====
     std::function<void()> onBacklogCallback;
@@ -115,7 +124,15 @@ private:
     std::function<void()> onAdvanceCallback;
 
     // ------------------------------------------------------------------------
-    // 載入紋理輔助
+    // 取得目前字型（安全 fallback）
+    // ------------------------------------------------------------------------
+    const sf::Font& getFont() const {
+        if (fontPtr) return *fontPtr;
+        return FontManager::instance().getFont();
+    }
+
+    // ------------------------------------------------------------------------
+    // 載入紋理
     // ------------------------------------------------------------------------
     std::shared_ptr<sf::Texture> loadTexture(const std::string& path) {
         auto tex = std::make_shared<sf::Texture>();
@@ -135,7 +152,7 @@ private:
     }
 
     // ------------------------------------------------------------------------
-    // CJK Kinsoku Shori (避頭尾禁則)
+    // CJK 避頭尾禁則
     // ------------------------------------------------------------------------
     static bool isProhibitedAtLineStart(char32_t cp) {
         static const std::unordered_set<char32_t> prohibited = {
@@ -192,6 +209,8 @@ private:
         std::vector<bool> shakeStack = { false };
         std::vector<bool> glitchStack = { false };
         std::vector<float> speedStack = { -1.0f };
+        std::vector<bool> waveStack = { false };
+        std::vector<bool> rainbowStack = { false };
 
         size_t idx = 0;
         size_t length = u32Str.size();
@@ -203,52 +222,48 @@ private:
                     std::string tag;
                     tag.reserve(tagEnd - idx - 1);
                     for (size_t t = idx + 1; t < tagEnd; ++t) {
-                        if (u32Str[t] < 128) {
-                            tag += static_cast<char>(u32Str[t]);
-                        }
+                        if (u32Str[t] < 128) tag += static_cast<char>(u32Str[t]);
                     }
 
                     if (tag.rfind("color=", 0) == 0) {
-                        std::string hex = tag.substr(6);
-                        colorStack.push_back(hexToColor(hex));
-                        idx = tagEnd + 1;
-                        continue;
+                        colorStack.push_back(hexToColor(tag.substr(6)));
+                        idx = tagEnd + 1; continue;
                     } else if (tag == "/color") {
                         if (colorStack.size() > 1) colorStack.pop_back();
-                        idx = tagEnd + 1;
-                        continue;
+                        idx = tagEnd + 1; continue;
                     } else if (tag == "shake") {
                         shakeStack.push_back(true);
-                        idx = tagEnd + 1;
-                        continue;
+                        idx = tagEnd + 1; continue;
                     } else if (tag == "/shake") {
                         if (shakeStack.size() > 1) shakeStack.pop_back();
-                        idx = tagEnd + 1;
-                        continue;
+                        idx = tagEnd + 1; continue;
                     } else if (tag == "glitch") {
                         glitchStack.push_back(true);
-                        idx = tagEnd + 1;
-                        continue;
+                        idx = tagEnd + 1; continue;
                     } else if (tag == "/glitch") {
                         if (glitchStack.size() > 1) glitchStack.pop_back();
-                        idx = tagEnd + 1;
-                        continue;
+                        idx = tagEnd + 1; continue;
+                    } else if (tag == "wave") {
+                        waveStack.push_back(true);
+                        idx = tagEnd + 1; continue;
+                    } else if (tag == "/wave") {
+                        if (waveStack.size() > 1) waveStack.pop_back();
+                        idx = tagEnd + 1; continue;
+                    } else if (tag == "rainbow") {
+                        rainbowStack.push_back(true);
+                        idx = tagEnd + 1; continue;
+                    } else if (tag == "/rainbow") {
+                        if (rainbowStack.size() > 1) rainbowStack.pop_back();
+                        idx = tagEnd + 1; continue;
                     } else if (tag.rfind("speed=", 0) == 0) {
-                        try {
-                            float spd = std::stof(tag.substr(6));
-                            speedStack.push_back(spd);
-                        } catch (...) {}
-                        idx = tagEnd + 1;
-                        continue;
+                        try { speedStack.push_back(std::stof(tag.substr(6))); } catch (...) {}
+                        idx = tagEnd + 1; continue;
                     } else if (tag == "/speed") {
                         if (speedStack.size() > 1) speedStack.pop_back();
-                        idx = tagEnd + 1;
-                        continue;
+                        idx = tagEnd + 1; continue;
                     } else if (tag.rfind("w=", 0) == 0) {
                         float pauseSec = 0.0f;
-                        try {
-                            pauseSec = std::stof(tag.substr(2));
-                        } catch (...) {}
+                        try { pauseSec = std::stof(tag.substr(2)); } catch (...) {}
 
                         if (!result.empty()) {
                             result.back().pause += pauseSec;
@@ -259,8 +274,7 @@ private:
                             placeholder.pause = pauseSec;
                             result.push_back(placeholder);
                         }
-                        idx = tagEnd + 1;
-                        continue;
+                        idx = tagEnd + 1; continue;
                     }
                 }
             }
@@ -270,6 +284,8 @@ private:
             pc.style.color = colorStack.back();
             pc.style.isShaking = shakeStack.back();
             pc.style.isGlitching = glitchStack.back();
+            pc.style.isWaving = waveStack.back();
+            pc.style.isRainbow = rainbowStack.back();
             pc.style.customSpeed = speedStack.back();
             result.push_back(pc);
             idx++;
@@ -287,13 +303,14 @@ private:
         isCompleted = false;
         autoTimer = 0.0f;
 
+        const sf::Font& font = getFont();
+
         float padding = 25.0f;
         float startX = boxShape.getPosition().x + padding;
         float startY = boxShape.getPosition().y + padding;
         float maxX = boxShape.getPosition().x + boxShape.getSize().x - padding;
         float lineHeight = style.dialogueFontSize * 1.4f;
 
-        // 若使用九宮格，從 style 取位置
         if (style.backgroundImage.enabled) {
             startX = style.posX + padding;
             startY = style.posY + padding;
@@ -401,7 +418,6 @@ private:
         for (const auto& cfg : buttonsStyle.buttons) {
             if (cfg.enabled) enabledCount++;
         }
-
         if (enabledCount == 0) return;
 
         float totalWidth = enabledCount * buttonsStyle.buttonWidth
@@ -423,7 +439,7 @@ private:
             btn.shape.setOutlineThickness(1.5f);
             btn.shape.setOutlineColor(buttonsStyle.outlineColor);
 
-            btn.text = std::make_unique<sf::Text>(font);
+            btn.text = std::make_unique<sf::Text>(getFont());
             btn.text->setString(sf::String::fromUtf8(cfg.text.begin(), cfg.text.end()));
             btn.text->setCharacterSize(buttonsStyle.fontSize);
             btn.text->setFillColor(buttonsStyle.textColor);
@@ -440,40 +456,34 @@ private:
     }
 
 public:
-    DialogueBox() : nameText(font) {}
+    DialogueBox() : nameText(FontManager::instance().getFont()) {}
 
     // ========================================================================
-    // 載入字型
+    // 字型設定
     // ========================================================================
-    bool loadFont(const std::string& fontPath) {
-        fontDataBuffer.clear();
-        if (AssetPack::readFileFromPak(fontPath, fontDataBuffer, "data.pak") && !fontDataBuffer.empty()) {
-            if (font.openFromMemory(fontDataBuffer.data(), fontDataBuffer.size())) {
-                nameText.setFont(font);
-                return true;
-            }
+    void setFont(const std::string& fontName) {
+        fontPtr = &FontManager::instance().getFont(fontName);
+        nameText.setFont(*fontPtr);
+        for (auto& btn : functionButtons) {
+            if (btn.text) btn.text->setFont(*fontPtr);
         }
-        if (font.openFromFile(fontPath)) {
-            nameText.setFont(font);
-            return true;
-        }
-        return false;
     }
 
-    void loadTypeSound(const std::string& soundPath) {
+    bool loadTypeSound(const std::string& soundPath) {
         soundDataBuffer.clear();
         if (AssetPack::readFileFromPak(soundPath, soundDataBuffer, "data.pak") && !soundDataBuffer.empty()) {
             if (typeBuffer.loadFromMemory(soundDataBuffer.data(), soundDataBuffer.size())) {
                 typeSound = std::make_unique<sf::Sound>(typeBuffer);
                 hasSound = true;
             }
-            return;
+            return true;
         }
 
         if (typeBuffer.loadFromFile(soundPath)) {
             typeSound = std::make_unique<sf::Sound>(typeBuffer);
             hasSound = true;
         }
+        return false;
     }
 
     // ========================================================================
@@ -487,7 +497,13 @@ public:
         skipInterval = btnStyle.skipInterval;
         if (skipInterval <= 0.0f) skipInterval = 0.05f;
 
-        // ===== 對話框本體 =====
+        // 從 FontManager 取得字型
+        if (!st.dialogueFont.empty()) {
+            fontPtr = &FontManager::instance().getFont(st.dialogueFont);
+            nameText.setFont(*fontPtr);
+        }
+
+        // 對話框本體
         if (style.backgroundImage.enabled) {
             boxTexture = loadTexture(style.backgroundImage.texturePath);
             if (boxTexture) {
@@ -500,9 +516,7 @@ public:
                 );
                 boxNineSlice.setSize(sf::Vector2f(style.width, style.height));
                 boxNineSlice.setPosition(sf::Vector2f(style.posX, style.posY));
-                std::cout << "[DialogueBox] Nine-slice box loaded" << std::endl;
             } else {
-                std::cerr << "[DialogueBox] Failed to load box image, falling back to color" << std::endl;
                 style.backgroundImage.enabled = false;
             }
         }
@@ -515,7 +529,7 @@ public:
             boxShape.setPosition(sf::Vector2f(style.posX, style.posY));
         }
 
-        // ===== 名字框 =====
+        // 名字框
         if (style.nameBoxImage.enabled) {
             nameBoxTexture = loadTexture(style.nameBoxImage.texturePath);
             if (nameBoxTexture) {
@@ -539,18 +553,11 @@ public:
             nameBoxShape.setPosition(sf::Vector2f(style.nameBoxPosX, style.nameBoxPosY));
         }
 
-        // ===== 名字文字 =====
         nameText.setCharacterSize(style.nameFontSize);
         nameText.setFillColor(style.nameTextColor);
         nameText.setPosition(sf::Vector2f(style.nameBoxPosX + 15.f, style.nameBoxPosY + 8.f));
 
         buildFunctionButtons();
-    }
-
-    // 向後相容：舊的 applyTheme
-    void applyTheme(const DialogueBoxStyle& st) {
-        DialogueButtonsStyle defaultBtnStyle;
-        applyTheme(st, defaultBtnStyle);
     }
 
     // ========================================================================
@@ -564,13 +571,34 @@ public:
 
         currentPauseRemaining = 0.0f;
         timer.restart();
+        animationClock.restart();
+    }
+
+    // ========================================================================
+    // 強制觀看
+    // ========================================================================
+    void setForcedRead(bool enabled, float waitSeconds = 0.0f) {
+        isForcedRead = enabled;
+        forcedWaitRemaining = waitSeconds;
+    }
+
+    bool isForcedReadMode() const { return isForcedRead; }
+
+    bool canAdvance() const {
+        if (isForcedRead && !isCompleted) return false;
+        if (forcedWaitRemaining > 0.0f) return false;
+        return true;
     }
 
     // ========================================================================
     // 更新
     // ========================================================================
     void update() {
-        // ⚠️ Skip 按住模式：自動快速推進
+        // Skip 在強制觀看時自動停止
+        if (skipHeld && isForcedRead) {
+            stopSkip();
+        }
+
         if (skipHeld && !hiddenMode) {
             float dt = timer.getElapsedTime().asSeconds();
             timer.restart();
@@ -579,22 +607,25 @@ public:
             isCompleted = true;
 
             skipWarmup += dt;
-            if (skipWarmup < skipWarmupDuration) {
-                return;
-            }
+            if (skipWarmup < skipWarmupDuration) return;
 
             skipTimer += dt;
             if (skipTimer >= skipInterval) {
                 skipTimer = 0.0f;
-                if (onAdvanceCallback) {
-                    onAdvanceCallback();
-                }
+                if (onAdvanceCallback) onAdvanceCallback();
             }
             return;
         }
 
-        // 自動模式
         if (isCompleted) {
+            // 強制等待倒數
+            if (forcedWaitRemaining > 0.0f) {
+                float dt = timer.getElapsedTime().asSeconds();
+                timer.restart();
+                forcedWaitRemaining -= dt;
+                if (forcedWaitRemaining < 0.0f) forcedWaitRemaining = 0.0f;
+            }
+
             if (autoMode && !hiddenMode) {
                 autoTimer += timer.getElapsedTime().asSeconds();
                 timer.restart();
@@ -606,7 +637,6 @@ public:
             return;
         }
 
-        // 一般打字機效果
         float dt = timer.getElapsedTime().asSeconds();
 
         if (currentPauseRemaining > 0.0f) {
@@ -653,6 +683,16 @@ public:
             return false;
         }
 
+        // 強制觀看：打字機未完成時，忽略點擊
+        if (isForcedRead && !isCompleted) {
+            return false;
+        }
+
+        // 強制等待：倒數未結束，忽略點擊
+        if (forcedWaitRemaining > 0.0f) {
+            return false;
+        }
+
         if (!isCompleted) {
             visibleCharCount = totalCharCount;
             currentPauseRemaining = 0.0f;
@@ -683,34 +723,27 @@ public:
                         btn.isActive = autoMode;
                         autoTimer = 0.0f;
                         break;
-
                     case ButtonAction::Skip:
                         skipHeld = true;
                         skipWarmup = 0.0f;
                         skipTimer = 0.0f;
                         btn.isActive = true;
                         break;
-
                     case ButtonAction::Backlog:
                         if (onBacklogCallback) onBacklogCallback();
                         break;
-
                     case ButtonAction::Save:
                         if (onSaveCallback) onSaveCallback();
                         break;
-
                     case ButtonAction::Load:
                         if (onLoadCallback) onLoadCallback();
                         break;
-
                     case ButtonAction::Hide:
                         hiddenMode = true;
                         break;
-
                     case ButtonAction::Menu:
                         if (onMenuCallback) onMenuCallback();
                         break;
-
                     default:
                         break;
                 }
@@ -725,17 +758,14 @@ public:
             skipHeld = false;
             skipTimer = 0.0f;
             skipWarmup = 0.0f;
-
             for (auto& btn : functionButtons) {
-                if (btn.action == ButtonAction::Skip) {
-                    btn.isActive = false;
-                }
+                if (btn.action == ButtonAction::Skip) btn.isActive = false;
             }
         }
     }
 
     // ========================================================================
-    // 回呼設定
+    // 回呼
     // ========================================================================
     void setBacklogCallback(std::function<void()> cb) { onBacklogCallback = cb; }
     void setSaveCallback(std::function<void()> cb) { onSaveCallback = cb; }
@@ -744,7 +774,7 @@ public:
     void setAdvanceCallback(std::function<void()> cb) { onAdvanceCallback = cb; }
 
     // ========================================================================
-    // 狀態存取
+    // 狀態
     // ========================================================================
     bool isAutoMode() const { return autoMode; }
     bool isSkipHeld() const { return skipHeld; }
@@ -754,18 +784,14 @@ public:
     void setAutoMode(bool enabled) { autoMode = enabled; }
     void setHiddenMode(bool enabled) { hiddenMode = enabled; }
     void setAutoDelay(float seconds) { autoDelay = seconds; }
-    void setSkipInterval(float seconds) {
-        skipInterval = std::max(0.01f, seconds);
-    }
+    void setSkipInterval(float seconds) { skipInterval = std::max(0.01f, seconds); }
 
     void stopSkip() {
         skipHeld = false;
         skipTimer = 0.0f;
         skipWarmup = 0.0f;
         for (auto& btn : functionButtons) {
-            if (btn.action == ButtonAction::Skip) {
-                btn.isActive = false;
-            }
+            if (btn.action == ButtonAction::Skip) btn.isActive = false;
         }
     }
 
@@ -776,9 +802,9 @@ public:
         autoTimer = 0.0f;
         skipTimer = 0.0f;
         skipWarmup = 0.0f;
-        for (auto& btn : functionButtons) {
-            btn.isActive = false;
-        }
+        isForcedRead = false;
+        forcedWaitRemaining = 0.0f;
+        for (auto& btn : functionButtons) btn.isActive = false;
     }
 
     // ========================================================================
@@ -787,14 +813,14 @@ public:
     void draw(sf::RenderTarget& target) {
         if (hiddenMode) return;
 
-        // ===== 對話框 =====
+        // 對話框背景
         if (style.backgroundImage.enabled && boxNineSlice.isInitialized()) {
             boxNineSlice.draw(target);
         } else {
             target.draw(boxShape);
         }
 
-        // ===== 名字框 =====
+        // 名字框
         if (!nameText.getString().isEmpty()) {
             if (style.nameBoxImage.enabled && nameBoxNineSlice.isInitialized()) {
                 nameBoxNineSlice.draw(target);
@@ -804,33 +830,115 @@ public:
             target.draw(nameText);
         }
 
-        // ===== 文字 =====
+        const sf::Font& font = getFont();
         size_t charsToRender = std::min(visibleCharCount, totalCharCount);
-        float time = glitchClock.getElapsedTime().asSeconds();
+        float animTime = animationClock.getElapsedTime().asSeconds();
+        float glitchTime = glitchClock.getElapsedTime().asSeconds();
 
+        // === 第一遍：陰影 ===
+        if (style.textShadow.enabled) {
+            for (size_t i = 0; i < charsToRender; ++i) {
+                const auto& fg = glyphs[i];
+                std::u32string singleCharStr(1, fg.codepoint);
+                sf::String sfChar(singleCharStr);
+
+                sf::Vector2f shadowPos = fg.position;
+                if (fg.style.isWaving) {
+                    shadowPos.y += std::sin(animTime * 3.0f + fg.position.x * 0.05f) * 5.0f;
+                }
+                shadowPos += sf::Vector2f(style.textShadow.offsetX, style.textShadow.offsetY);
+
+                sf::Text shadowText(font, sfChar, style.dialogueFontSize);
+                shadowText.setFillColor(style.textShadow.color);
+                shadowText.setPosition(shadowPos);
+                target.draw(shadowText);
+            }
+        }
+
+        // === 第二遍：描邊 ===
+        if (style.textOutline.enabled) {
+            float t = style.textOutline.thickness;
+            const float offsets[8][2] = {
+                {-t, -t}, {0, -t}, {t, -t},
+                {-t,  0},          {t,  0},
+                {-t,  t}, {0,  t}, {t,  t}
+            };
+
+            for (size_t i = 0; i < charsToRender; ++i) {
+                const auto& fg = glyphs[i];
+                std::u32string singleCharStr(1, fg.codepoint);
+                sf::String sfChar(singleCharStr);
+
+                sf::Vector2f basePos = fg.position;
+                if (fg.style.isWaving) {
+                    basePos.y += std::sin(animTime * 3.0f + fg.position.x * 0.05f) * 5.0f;
+                }
+
+                for (const auto& [dx, dy] : offsets) {
+                    sf::Text outlineText(font, sfChar, style.dialogueFontSize);
+                    outlineText.setFillColor(style.textOutline.color);
+                    outlineText.setPosition(basePos + sf::Vector2f(dx, dy));
+                    target.draw(outlineText);
+                }
+            }
+        }
+
+        // === 第三遍：主文字 + 動畫 ===
         for (size_t i = 0; i < charsToRender; ++i) {
             const auto& fg = glyphs[i];
+            std::u32string singleCharStr(1, fg.codepoint);
+            sf::String sfChar(singleCharStr);
 
             sf::Vector2f drawPos = fg.position;
 
+            // Wave
+            if (fg.style.isWaving) {
+                drawPos.y += std::sin(animTime * 3.0f + fg.position.x * 0.05f) * 5.0f;
+            }
+
+            // Shake
             if (fg.style.isShaking) {
                 float ox = (-1.0f + static_cast<float>(rand()) / (RAND_MAX / 2.0f)) * 2.0f;
                 float oy = (-1.0f + static_cast<float>(rand()) / (RAND_MAX / 2.0f)) * 2.0f;
                 drawPos += sf::Vector2f(ox, oy);
             }
 
-            std::u32string singleCharStr(1, fg.codepoint);
-            sf::String sfChar(singleCharStr);
+            sf::Text charText(font, sfChar, style.dialogueFontSize);
 
+            // Rainbow
+            if (fg.style.isRainbow) {
+                float hue = std::fmod(animTime * 120.0f + fg.position.x * 2.0f, 360.0f);
+                if (hue < 0.0f) hue += 360.0f;
+
+                float c = 1.0f;
+                float x = c * (1.0f - std::abs(std::fmod(hue / 60.0f, 2.0f) - 1.0f));
+                float r = 0, g = 0, b = 0;
+
+                if (hue < 60) { r = c; g = x; b = 0; }
+                else if (hue < 120) { r = x; g = c; b = 0; }
+                else if (hue < 180) { r = 0; g = c; b = x; }
+                else if (hue < 240) { r = 0; g = x; b = c; }
+                else if (hue < 300) { r = x; g = 0; b = c; }
+                else { r = c; g = 0; b = x; }
+
+                charText.setFillColor(sf::Color(
+                    static_cast<std::uint8_t>(r * 255),
+                    static_cast<std::uint8_t>(g * 255),
+                    static_cast<std::uint8_t>(b * 255),
+                    255
+                ));
+            } else {
+                charText.setFillColor(fg.style.color);
+            }
+
+            // Glitch
             if (fg.style.isGlitching) {
-                float glitchTime = time * 10.0f + fg.glitchSeed * 100.0f;
-                float trigger = std::sin(glitchTime * 2.0f);
+                float gt = glitchTime * 10.0f + fg.glitchSeed * 100.0f;
+                float trigger = std::sin(gt * 2.0f);
 
                 if (trigger > 0.7f) {
-                    float glitchX = std::sin(glitchTime * 50.0f) * 3.0f;
-                    float glitchY = std::cos(glitchTime * 40.0f) * 2.0f;
-                    drawPos.x += glitchX;
-                    drawPos.y += glitchY;
+                    drawPos.x += std::sin(gt * 50.0f) * 3.0f;
+                    drawPos.y += std::cos(gt * 40.0f) * 2.0f;
 
                     sf::Text redText(font, sfChar, style.dialogueFontSize);
                     redText.setFillColor(sf::Color(255, 0, 0, 128));
@@ -844,13 +952,24 @@ public:
                 }
             }
 
-            sf::Text charText(font, sfChar, style.dialogueFontSize);
-            charText.setFillColor(fg.style.color);
             charText.setPosition(drawPos);
             target.draw(charText);
         }
 
-        // ===== 功能按鈕 =====
+        // 強制觀看提示：右下角閃爍紅點
+        if (isForcedRead && (!isCompleted || forcedWaitRemaining > 0.0f)) {
+            sf::CircleShape dot(6.0f);
+            dot.setFillColor(sf::Color(
+                255, 100, 100,
+                static_cast<std::uint8_t>(128 + 127 * std::sin(animTime * 5.0f))
+            ));
+            dot.setPosition(sf::Vector2f(
+                style.posX + style.width - 30.0f,
+                style.posY + style.height - 30.0f
+            ));
+            target.draw(dot);
+        }
+
         drawFunctionButtons(target);
     }
 

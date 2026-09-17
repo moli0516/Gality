@@ -53,16 +53,15 @@ public:
             node->shake = item.value("shake", 0.0f);
             node->nextNodeId = item.value("next", "");
 
-            // 立繪槽位映射解析
             std::map<CharSlot, std::string> slots;
             if (item.contains("char_left")) slots[CharSlot::Left] = item["char_left"];
-            
+
             if (item.contains("char_center")) slots[CharSlot::Center] = item["char_center"];
             else if (item.contains("char")) slots[CharSlot::Center] = item["char"];
             else if (item.contains("character")) slots[CharSlot::Center] = item["character"];
-            
+
             if (item.contains("char_right")) slots[CharSlot::Right] = item["char_right"];
-            
+
             for (auto it = slots.begin(); it != slots.end(); ) {
                 if (it->second.empty()) it = slots.erase(it);
                 else ++it;
@@ -86,6 +85,10 @@ public:
 
             node->transitionMask = item.value("transition_mask", item.value("trans", ""));
             node->transitionDuration = item.value("transition_duration", item.value("duration", 1.0f));
+
+            // ⚠️ 強制觀看
+            node->noSkip = item.value("no_skip", false);
+            node->noSkipWait = item.value("wait", 0.0f);
 
             if (item.contains("choices") && item["choices"].is_array()) {
                 for (const auto& ch : item["choices"]) {
@@ -114,12 +117,6 @@ public:
                 node->mutations.push_back(mut);
             }
 
-            // 節點型別嚴格推導
-// ============================================================================
-// 節點型別推導 + actionFunc 綁定
-// ============================================================================
-
-// 節點型別嚴格推導
             std::string typeStr = item.value("type", "");
             if (typeStr == "action") {
                 node->type = NodeType::Action;
@@ -131,7 +128,6 @@ public:
                 node->type = NodeType::Dialogue;
             }
 
-            // ⚠️ 關鍵修復：為所有節點綁定 actionFunc（不限於 Action）
             if (!node->mutations.empty()) {
                 node->actionFunc = [node](Blackboard& bb) {
                     for (const auto& mut : node->mutations) {
@@ -156,7 +152,7 @@ public:
                 node->conditionFunc = [flag, op, threshold, tNext, fNext](Blackboard& bb) -> std::shared_ptr<StoryNode> {
                     int currentVal = bb.getInt(flag, 0);
                     bool passed = false;
-                    
+
                     if (op == ">=") passed = (currentVal >= threshold);
                     else if (op == "<=") passed = (currentVal <= threshold);
                     else if (op == ">") passed = (currentVal > threshold);
@@ -172,7 +168,7 @@ public:
             nodeRegistry[node->id] = node;
         }
 
-        // --- Pass 2: 拓撲鏈接 (Link Graph Pointers) ---
+        // --- Pass 2: 拓撲鏈接 ---
         for (auto& [id, node] : nodeRegistry) {
             if (!node->nextNodeId.empty() && nodeRegistry.count(node->nextNodeId)) {
                 node->defaultNext = nodeRegistry[node->nextNodeId];

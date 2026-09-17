@@ -61,7 +61,9 @@ class GalityCompiler:
                     "shake": 0.0,
                     "transition_mask": "",
                     "transition_duration": 1.0,
-                    "next": ""
+                    "next": "",
+                    "no_skip": False,     # ⚠️ 新增
+                    "wait": 0.0           # ⚠️ 新增
                 }
                 continue
 
@@ -118,7 +120,10 @@ class GalityCompiler:
 
             # 7. 解析單行屬性 key: value
             # 嚴格匹配白名單屬性，避免把角色名冒號誤判為屬性
-            attr_match = re.match(r'^(bg|bgm|cv|trans|transition|duration|weather|shake|char|character|char_left|char_center|char_right|active_char)\s*[:=]\s*(.*)$', line)
+            attr_match = re.match(
+                r'^(bg|bgm|cv|trans|transition|duration|weather|shake|char|character|char_left|char_center|char_right|active_char|no_skip|wait)\s*[:=]\s*(.*)$',
+                line
+            )
             if attr_match:
                 key, val = attr_match.groups()
                 val = val.strip().strip('"')
@@ -147,6 +152,14 @@ class GalityCompiler:
                     current_node["char_center"] = val
                 elif key in ("char_left", "char_center", "char_right", "active_char"):
                     current_node[key] = val
+                # ⚠️ 新增
+                elif key == "no_skip":
+                    current_node["no_skip"] = val.lower() in ("true", "1", "yes")
+                elif key == "wait":
+                    try:
+                        current_node["wait"] = float(val)
+                    except ValueError:
+                        current_node["wait"] = 0.0
                 continue
 
             # 8. 解析對話台詞：說話者: 台詞 (例如 "學姐: 你好！" 或 "旁白: 春天來了。")
