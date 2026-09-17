@@ -11,6 +11,7 @@
 #include "StoryNode.hpp"
 #include "../core/Blackboard.hpp"
 #include "../core/AssetPack.hpp"
+#include "../core/LocalizationManager.hpp"
 
 using json = nlohmann::json;
 
@@ -20,25 +21,61 @@ public:
     inline static std::string defaultStartNodeId = "node_01";
 
     static std::shared_ptr<StoryNode> parseScriptJson(const json& scriptJson) {
-        if (scriptJson.contains("startNode")) {
-            defaultStartNodeId = scriptJson["startNode"].get<std::string>();
-        } else if (scriptJson.contains("start_node")) {
-            defaultStartNodeId = scriptJson["start_node"].get<std::string>();
-        } else if (scriptJson.contains("start")) {
-            defaultStartNodeId = scriptJson["start"].get<std::string>();
+        // ===== 多語言處理 =====
+        const std::string currentLang = LocalizationManager::instance().getLanguage();
+        json workingJson = scriptJson;
+
+        if (currentLang != "zh-TW") {
+            std::string i18nKey = "i18n_" + currentLang;
+            if (scriptJson.contains(i18nKey) &&
+                scriptJson[i18nKey].contains("nodes")) {
+                const auto& i18nNodes = scriptJson[i18nKey]["nodes"];
+                std::cout << "[ScriptLoader] Applying i18n: " << currentLang << std::endl;
+
+                for (size_t i = 0; i < workingJson["nodes"].size() &&
+                                   i < i18nNodes.size(); ++i) {
+                    auto& node = workingJson["nodes"][i];
+                    const auto& i18nNode = i18nNodes[i];
+
+                    if (i18nNode.contains("text") &&
+                        !i18nNode["text"].get<std::string>().empty()) {
+                        node["text"] = i18nNode["text"];
+                    }
+
+                    if (i18nNode.contains("choices") && node.contains("choices") &&
+                        node["choices"].is_array()) {
+                        const auto& i18nChoices = i18nNode["choices"];
+                        for (size_t j = 0; j < node["choices"].size() &&
+                                           j < i18nChoices.size(); ++j) {
+                            if (i18nChoices[j].contains("text")) {
+                                node["choices"][j]["text"] = i18nChoices[j]["text"];
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // ===== 解析 start =====
+        if (workingJson.contains("startNode")) {
+            defaultStartNodeId = workingJson["startNode"].get<std::string>();
+        } else if (workingJson.contains("start_node")) {
+            defaultStartNodeId = workingJson["start_node"].get<std::string>();
+        } else if (workingJson.contains("start")) {
+            defaultStartNodeId = workingJson["start"].get<std::string>();
         } else {
             defaultStartNodeId = "node_01";
         }
 
         nodeRegistry.clear();
 
-        if (!scriptJson.contains("nodes") || !scriptJson["nodes"].is_array()) {
-            std::cerr << "[ScriptLoader Error] Invalid JSON AST: missing 'nodes' array." << std::endl;
+        if (!workingJson.contains("nodes") || !workingJson["nodes"].is_array()) {
+            std::cerr << "[ScriptLoader Error] Invalid JSON AST." << std::endl;
             return nullptr;
         }
 
-        // --- Pass 1: 建立節點與解析屬性 ---
-        for (const auto& item : scriptJson["nodes"]) {
+        // --- Pass 1: 建立節點 ---
+        for (const auto& item : workingJson["nodes"]) {
             if (!item.contains("id")) continue;
 
             auto node = std::make_shared<StoryNode>();
@@ -55,11 +92,9 @@ public:
 
             std::map<CharSlot, std::string> slots;
             if (item.contains("char_left")) slots[CharSlot::Left] = item["char_left"];
-
             if (item.contains("char_center")) slots[CharSlot::Center] = item["char_center"];
             else if (item.contains("char")) slots[CharSlot::Center] = item["char"];
             else if (item.contains("character")) slots[CharSlot::Center] = item["character"];
-
             if (item.contains("char_right")) slots[CharSlot::Right] = item["char_right"];
 
             for (auto it = slots.begin(); it != slots.end(); ) {
@@ -84,9 +119,9 @@ public:
             node->voicePath = node->cv;
 
             node->transitionMask = item.value("transition_mask", item.value("trans", ""));
-            node->transitionDuration = item.value("transition_duration", item.value("duration", 1.0f));
+            node->transitionDuration = item.value("transition_duration",
+                                                   item.value("duration", 1.0f));
 
-            // ⚠️ 強制觀看
             node->noSkip = item.value("no_skip", false);
             node->noSkipWait = item.value("wait", 0.0f);
 
@@ -122,7 +157,8 @@ public:
                 node->type = NodeType::Action;
             } else if (typeStr == "choice" || !node->choices.empty()) {
                 node->type = NodeType::Choice;
-            } else if (typeStr == "condition" || (item.contains("condition") && !item["condition"].is_null())) {
+            } else if (typeStr == "condition" ||
+                       (item.contains("condition") && !item["condition"].is_null())) {
                 node->type = NodeType::Condition;
             } else {
                 node->type = NodeType::Dialogue;
@@ -149,10 +185,10 @@ public:
                 node->thenNodeId = tNext;
                 node->elseNodeId = fNext;
 
-                node->conditionFunc = [flag, op, threshold, tNext, fNext](Blackboard& bb) -> std::shared_ptr<StoryNode> {
+                node->conditionFunc = [flag, op, threshold, tNext, fNext]
+                                      (Blackboard& bb) -> std::shared_ptr<StoryNode> {
                     int currentVal = bb.getInt(flag, 0);
                     bool passed = false;
-
                     if (op == ">=") passed = (currentVal >= threshold);
                     else if (op == "<=") passed = (currentVal <= threshold);
                     else if (op == ">") passed = (currentVal > threshold);
@@ -175,14 +211,18 @@ public:
                 node->nextNode = node->defaultNext;
             }
             for (auto& choice : node->choices) {
-                if (!choice.targetNodeId.empty() && nodeRegistry.count(choice.targetNodeId)) {
+                if (!choice.targetNodeId.empty() &&
+                    nodeRegistry.count(choice.targetNodeId)) {
                     choice.nextNode = nodeRegistry[choice.targetNodeId];
                 }
             }
         }
 
-        std::cout << "[ScriptLoader] Loaded and linked " << nodeRegistry.size() << " nodes." << std::endl;
-        return nodeRegistry.count(defaultStartNodeId) ? nodeRegistry[defaultStartNodeId] : nullptr;
+        std::cout << "[ScriptLoader] Loaded " << nodeRegistry.size()
+                  << " nodes (lang: " << currentLang << ")" << std::endl;
+
+        return nodeRegistry.count(defaultStartNodeId)
+            ? nodeRegistry[defaultStartNodeId] : nullptr;
     }
 
     static std::shared_ptr<StoryNode> loadFromFile(const std::string& filePath) {
@@ -194,14 +234,15 @@ public:
                 stream >> scriptJson;
                 return parseScriptJson(scriptJson);
             } catch (const json::parse_error& e) {
-                std::cerr << "[ScriptLoader Error] JSON Parse failed from data.pak: " << e.what() << std::endl;
+                std::cerr << "[ScriptLoader] JSON Parse failed: "
+                          << e.what() << std::endl;
                 return nullptr;
             }
         }
 
         std::ifstream file(filePath);
         if (!file.is_open()) {
-            std::cerr << "[ScriptLoader Error] Cannot open file: " << filePath << std::endl;
+            std::cerr << "[ScriptLoader] Cannot open: " << filePath << std::endl;
             return nullptr;
         }
 
@@ -210,7 +251,8 @@ public:
             file >> scriptJson;
             return parseScriptJson(scriptJson);
         } catch (const json::parse_error& e) {
-            std::cerr << "[ScriptLoader Error] JSON Parse failed from disk: " << e.what() << std::endl;
+            std::cerr << "[ScriptLoader] JSON Parse failed: "
+                      << e.what() << std::endl;
             return nullptr;
         }
     }

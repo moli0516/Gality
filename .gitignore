@@ -23,6 +23,7 @@ build_test.bat
 dist-test/
 demo_long.json
 test.gality
+TODO.md
 
 !devtools/scripts/
 game/

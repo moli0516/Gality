@@ -174,4 +174,7 @@ echo.
 echo   This package is ready for distribution.
 echo   All assets are packed into data.pak.
 echo ===================================================
+
+cd dist
+.\gality.exe
 pause

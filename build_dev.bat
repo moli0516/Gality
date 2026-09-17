@@ -234,4 +234,6 @@ echo   HotReload: edit .gality and recompile demo_long.json
 echo ===================================================
 
 powershell -c "[console]::beep(800,200)" 2>nul
+cd dist-dev
+.\gality.exe
 pause

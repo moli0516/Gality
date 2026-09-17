@@ -4,6 +4,7 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <vector>
 #include "AssetPack.hpp"
 
 struct EngineConfig {
@@ -14,13 +15,17 @@ struct EngineConfig {
     float sfxVolume = 100.0f;
     float textSpeed = 0.04f;
 
-    // 畫面（新增）
-    int renderScale = 2;            // 1 = 標準, 2 = Retina
-    bool enablePostFX = true;       // 模糊 + 震動
-    bool enableTransitions = true;  // 遮罩轉場
-    int particleCount = 150;        // 天氣粒子數量
+    // 畫面
+    int renderScale = 2;
+    bool enablePostFX = true;
+    bool enableTransitions = true;
+    int particleCount = 150;
     bool enableVsync = true;
-    int windowMode = 0;             // 0 = 全螢幕, 1 = 視窗
+    int windowMode = 0;
+
+    // 語言
+    std::string language = "zh-TW";
+    std::vector<std::string> availableLanguages = {"zh-TW", "en", "ja"};
 };
 
 class ConfigManager {
@@ -59,21 +64,23 @@ public:
     static void save() {
         try {
             nlohmann::json j;
-            j["masterVolume"]      = config.masterVolume;
-            j["bgmVolume"]         = config.bgmVolume;
-            j["voiceVolume"]       = config.voiceVolume;
-            j["sfxVolume"]         = config.sfxVolume;
-            j["textSpeed"]         = config.textSpeed;
-            j["renderScale"]       = config.renderScale;
-            j["enablePostFX"]      = config.enablePostFX;
-            j["enableTransitions"] = config.enableTransitions;
-            j["particleCount"]     = config.particleCount;
-            j["enableVsync"]       = config.enableVsync;
-            j["windowMode"]        = config.windowMode;
+            j["masterVolume"]       = config.masterVolume;
+            j["bgmVolume"]          = config.bgmVolume;
+            j["voiceVolume"]        = config.voiceVolume;
+            j["sfxVolume"]          = config.sfxVolume;
+            j["textSpeed"]          = config.textSpeed;
+            j["renderScale"]        = config.renderScale;
+            j["enablePostFX"]       = config.enablePostFX;
+            j["enableTransitions"]  = config.enableTransitions;
+            j["particleCount"]      = config.particleCount;
+            j["enableVsync"]        = config.enableVsync;
+            j["windowMode"]         = config.windowMode;
+            j["language"]           = config.language;
+            j["availableLanguages"] = config.availableLanguages;
 
             std::ofstream file(configPath);
             file << j.dump(4);
-            std::cout << "[ConfigManager] Settings saved to " << configPath << std::endl;
+            std::cout << "[ConfigManager] Settings saved." << std::endl;
         } catch (const std::exception& e) {
             std::cerr << "[ConfigManager] Save error: " << e.what() << std::endl;
         }
@@ -92,5 +99,8 @@ private:
         config.particleCount     = j.value("particleCount", 150);
         config.enableVsync       = j.value("enableVsync", true);
         config.windowMode        = j.value("windowMode", 0);
+        config.language          = j.value("language", "zh-TW");
+        config.availableLanguages = j.value("availableLanguages",
+            std::vector<std::string>{"zh-TW", "en", "ja"});
     }
 };

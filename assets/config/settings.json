@@ -1,4 +1,6 @@
 {
+    "language": "zh-TW",
+    "availableLanguages": ["zh-TW"],
     "bgmVolume": 71.0,
     "masterVolume": 38.0,
     "sfxVolume": 100.0,

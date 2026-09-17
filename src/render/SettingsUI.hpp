@@ -11,6 +11,7 @@
 #include <optional>
 #include "../core/ConfigManager.hpp"
 #include "../core/AssetPack.hpp"
+#include "../core/LocalizationManager.hpp"
 
 class SettingsUI {
 public:
@@ -20,7 +21,6 @@ public:
         System
     };
 
-    // 公開確認對話框控制（main.cpp 需要呼叫）
     void openConfirm(const std::string& message, std::function<void()> onYes) {
         confirmMessage = message;
         confirmYesCallback = onYes;
@@ -35,19 +35,19 @@ public:
         confirmYesCallback = nullptr;
     }
 
+    std::function<void(const std::string&)> onLanguageChanged;
+
 private:
     bool isVisible = false;
     sf::Font font;
     bool hasFont = false;
     std::vector<std::uint8_t> fontDataBuffer;
 
-    // 背景與面板
     sf::RectangleShape backgroundDim;
     sf::RectangleShape panel;
     sf::RectangleShape panelBorder;
     sf::Text titleText;
 
-    // 分頁標籤
     struct TabButton {
         Tab tab = Tab::Audio;
         std::string label;
@@ -64,7 +64,6 @@ private:
     std::vector<TabButton> tabButtons;
     Tab currentTab = Tab::Audio;
 
-    // 滑桿
     struct SliderControl {
         std::string label;
         float* targetFloat = nullptr;
@@ -79,7 +78,6 @@ private:
     };
     std::vector<SliderControl> sliders;
 
-    // 切換開關
     struct ToggleControl {
         std::string label;
         bool* targetValue = nullptr;
@@ -89,7 +87,6 @@ private:
     };
     std::vector<ToggleControl> toggles;
 
-    // 下拉選單
     struct DropdownControl {
         std::string label;
         int* targetValue = nullptr;
@@ -97,10 +94,10 @@ private:
         Tab tab = Tab::Graphics;
         sf::FloatRect bounds;
         bool isHovered = false;
+        bool isLanguageSelector = false;
     };
     std::vector<DropdownControl> dropdowns;
 
-    // 動作按鈕
     struct ActionButton {
         std::string label;
         std::function<void()> callback;
@@ -120,7 +117,6 @@ private:
     };
     std::vector<ActionButton> actionButtons;
 
-    // 確認對話框
     bool confirmVisible = false;
     std::string confirmMessage;
     std::function<void()> confirmYesCallback;
@@ -134,10 +130,9 @@ private:
     std::function<void()> onExitCallback;
     std::function<void()> returnToTitleCallback;
 
-    // ========================================================================
-    // 輔助：建立 sf::Text
-    // ========================================================================
-    std::unique_ptr<sf::Text> makeText(const std::string& str, unsigned int size, sf::Color color) {
+    std::unique_ptr<sf::Text> makeText(const std::string& str,
+                                        unsigned int size,
+                                        sf::Color color) {
         auto t = std::make_unique<sf::Text>(font);
         t->setString(sf::String::fromUtf8(str.begin(), str.end()));
         t->setCharacterSize(size);
@@ -145,9 +140,6 @@ private:
         return t;
     }
 
-    // ========================================================================
-    // 控制項建構
-    // ========================================================================
     void buildControls() {
         sliders.clear();
         toggles.clear();
@@ -155,48 +147,73 @@ private:
         actionButtons.clear();
 
         // ===== 音訊頁 =====
-        sliders.push_back({"Master Volume", &ConfigManager::config.masterVolume, nullptr, 0.0f, 100.0f, true, "%", Tab::Audio, {}});
-        sliders.push_back({"BGM Volume",    &ConfigManager::config.bgmVolume,    nullptr, 0.0f, 100.0f, true, "%", Tab::Audio, {}});
-        sliders.push_back({"Voice Volume",  &ConfigManager::config.voiceVolume,  nullptr, 0.0f, 100.0f, true, "%", Tab::Audio, {}});
-        sliders.push_back({"SFX Volume",    &ConfigManager::config.sfxVolume,    nullptr, 0.0f, 100.0f, true, "%", Tab::Audio, {}});
-        sliders.push_back({"Text Speed",    &ConfigManager::config.textSpeed,    nullptr, 0.005f, 0.10f, false, "s", Tab::Audio, {}});
+        sliders.push_back({"Master Volume",
+            &ConfigManager::config.masterVolume, nullptr, 0.0f, 100.0f, true, "%",
+            Tab::Audio, {}});
+        sliders.push_back({"BGM Volume",
+            &ConfigManager::config.bgmVolume, nullptr, 0.0f, 100.0f, true, "%",
+            Tab::Audio, {}});
+        sliders.push_back({"Voice Volume",
+            &ConfigManager::config.voiceVolume, nullptr, 0.0f, 100.0f, true, "%",
+            Tab::Audio, {}});
+        sliders.push_back({"SFX Volume",
+            &ConfigManager::config.sfxVolume, nullptr, 0.0f, 100.0f, true, "%",
+            Tab::Audio, {}});
+        sliders.push_back({"Text Speed",
+            &ConfigManager::config.textSpeed, nullptr, 0.005f, 0.10f, false, "s",
+            Tab::Audio, {}});
 
         // ===== 畫面頁 =====
         dropdowns.push_back({
             "Render Scale",
             &ConfigManager::config.renderScale,
             {"1x (Standard)", "2x (Retina)"},
-            Tab::Graphics, {}, false
+            Tab::Graphics, {}, false, false
         });
 
         dropdowns.push_back({
             "Window Mode",
             &ConfigManager::config.windowMode,
             {"Fullscreen", "Windowed"},
-            Tab::Graphics, {}, false
+            Tab::Graphics, {}, false, false
         });
 
-        toggles.push_back({"Post-Processing",   &ConfigManager::config.enablePostFX,      Tab::Graphics, {}, false});
-        toggles.push_back({"Screen Transitions",&ConfigManager::config.enableTransitions, Tab::Graphics, {}, false});
-        toggles.push_back({"Vertical Sync",     &ConfigManager::config.enableVsync,       Tab::Graphics, {}, false});
+        toggles.push_back({"Post-Processing",
+            &ConfigManager::config.enablePostFX, Tab::Graphics, {}, false});
+        toggles.push_back({"Screen Transitions",
+            &ConfigManager::config.enableTransitions, Tab::Graphics, {}, false});
+        toggles.push_back({"Vertical Sync",
+            &ConfigManager::config.enableVsync, Tab::Graphics, {}, false});
 
-        sliders.push_back({"Weather Particles", nullptr, &ConfigManager::config.particleCount, 0.0f, 300.0f, true, "", Tab::Graphics, {}});
+        sliders.push_back({"Weather Particles", nullptr,
+            &ConfigManager::config.particleCount, 0.0f, 300.0f, true, "",
+            Tab::Graphics, {}});
 
         // ===== 系統頁 =====
+        // 語言選擇器（動態）
+        dropdowns.push_back({
+            "Language",
+            nullptr,
+            ConfigManager::config.availableLanguages,
+            Tab::System, {}, false, true
+        });
+
         {
             ActionButton btn;
             btn.label = "Reset to Defaults";
             btn.callback = [this]() {
                 if (!confirmVisible) {
-                    openConfirm(
-                        "Reset all settings to default values?",
+                    openConfirm("Reset all settings to default values?",
                         [this]() {
+                            std::string lang = ConfigManager::config.language;
+                            auto langs = ConfigManager::config.availableLanguages;
                             ConfigManager::config = EngineConfig{};
+                            ConfigManager::config.language = lang;
+                            ConfigManager::config.availableLanguages = langs;
                             ConfigManager::save();
                             closeConfirm();
                             recalculateLayout();
-                        }
-                    );
+                        });
                 }
             };
             btn.tab = Tab::System;
@@ -210,13 +227,11 @@ private:
             btn.label = "Return to Title";
             btn.callback = [this]() {
                 if (!confirmVisible) {
-                    openConfirm(
-                        "Return to the title screen? Unsaved progress will be lost.",
+                    openConfirm("Return to the title screen? Unsaved progress will be lost.",
                         [this]() {
                             closeConfirm();
                             if (returnToTitleCallback) returnToTitleCallback();
-                        }
-                    );
+                        });
                 }
             };
             btn.tab = Tab::System;
@@ -230,14 +245,12 @@ private:
             btn.label = "Exit Game";
             btn.callback = [this]() {
                 if (!confirmVisible) {
-                    openConfirm(
-                        "Are you sure you want to exit Gality Engine?",
+                    openConfirm("Are you sure you want to exit Gality Engine?",
                         [this]() {
                             ConfigManager::save();
                             closeConfirm();
                             if (onExitCallback) onExitCallback();
-                        }
-                    );
+                        });
                 }
             };
             btn.tab = Tab::System;
@@ -247,9 +260,9 @@ private:
         }
     }
 
-    // 更新滑桿值
     void updateSliderValue(SliderControl& slider, float mouseX) {
-        float ratio = (mouseX - slider.trackBounds.position.x) / slider.trackBounds.size.x;
+        float ratio = (mouseX - slider.trackBounds.position.x) /
+                      slider.trackBounds.size.x;
         ratio = std::clamp(ratio, 0.0f, 1.0f);
         float computed = slider.minVal + ratio * (slider.maxVal - slider.minVal);
 
@@ -290,7 +303,7 @@ private:
             titleText.setPosition(sf::Vector2f(panelX + 35.0f, panelY + 22.0f));
         }
 
-        // 分頁標籤
+        // ===== Tabs =====
         tabButtons.clear();
         float tabX = panelX + 35.0f;
         float tabY = panelY + 70.0f;
@@ -308,7 +321,8 @@ private:
             TabButton btn;
             btn.tab = tabEnum;
             btn.label = label;
-            btn.bounds = sf::FloatRect(sf::Vector2f(tabX, tabY), sf::Vector2f(tabW, tabH));
+            btn.bounds = sf::FloatRect(sf::Vector2f(tabX, tabY),
+                                        sf::Vector2f(tabW, tabH));
             btn.shape.setSize(sf::Vector2f(tabW, tabH));
             btn.shape.setPosition(sf::Vector2f(tabX, tabY));
             btn.shape.setOutlineThickness(1.5f);
@@ -320,9 +334,7 @@ private:
             tabX += tabW + tabGap;
         }
 
-        // =====================================================================
-        // 控制項佈局（標籤區 280px，控制項區剩餘空間）
-        // =====================================================================
+        // ===== 內容區 =====
         float contentX = panelX + 45.0f;
         float contentY = tabY + tabH + 40.0f;
         float contentW = panelW - 90.0f;
@@ -332,10 +344,10 @@ private:
         float controlX = contentX + labelWidth;
         float controlW = contentW - labelWidth;
 
-        // 滑桿
+        // ===== Sliders =====
         int sliderIdx = 0;
         for (auto& s : sliders) {
-            if (s.tab != currentTab) { sliderIdx++; continue; }
+            if (s.tab != currentTab) continue;  // ⚠️ 只計數當前 Tab
             float rowY = contentY + static_cast<float>(sliderIdx) * spacingY;
             s.trackBounds = sf::FloatRect(
                 sf::Vector2f(controlX, rowY + 12.0f),
@@ -344,10 +356,10 @@ private:
             sliderIdx++;
         }
 
-        // 下拉選單
+        // ===== Dropdowns =====
         int ddIdx = 0;
         for (auto& d : dropdowns) {
-            if (d.tab != currentTab) { ddIdx++; continue; }
+            if (d.tab != currentTab) continue;  // ⚠️ 只計數當前 Tab
             float rowY = contentY + static_cast<float>(ddIdx) * spacingY;
             d.bounds = sf::FloatRect(
                 sf::Vector2f(controlX, rowY),
@@ -356,10 +368,16 @@ private:
             ddIdx++;
         }
 
-        // 切換開關
-        int toggleIdx = static_cast<int>(dropdowns.size());
+        // 計算當前 Tab 的 dropdowns 數量
+        int currentTabDropdownCount = 0;
+        for (const auto& d : dropdowns) {
+            if (d.tab == currentTab) currentTabDropdownCount++;
+        }
+
+        // ===== Toggles（從 dropdowns 之後開始）=====
+        int toggleIdx = currentTabDropdownCount;
         for (auto& t : toggles) {
-            if (t.tab != currentTab) { toggleIdx++; continue; }
+            if (t.tab != currentTab) continue;  // ⚠️ 只計數當前 Tab
             float rowY = contentY + static_cast<float>(toggleIdx) * spacingY;
             t.toggleBounds = sf::FloatRect(
                 sf::Vector2f(controlX, rowY + 6.0f),
@@ -368,11 +386,21 @@ private:
             toggleIdx++;
         }
 
-        // 動作按鈕
+        // 計算當前 Tab 的 toggles 數量
+        int currentTabToggleCount = 0;
+        for (const auto& t : toggles) {
+            if (t.tab == currentTab) currentTabToggleCount++;
+        }
+
+        // ===== Action Buttons（從 dropdowns + toggles 之後開始）=====
+        int currentTabControlCount = currentTabDropdownCount + currentTabToggleCount;
+
         int btnIdx = 0;
         for (auto& b : actionButtons) {
-            if (b.tab != currentTab) { btnIdx++; continue; }
-            float rowY = contentY + static_cast<float>(btnIdx) * (spacingY + 10.0f);
+            if (b.tab != currentTab) continue;  // ⚠️ 只處理當前 Tab 的按鈕
+
+            // 按鈕的起始行號 = 已有控件總數 + 當前按鈕的序號
+            float rowY = contentY + static_cast<float>(currentTabControlCount + btnIdx) * (spacingY + 10.0f);
             b.bounds = sf::FloatRect(
                 sf::Vector2f(contentX + 100.0f, rowY),
                 sf::Vector2f(contentW - 200.0f, 45.0f)
@@ -390,10 +418,10 @@ private:
                     b.bounds.position.y + (b.bounds.size.y - tb.size.y) * 0.5f - 4.0f
                 ));
             }
-            btnIdx++;
+            btnIdx++;  // ⚠️ 只對當前 Tab 的按鈕遞增
         }
 
-        // 確認對話框
+        // ===== Confirm Dialog =====
         float cbW = 520.0f;
         float cbH = 220.0f;
         float cbX = (winW - cbW) * 0.5f;
@@ -418,18 +446,22 @@ private:
 
         float btnW = 140.0f;
         float btnH = 44.0f;
-        float btnY = cbY + cbH - btnH - 30.0f;
+        float btnY2 = cbY + cbH - btnH - 30.0f;
 
-        confirmYesBtn.bounds = sf::FloatRect(sf::Vector2f(cbX + cbW - btnW * 2 - 40.0f, btnY), sf::Vector2f(btnW, btnH));
+        confirmYesBtn.bounds = sf::FloatRect(
+            sf::Vector2f(cbX + cbW - btnW * 2 - 40.0f, btnY2),
+            sf::Vector2f(btnW, btnH));
         confirmYesBtn.shape.setSize(sf::Vector2f(btnW, btnH));
-        confirmYesBtn.shape.setPosition(sf::Vector2f(cbX + cbW - btnW * 2 - 40.0f, btnY));
+        confirmYesBtn.shape.setPosition(sf::Vector2f(cbX + cbW - btnW * 2 - 40.0f, btnY2));
         confirmYesBtn.shape.setFillColor(sf::Color(140, 50, 50));
         confirmYesBtn.shape.setOutlineThickness(1.5f);
         confirmYesBtn.shape.setOutlineColor(sf::Color(255, 150, 150, 100));
 
-        confirmNoBtn.bounds = sf::FloatRect(sf::Vector2f(cbX + cbW - btnW - 30.0f, btnY), sf::Vector2f(btnW, btnH));
+        confirmNoBtn.bounds = sf::FloatRect(
+            sf::Vector2f(cbX + cbW - btnW - 30.0f, btnY2),
+            sf::Vector2f(btnW, btnH));
         confirmNoBtn.shape.setSize(sf::Vector2f(btnW, btnH));
-        confirmNoBtn.shape.setPosition(sf::Vector2f(cbX + cbW - btnW - 30.0f, btnY));
+        confirmNoBtn.shape.setPosition(sf::Vector2f(cbX + cbW - btnW - 30.0f, btnY2));
         confirmNoBtn.shape.setFillColor(sf::Color(60, 90, 60));
         confirmNoBtn.shape.setOutlineThickness(1.5f);
         confirmNoBtn.shape.setOutlineColor(sf::Color(150, 200, 150, 100));
@@ -460,7 +492,8 @@ public:
         fontDataBuffer.clear();
         hasFont = false;
 
-        if (AssetPack::readFileFromPak(fontPath, fontDataBuffer, "data.pak") && !fontDataBuffer.empty()) {
+        if (AssetPack::readFileFromPak(fontPath, fontDataBuffer, "data.pak") &&
+            !fontDataBuffer.empty()) {
             if (font.openFromMemory(fontDataBuffer.data(), fontDataBuffer.size())) {
                 hasFont = true;
             }
@@ -476,10 +509,7 @@ public:
         return false;
     }
 
-    void setExitCallback(std::function<void()> cb) {
-        onExitCallback = cb;
-    }
-
+    void setExitCallback(std::function<void()> cb) { onExitCallback = cb; }
     void setReturnToTitleCallback(std::function<void()> cb) {
         returnToTitleCallback = cb;
     }
@@ -494,10 +524,7 @@ public:
         }
     }
 
-    void toggle() {
-        setVisible(!isVisible);
-    }
-
+    void toggle() { setVisible(!isVisible); }
     bool getIsVisible() const { return isVisible; }
     bool getConfirmVisible() const { return confirmVisible; }
 
@@ -506,13 +533,14 @@ public:
         recalculateLayout();
     }
 
-    bool handleMouseButtonPressed(sf::Mouse::Button button, const sf::Vector2i& mousePos) {
+    bool handleMouseButtonPressed(sf::Mouse::Button button,
+                                   const sf::Vector2i& mousePos) {
         if (!isVisible) return false;
         if (button != sf::Mouse::Button::Left) return false;
 
-        sf::Vector2f mPos(static_cast<float>(mousePos.x), static_cast<float>(mousePos.y));
+        sf::Vector2f mPos(static_cast<float>(mousePos.x),
+                          static_cast<float>(mousePos.y));
 
-        // 確認對話框優先
         if (confirmVisible) {
             if (confirmYesBtn.bounds.contains(mPos)) {
                 if (confirmYesCallback) confirmYesCallback();
@@ -525,7 +553,6 @@ public:
             return true;
         }
 
-        // 分頁切換
         for (auto& tb : tabButtons) {
             if (tb.bounds.contains(mPos)) {
                 currentTab = tb.tab;
@@ -534,12 +561,13 @@ public:
             }
         }
 
-        // 滑桿拖曳
         for (auto& slider : sliders) {
             if (slider.tab != currentTab) continue;
             sf::FloatRect hitBox(
-                sf::Vector2f(slider.trackBounds.position.x - 10.0f, slider.trackBounds.position.y - 12.0f),
-                sf::Vector2f(slider.trackBounds.size.x + 20.0f, slider.trackBounds.size.y + 24.0f)
+                sf::Vector2f(slider.trackBounds.position.x - 10.0f,
+                             slider.trackBounds.position.y - 12.0f),
+                sf::Vector2f(slider.trackBounds.size.x + 20.0f,
+                             slider.trackBounds.size.y + 24.0f)
             );
             if (hitBox.contains(mPos)) {
                 slider.isDragging = true;
@@ -548,18 +576,32 @@ public:
             }
         }
 
-        // 下拉選單切換
         for (auto& d : dropdowns) {
             if (d.tab != currentTab) continue;
             if (d.bounds.contains(mPos)) {
-                if (d.targetValue && !d.options.empty()) {
-                    *d.targetValue = (*d.targetValue + 1) % static_cast<int>(d.options.size());
+                if (d.isLanguageSelector) {
+                    auto& langs = ConfigManager::config.availableLanguages;
+                    if (!langs.empty()) {
+                        int currentIdx = LocalizationManager::instance().getLanguageIndex();
+                        int nextIdx = (currentIdx + 1) % static_cast<int>(langs.size());
+                        const std::string& newLang = langs[nextIdx];
+
+                        LocalizationManager::instance().setLanguage(newLang);
+                        ConfigManager::config.language = newLang;
+                        ConfigManager::save();
+
+                        if (onLanguageChanged) {
+                            onLanguageChanged(newLang);
+                        }
+                    }
+                } else if (d.targetValue && !d.options.empty()) {
+                    *d.targetValue = (*d.targetValue + 1) %
+                                     static_cast<int>(d.options.size());
                 }
                 return true;
             }
         }
 
-        // 切換開關
         for (auto& t : toggles) {
             if (t.tab != currentTab) continue;
             if (t.toggleBounds.contains(mPos)) {
@@ -568,7 +610,6 @@ public:
             }
         }
 
-        // 動作按鈕
         for (auto& b : actionButtons) {
             if (b.tab != currentTab) continue;
             if (b.bounds.contains(mPos)) {
@@ -577,7 +618,6 @@ public:
             }
         }
 
-        // 點擊面板外關閉
         if (!panel.getGlobalBounds().contains(mPos)) {
             setVisible(false);
             return true;
@@ -600,7 +640,8 @@ public:
 
     void handleMouseMove(const sf::Vector2i& mousePos) {
         if (!isVisible) return;
-        sf::Vector2f mPos(static_cast<float>(mousePos.x), static_cast<float>(mousePos.y));
+        sf::Vector2f mPos(static_cast<float>(mousePos.x),
+                          static_cast<float>(mousePos.y));
 
         for (auto& slider : sliders) {
             if (slider.isDragging) {
@@ -629,29 +670,31 @@ public:
         target.draw(panelBorder);
         target.draw(titleText);
 
-        // 分頁標籤
         for (auto& tb : tabButtons) {
             bool active = (tb.tab == currentTab);
-            tb.shape.setFillColor(active ? sf::Color(45, 52, 70) : sf::Color(24, 27, 34));
-            tb.shape.setOutlineColor(active ? sf::Color(100, 149, 237) : sf::Color(60, 65, 80));
-            if (tb.text) tb.text->setFillColor(active ? sf::Color::White : sf::Color(170, 180, 200));
+            tb.shape.setFillColor(active ? sf::Color(45, 52, 70)
+                                          : sf::Color(24, 27, 34));
+            tb.shape.setOutlineColor(active ? sf::Color(100, 149, 237)
+                                             : sf::Color(60, 65, 80));
+            if (tb.text) tb.text->setFillColor(active ? sf::Color::White
+                                                       : sf::Color(170, 180, 200));
             target.draw(tb.shape);
             if (tb.text) target.draw(*tb.text);
         }
 
         float contentX = panel.getPosition().x + 45.0f;
 
-        // =====================================================================
-        // 滑桿
-        // =====================================================================
+        // Sliders
         for (auto& slider : sliders) {
             if (slider.tab != currentTab) continue;
 
             sf::Text labelText(font);
-            labelText.setString(sf::String::fromUtf8(slider.label.begin(), slider.label.end()));
+            labelText.setString(sf::String::fromUtf8(slider.label.begin(),
+                                                      slider.label.end()));
             labelText.setCharacterSize(16);
             labelText.setFillColor(sf::Color(210, 215, 225));
-            labelText.setPosition(sf::Vector2f(contentX, slider.trackBounds.position.y - 5.0f));
+            labelText.setPosition(sf::Vector2f(contentX,
+                                                slider.trackBounds.position.y - 5.0f));
             target.draw(labelText);
 
             sf::RectangleShape track(slider.trackBounds.size);
@@ -659,12 +702,15 @@ public:
             track.setFillColor(sf::Color(40, 44, 54));
             target.draw(track);
 
-            float val = slider.targetInt ? static_cast<float>(*slider.targetInt)
-                                         : (slider.targetFloat ? *slider.targetFloat : slider.minVal);
+            float val = slider.targetInt
+                ? static_cast<float>(*slider.targetInt)
+                : (slider.targetFloat ? *slider.targetFloat : slider.minVal);
             float norm = (val - slider.minVal) / (slider.maxVal - slider.minVal);
             norm = std::clamp(norm, 0.0f, 1.0f);
 
-            sf::RectangleShape fill(sf::Vector2f(slider.trackBounds.size.x * norm, slider.trackBounds.size.y));
+            sf::RectangleShape fill(sf::Vector2f(
+                slider.trackBounds.size.x * norm,
+                slider.trackBounds.size.y));
             fill.setPosition(slider.trackBounds.position);
             fill.setFillColor(sf::Color(100, 149, 237));
             target.draw(fill);
@@ -675,10 +721,10 @@ public:
                 slider.trackBounds.position.x + slider.trackBounds.size.x * norm,
                 slider.trackBounds.position.y + slider.trackBounds.size.y * 0.5f
             ));
-            handle.setFillColor(slider.isDragging ? sf::Color::White : sf::Color(220, 225, 235));
+            handle.setFillColor(slider.isDragging ? sf::Color::White
+                                                   : sf::Color(220, 225, 235));
             target.draw(handle);
 
-            // 數值顯示（整數 / 浮點 + 後綴）
             std::ostringstream ss;
             if (slider.targetInt) {
                 ss << *slider.targetInt;
@@ -701,37 +747,48 @@ public:
             target.draw(valText);
         }
 
-        // =====================================================================
-        // 下拉選單
-        // =====================================================================
+        // Dropdowns
         for (auto& d : dropdowns) {
             if (d.tab != currentTab) continue;
 
             sf::Text labelText(font);
-            labelText.setString(sf::String::fromUtf8(d.label.begin(), d.label.end()));
+            labelText.setString(sf::String::fromUtf8(d.label.begin(),
+                                                      d.label.end()));
             labelText.setCharacterSize(16);
             labelText.setFillColor(sf::Color(210, 215, 225));
-            labelText.setPosition(sf::Vector2f(contentX, d.bounds.position.y + 8.0f));
+            labelText.setPosition(sf::Vector2f(contentX,
+                                                d.bounds.position.y + 8.0f));
             target.draw(labelText);
 
             sf::RectangleShape box(d.bounds.size);
             box.setPosition(d.bounds.position);
-            box.setFillColor(d.isHovered ? sf::Color(45, 55, 75) : sf::Color(30, 34, 44));
+            box.setFillColor(d.isHovered ? sf::Color(45, 55, 75)
+                                          : sf::Color(30, 34, 44));
             box.setOutlineThickness(1.5f);
-            box.setOutlineColor(d.isHovered ? sf::Color(100, 149, 237) : sf::Color(60, 70, 90));
+            box.setOutlineColor(d.isHovered ? sf::Color(100, 149, 237)
+                                             : sf::Color(60, 70, 90));
             target.draw(box);
 
-            std::string display = (d.targetValue && *d.targetValue < static_cast<int>(d.options.size()))
-                ? d.options[*d.targetValue]
-                : "---";
+            std::string display;
+            if (d.isLanguageSelector) {
+                display = LocalizationManager::instance().getDisplayName(
+                    ConfigManager::config.language);
+            } else if (d.targetValue &&
+                       *d.targetValue < static_cast<int>(d.options.size())) {
+                display = d.options[*d.targetValue];
+            } else {
+                display = "---";
+            }
+
             sf::Text valText(font);
-            valText.setString(sf::String::fromUtf8(display.begin(), display.end()));
+            valText.setString(sf::String::fromUtf8(display.begin(),
+                                                    display.end()));
             valText.setCharacterSize(15);
             valText.setFillColor(sf::Color::White);
-            valText.setPosition(sf::Vector2f(d.bounds.position.x + 12.0f, d.bounds.position.y + 9.0f));
+            valText.setPosition(sf::Vector2f(d.bounds.position.x + 12.0f,
+                                              d.bounds.position.y + 9.0f));
             target.draw(valText);
 
-            // 箭頭：用 ASCII "v" 取代 Unicode ▼
             sf::Text arrow(font);
             arrow.setString("v");
             arrow.setCharacterSize(14);
@@ -743,40 +800,45 @@ public:
             target.draw(arrow);
         }
 
-        // =====================================================================
-        // 切換開關
-        // =====================================================================
+        // Toggles
         for (auto& t : toggles) {
             if (t.tab != currentTab) continue;
 
             sf::Text labelText(font);
-            labelText.setString(sf::String::fromUtf8(t.label.begin(), t.label.end()));
+            labelText.setString(sf::String::fromUtf8(t.label.begin(),
+                                                      t.label.end()));
             labelText.setCharacterSize(15);
             labelText.setFillColor(sf::Color(210, 215, 225));
-            labelText.setPosition(sf::Vector2f(contentX, t.toggleBounds.position.y + 6.0f));
+            labelText.setPosition(sf::Vector2f(contentX,
+                                                t.toggleBounds.position.y + 6.0f));
             target.draw(labelText);
 
             bool on = t.targetValue && *t.targetValue;
 
             sf::RectangleShape track(t.toggleBounds.size);
             track.setPosition(t.toggleBounds.position);
-            track.setFillColor(on ? sf::Color(70, 130, 100) : sf::Color(45, 48, 58));
+            track.setFillColor(on ? sf::Color(70, 130, 100)
+                                   : sf::Color(45, 48, 58));
             track.setOutlineThickness(1.5f);
-            track.setOutlineColor(t.isHovered ? sf::Color(150, 180, 220) : sf::Color(80, 90, 105));
+            track.setOutlineColor(t.isHovered ? sf::Color(150, 180, 220)
+                                               : sf::Color(80, 90, 105));
             target.draw(track);
 
-            float knobX = on ? (t.toggleBounds.position.x + t.toggleBounds.size.x - 26.0f)
-                             : (t.toggleBounds.position.x + 4.0f);
+            float knobX = on
+                ? (t.toggleBounds.position.x + t.toggleBounds.size.x - 26.0f)
+                : (t.toggleBounds.position.x + 4.0f);
             sf::CircleShape knob(12.0f);
-            knob.setFillColor(on ? sf::Color(180, 240, 200) : sf::Color(150, 155, 170));
-            knob.setPosition(sf::Vector2f(knobX, t.toggleBounds.position.y + 4.0f));
+            knob.setFillColor(on ? sf::Color(180, 240, 200)
+                                  : sf::Color(150, 155, 170));
+            knob.setPosition(sf::Vector2f(knobX,
+                                           t.toggleBounds.position.y + 4.0f));
             target.draw(knob);
 
-            // ON/OFF 狀態文字
             sf::Text stateText(font);
             stateText.setString(on ? "ON" : "OFF");
             stateText.setCharacterSize(13);
-            stateText.setFillColor(on ? sf::Color(180, 240, 200) : sf::Color(150, 155, 170));
+            stateText.setFillColor(on ? sf::Color(180, 240, 200)
+                                       : sf::Color(150, 155, 170));
             stateText.setPosition(sf::Vector2f(
                 t.toggleBounds.position.x + t.toggleBounds.size.x + 14.0f,
                 t.toggleBounds.position.y + 9.0f
@@ -784,9 +846,7 @@ public:
             target.draw(stateText);
         }
 
-        // =====================================================================
-        // 動作按鈕
-        // =====================================================================
+        // Action buttons
         for (auto& b : actionButtons) {
             if (b.tab != currentTab) continue;
             b.shape.setFillColor(b.isHovered ? b.hoverColor : b.baseColor);
@@ -794,9 +854,7 @@ public:
             if (b.text) target.draw(*b.text);
         }
 
-        // =====================================================================
-        // 確認對話框
-        // =====================================================================
+        // Confirm dialog
         if (confirmVisible) {
             sf::RectangleShape overlay(sf::Vector2f(
                 static_cast<float>(target.getSize().x),

@@ -27,6 +27,7 @@
 #include "core/FontManager.hpp"
 #include "core/ConfigManager.hpp"
 #include "core/AssetPack.hpp"
+#include "core/LocalizationManager.hpp"
 #include "story/ScriptLoader.hpp"
 #include "core/Blackboard.hpp"
 #include "core/LRUCache.hpp"
@@ -85,11 +86,13 @@ sf::View calculateLetterboxView(sf::Vector2u windowSize) {
     if (windowRatio >= targetRatio) {
         float viewportWidth = targetRatio / windowRatio;
         float viewportX = (1.0f - viewportWidth) * 0.5f;
-        view.setViewport(sf::FloatRect(sf::Vector2f(viewportX, 0.0f), sf::Vector2f(viewportWidth, 1.0f)));
+        view.setViewport(sf::FloatRect(sf::Vector2f(viewportX, 0.0f),
+                                        sf::Vector2f(viewportWidth, 1.0f)));
     } else {
         float viewportHeight = windowRatio / targetRatio;
         float viewportY = (1.0f - viewportHeight) * 0.5f;
-        view.setViewport(sf::FloatRect(sf::Vector2f(0.0f, viewportY), sf::Vector2f(1.0f, viewportHeight)));
+        view.setViewport(sf::FloatRect(sf::Vector2f(0.0f, viewportY),
+                                        sf::Vector2f(1.0f, viewportHeight)));
     }
 
     return view;
@@ -217,7 +220,13 @@ struct GalityApp {
         // 4. 配置
         ConfigManager::load();
 
-        // 5. 劇本
+        // 5. 初始化 LocalizationManager
+        LocalizationManager::instance().initialize(
+            ConfigManager::config.availableLanguages,
+            ConfigManager::config.language
+        );
+
+        // 6. 載入劇本
         rootNode = ScriptLoader::loadFromFile("assets/scripts/demo_long.json");
         if (!rootNode) {
             std::cerr << "[Boot Error] Failed to load script!" << std::endl;
@@ -233,7 +242,7 @@ struct GalityApp {
             nodeIndexMap[id] = nodePtr;
         }
 
-        // 6. 字型
+        // 7. 字型
         if (!choiceUI.loadFont("assets/fonts/font.ttf") ||
             !backlogUI.loadFont("assets/fonts/font.ttf") ||
             !titleMenu.loadFont("assets/fonts/font.ttf") ||
@@ -252,24 +261,29 @@ struct GalityApp {
         std::cout << "[Boot] Debug tools loaded (DEVELOP build)" << std::endl;
 #endif
 
-        // 7. 打字音效
+        // 8. 打字音效
         dialogueBox.loadTypeSound("assets/audio/typewriter.wav");
 
-        // 8. UI 主題
+
+        // 9. UI 主題
         uiTheme.loadFromFile("assets/config/ui_theme.json");
-        // ⚠️ 初始化 FontManager
+
+        // ⚠️ 初始化 FontManager（DialogueBox 依賴它）
         FontManager::instance().initialize(
             uiTheme.fonts.available,
             uiTheme.fonts.defaultName
         );
 
+        // DialogueBox 套用主題（內部會從 FontManager 取得字型）
         dialogueBox.applyTheme(uiTheme.dialogueStyle, uiTheme.dialogueButtonsStyle);
+
+        // 如果 dialogueFont 不是預設，明確設定
+        if (!uiTheme.dialogueStyle.dialogueFont.empty()) {
+            dialogueBox.setFont(uiTheme.dialogueStyle.dialogueFont);
+        }
+
         choiceUI.applyTheme(uiTheme.choiceStyle);
 
-        // ⚠️ 設定字型
-        dialogueBox.setFont(uiTheme.dialogueStyle.dialogueFont);
-
-        // ⚠️ 套用對話框保留高度與角色縮放係數
         layerRenderer.setDialogueBoxReservedHeight(uiTheme.dialogueStyle.height);
         layerRenderer.setScaleFactors(
             uiTheme.characterScaling.single,
@@ -278,7 +292,7 @@ struct GalityApp {
             uiTheme.characterScaling.bottomOffset
         );
 
-        // 9. HotReloader（僅開發版）
+        // 10. HotReloader
 #ifdef GALITY_DEV_BUILD
 #ifndef __EMSCRIPTEN__
         hotReloader = std::make_unique<HotReloader>(
@@ -289,7 +303,7 @@ struct GalityApp {
 #endif
 
         // ====================================================================
-        // 10. SettingsUI 回呼
+        // 11. SettingsUI 回呼
         // ====================================================================
         settingsUI.setExitCallback([this]() {
             std::cout << "[Settings] Exiting..." << std::endl;
@@ -307,10 +321,35 @@ struct GalityApp {
             titleMenu.setVisible(true);
         });
 
+        // ⚠️ 語言切換回呼
+        settingsUI.onLanguageChanged = [this](const std::string& lang) {
+            std::cout << "[Main] Language changed to: " << lang << std::endl;
+
+            // 重新載入劇本（會自動套用新語言）
+            rootNode = ScriptLoader::loadFromFile("assets/scripts/demo_long.json");
+            if (rootNode) {
+                nodeIndexMap.clear();
+                for (const auto& [id, nodePtr] : ScriptLoader::nodeRegistry) {
+                    nodeIndexMap[id] = nodePtr;
+                }
+
+                // 如果遊戲正在進行，重新載入當前節點
+                auto currentNode = executor.getCurrentNode();
+                if (currentNode) {
+                    std::string currentId = currentNode->id;
+                    if (nodeIndexMap.count(currentId)) {
+                        executor.jumpToNode(nodeIndexMap[currentId]);
+                        syncCurrentNodeState(false, false);
+                    }
+                }
+            }
+        };
+
         // ====================================================================
-        // 11. TitleMenu BGM 回呼
+        // 12. TitleMenu BGM 回呼
         // ====================================================================
-        titleMenu.setBGMRequestCallback([this](const std::string& path, float volume, bool loop, float fadeIn) {
+        titleMenu.setBGMRequestCallback([this](const std::string& path, float volume,
+                                                bool loop, float fadeIn) {
             audioManager.playBGM(path, volume, loop, fadeIn);
         });
 
@@ -319,7 +358,7 @@ struct GalityApp {
         });
 
         // ====================================================================
-        // 12. DialogueBox 按鈕回呼
+        // 13. DialogueBox 按鈕回呼
         // ====================================================================
         dialogueBox.setBacklogCallback([this]() {
             backlogUI.toggle();
@@ -348,7 +387,7 @@ struct GalityApp {
         });
 
         // ====================================================================
-        // 13. TitleMenu 配置與動作
+        // 14. TitleMenu 配置與動作
         // ====================================================================
         titleMenu.loadConfig("assets/config/title_menu.json");
 
@@ -418,11 +457,14 @@ struct GalityApp {
     // ========================================================================
     // 同步節點狀態
     // ========================================================================
+        // ========================================================================
+    // 同步節點狀態
+    // ========================================================================
     void syncCurrentNodeState(bool recordHistory = true, bool playTransition = true) {
         auto currentNode = executor.getCurrentNode();
         if (!currentNode) return;
 
-        // ⚠️ Skip 停止條件
+        // Skip 停止條件
         if (dialogueBox.isSkipHeld()) {
             if (currentNode->type == NodeType::Choice) {
                 dialogueBox.stopSkip();
@@ -439,34 +481,70 @@ struct GalityApp {
         if (currentNode->type == NodeType::Dialogue) {
             dialogueBox.setText(currentNode->speaker, currentNode->text);
 
-            // ⚠️ 設定強制觀看
+            // 設定強制觀看
             dialogueBox.setForcedRead(
                 currentNode->noSkip,
                 currentNode->noSkipWait
             );
 
             if (recordHistory) {
-                backlogUI.addEntry(currentNode->speaker, currentNode->text, currentNode->voicePath);
+                backlogUI.addEntry(currentNode->speaker, currentNode->text,
+                                    currentNode->voicePath);
             }
 
-            if (!currentNode->bgImagePath.empty() && currentNode->bgImagePath != previousBgPath) {
-                if (!previousBgPath.empty() && playTransition && ConfigManager::config.enableTransitions) {
+            // ================================================================
+            // ⚠️ 轉場觸發邏輯（支援同背景轉場）
+            // ================================================================
+            // 判斷是否要觸發轉場：
+            //   1. 背景有改變（bgChanged）
+            //   2. 創作者明確指定了 trans（hasExplicitTrans）
+            // ================================================================
+            bool bgChanged = (!currentNode->bgImagePath.empty() &&
+                              currentNode->bgImagePath != previousBgPath);
+            bool hasExplicitTrans = !currentNode->transitionMask.empty();
+            bool shouldTransition = bgChanged || hasExplicitTrans;
+
+            if (shouldTransition) {
+                // 只有在「已經有舊畫面」且「轉場功能開啟」時，才觸發轉場
+                if (!previousBgPath.empty() &&
+                    playTransition &&
+                    ConfigManager::config.enableTransitions) {
+
+                    // 快照當前畫面
                     sceneBuffer.clear(sf::Color(20, 20, 30));
                     layerRenderer.draw(sceneBuffer);
                     sceneBuffer.display();
 
-                    std::string maskName = currentNode->transitionMask.empty() ? "diamond" : currentNode->transitionMask;
-                    float dur = (currentNode->transitionDuration > 0.0f) ? currentNode->transitionDuration : 1.0f;
+                    // 決定遮罩名稱與時長
+                    std::string maskName = currentNode->transitionMask.empty()
+                        ? "diamond" : currentNode->transitionMask;
+                    float dur = (currentNode->transitionDuration > 0.0f)
+                        ? currentNode->transitionDuration : 1.0f;
+
+                    // 觸發轉場
                     transitionSystem.start(sceneBuffer, maskName, dur, 0.15f);
+
+                    std::cout << "[Transition] Triggered: mask=" << maskName
+                              << ", duration=" << dur
+                              << ", bgChanged=" << bgChanged
+                              << ", explicit=" << hasExplicitTrans
+                              << std::endl;
                 }
 
-                layerRenderer.setBackground(currentNode->bgImagePath, sf::Vector2u(LOGICAL_WIDTH, LOGICAL_HEIGHT));
-                previousBgPath = currentNode->bgImagePath;
+                // ⚠️ 只有背景真的改變時，才更新背景
+                if (bgChanged) {
+                    layerRenderer.setBackground(currentNode->bgImagePath,
+                                                 sf::Vector2u(LOGICAL_WIDTH, LOGICAL_HEIGHT));
+                    previousBgPath = currentNode->bgImagePath;
+                }
             } else if (currentNode->bgImagePath.empty()) {
                 layerRenderer.setBackground("");
                 previousBgPath = "";
             }
 
+            // ================================================================
+            // 角色立繪更新
+            // ================================================================
             if (!currentNode->slotTextures.empty()) {
                 currentSlots = currentNode->slotTextures;
                 currentActiveSlot = currentNode->activeSlot;
@@ -482,6 +560,9 @@ struct GalityApp {
                 layerRenderer.setCharacter("");
             }
 
+            // ================================================================
+            // BGM 與語音
+            // ================================================================
             if (!currentNode->bgmPath.empty()) {
                 currentPlayingBgm = currentNode->bgmPath;
                 audioManager.playBGM(currentNode->bgmPath);
@@ -490,22 +571,36 @@ struct GalityApp {
                 audioManager.playVoice(currentNode->voicePath, currentActiveSlot);
             }
 
+            // ================================================================
+            // 天氣系統
+            // ================================================================
             currentWeatherStr = currentNode->weather;
             if (!currentNode->weather.empty()) {
-                if (currentNode->weather == "rain") weatherSystem.setWeather(WeatherType::Rain);
-                else if (currentNode->weather == "snow") weatherSystem.setWeather(WeatherType::Snow);
-                else if (currentNode->weather == "sakura") weatherSystem.setWeather(WeatherType::Sakura);
-                else if (currentNode->weather == "none") weatherSystem.setWeather(WeatherType::None);
+                if (currentNode->weather == "rain")
+                    weatherSystem.setWeather(WeatherType::Rain);
+                else if (currentNode->weather == "snow")
+                    weatherSystem.setWeather(WeatherType::Snow);
+                else if (currentNode->weather == "sakura")
+                    weatherSystem.setWeather(WeatherType::Sakura);
+                else if (currentNode->weather == "none")
+                    weatherSystem.setWeather(WeatherType::None);
             }
 
+            // ================================================================
+            // 震動效果
+            // ================================================================
             if (currentNode->shake > 0.0f) {
                 postFX.triggerShake(currentNode->shake, 20.0f);
             }
 
-            executor.updatePresentationState(previousBgPath, currentSlots, currentActiveSlot,
+            // ================================================================
+            // 更新演出狀態（供 Rollback 使用）
+            // ================================================================
+            executor.updatePresentationState(previousBgPath, currentSlots,
+                                             currentActiveSlot,
                                              currentWeatherStr, currentPlayingBgm);
 
-            // 切換節點時重置隱藏模式
+            // 如果處於隱藏模式，恢復顯示
             if (dialogueBox.isHiddenMode()) {
                 dialogueBox.setHiddenMode(false);
             }
@@ -526,16 +621,21 @@ struct GalityApp {
                 executor.jumpToNode(nodeIndexMap[snapshot.currentNodeId]);
 
                 previousBgPath = snapshot.bgImagePath;
-                layerRenderer.setBackground(snapshot.bgImagePath, sf::Vector2u(LOGICAL_WIDTH, LOGICAL_HEIGHT));
+                layerRenderer.setBackground(snapshot.bgImagePath,
+                                             sf::Vector2u(LOGICAL_WIDTH, LOGICAL_HEIGHT));
                 currentSlots = snapshot.slotTextures;
                 currentActiveSlot = snapshot.activeSlot;
                 layerRenderer.updateCharacters(currentSlots, currentActiveSlot);
 
                 currentWeatherStr = snapshot.weather;
-                if (currentWeatherStr == "rain") weatherSystem.setWeather(WeatherType::Rain);
-                else if (currentWeatherStr == "snow") weatherSystem.setWeather(WeatherType::Snow);
-                else if (currentWeatherStr == "sakura") weatherSystem.setWeather(WeatherType::Sakura);
-                else weatherSystem.setWeather(WeatherType::None);
+                if (currentWeatherStr == "rain")
+                    weatherSystem.setWeather(WeatherType::Rain);
+                else if (currentWeatherStr == "snow")
+                    weatherSystem.setWeather(WeatherType::Snow);
+                else if (currentWeatherStr == "sakura")
+                    weatherSystem.setWeather(WeatherType::Sakura);
+                else
+                    weatherSystem.setWeather(WeatherType::None);
 
                 if (!snapshot.bgmPath.empty() && snapshot.bgmPath != currentPlayingBgm) {
                     currentPlayingBgm = snapshot.bgmPath;
@@ -551,7 +651,8 @@ struct GalityApp {
                     }
                 }
 
-                executor.updatePresentationState(previousBgPath, currentSlots, currentActiveSlot,
+                executor.updatePresentationState(previousBgPath, currentSlots,
+                                                 currentActiveSlot,
                                                  currentWeatherStr, currentPlayingBgm);
             }
         }
@@ -586,16 +687,21 @@ struct GalityApp {
         dialogueBox.resetModes();
 
         previousBgPath = snapshot.bgImagePath;
-        layerRenderer.setBackground(snapshot.bgImagePath, sf::Vector2u(LOGICAL_WIDTH, LOGICAL_HEIGHT));
+        layerRenderer.setBackground(snapshot.bgImagePath,
+                                     sf::Vector2u(LOGICAL_WIDTH, LOGICAL_HEIGHT));
         currentSlots = snapshot.slotTextures;
         currentActiveSlot = snapshot.activeSlot;
         layerRenderer.updateCharacters(currentSlots, currentActiveSlot);
 
         currentWeatherStr = snapshot.weather;
-        if (currentWeatherStr == "rain") weatherSystem.setWeather(WeatherType::Rain);
-        else if (currentWeatherStr == "snow") weatherSystem.setWeather(WeatherType::Snow);
-        else if (currentWeatherStr == "sakura") weatherSystem.setWeather(WeatherType::Sakura);
-        else weatherSystem.setWeather(WeatherType::None);
+        if (currentWeatherStr == "rain")
+            weatherSystem.setWeather(WeatherType::Rain);
+        else if (currentWeatherStr == "snow")
+            weatherSystem.setWeather(WeatherType::Snow);
+        else if (currentWeatherStr == "sakura")
+            weatherSystem.setWeather(WeatherType::Sakura);
+        else
+            weatherSystem.setWeather(WeatherType::None);
 
         if (!snapshot.bgmPath.empty()) {
             currentPlayingBgm = snapshot.bgmPath;
@@ -640,18 +746,14 @@ struct GalityApp {
                 static_cast<int>(logicalMousePosF.y)
             );
 
-            // =================================================================
-            // ⚠️ 全域滑鼠放開事件（處理 Skip 停止）
-            // =================================================================
+            // ===== 全域滑鼠放開事件 =====
             if (const auto* mouseRel = event->getIf<sf::Event::MouseButtonReleased>()) {
                 if (mouseRel->button == sf::Mouse::Button::Left) {
                     dialogueBox.handleButtonRelease();
                 }
             }
 
-            // =================================================================
-            // 全域快捷鍵
-            // =================================================================
+            // ===== 全域快捷鍵 =====
             if (const auto* keyBtn = event->getIf<sf::Event::KeyPressed>()) {
                 if (keyBtn->code == sf::Keyboard::Key::F12) {
                     captureScreenshot();
@@ -876,7 +978,8 @@ struct GalityApp {
                     settingsUI.setVisible(true);
                     continue;
                 }
-                if (keyBtn->code == sf::Keyboard::Key::Tab || keyBtn->code == sf::Keyboard::Key::H) {
+                if (keyBtn->code == sf::Keyboard::Key::Tab ||
+                    keyBtn->code == sf::Keyboard::Key::H) {
                     backlogUI.toggle();
                 }
                 if (keyBtn->code == sf::Keyboard::Key::Backspace) {
@@ -930,12 +1033,10 @@ struct GalityApp {
                     }
                 }
             } else if (currentNode->type == NodeType::Dialogue) {
-                // 按鈕 hover
                 if (event->is<sf::Event::MouseMoved>()) {
                     dialogueBox.updateButtonHover(logicalMousePosF);
                 }
 
-                // ⚠️ 按鈕按下（使用 handleButtonPress）
                 if (const auto* mouseBtn = event->getIf<sf::Event::MouseButtonPressed>()) {
                     if (mouseBtn->button == sf::Mouse::Button::Left) {
                         if (dialogueBox.handleButtonPress(logicalMousePosF)) {
@@ -944,12 +1045,10 @@ struct GalityApp {
                     }
                 }
 
-                // 若 Skip 按住中，不處理一般推進
                 if (dialogueBox.isSkipHeld()) {
                     continue;
                 }
 
-                // 一般推進對話
                 bool triggerAdvance = false;
                 if (const auto* keyBtn = event->getIf<sf::Event::KeyPressed>()) {
                     if (keyBtn->code == sf::Keyboard::Key::Enter ||
@@ -1013,7 +1112,8 @@ struct GalityApp {
         bool shouldBlur = titleMenu.isVisible() || backlogUI.isVisible() ||
                           settingsUI.getIsVisible() || saveLoadUI.isVisible();
 #ifdef GALITY_DEV_BUILD
-        shouldBlur = shouldBlur || debugOverlay.getIsVisible() || nodeGraphViewer.getIsVisible();
+        shouldBlur = shouldBlur || debugOverlay.getIsVisible() ||
+                     nodeGraphViewer.getIsVisible();
 #endif
 
         if (!ConfigManager::config.enablePostFX) {
