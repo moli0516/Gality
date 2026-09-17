@@ -1,17 +1,16 @@
+
 # 🌸 Gality Engine
 
 **A narrative engine built by engineers, for engineers.**
 
-*C++17 · SFML 3.x · Zero GC · 48 MB footprint · Pure native vector UI*
+_C++17 · SFML 3.x · Zero GC · 48 MB footprint · Pure native vector UI_
 
-[![C++17](https://img.shields.io/badge/C%2B%2B-17-blue.svg)](https://en.cppreference.com/w/cpp/17)
+_「有些東西會永遠留在原始碼裡。」_
+
+[![Version](https://img.shields.io/badge/version-0.3.0-blue.svg)](CHANGELOG.md)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![C++](https://img.shields.io/badge/C%2B%2B-17-blue.svg)](https://en.cppreference.com/w/cpp/17)
 [![SFML](https://img.shields.io/badge/SFML-3.x-green.svg)](https://www.sfml-dev.org/)
-[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS-lightgrey.svg)]()
-
-*「有些東西會永遠留在原始碼裡。」*
-
-</div>
 
 ---
 
@@ -35,29 +34,31 @@ And then, somewhere along the way, that engine became the story itself.
 
 ### For Engineers
 
-
-| Feature                   | What it actually means                                                    |
-| ------------------------- | ------------------------------------------------------------------------- |
-| **Zero-GC C++17 Core**    | No`shared_ptr` in hot paths. RAII everywhere. Sub-100ms cold start.       |
-| **~48 MB Runtime**        | Fits in a browser tab's budget. Fits on a Raspberry Pi.                   |
-| **Pure Native Vector UI** | No Dear ImGui. No Qt. No webview. Just SFML primitives and math.          |
-| **Generic LRU Cache**     | Textures and audio buffers recycled by a template-based eviction policy.  |
-| **XOR-Encrypted VFS**     | `data.pak` archives with `O(1)` offset lookups. No external asset loader. |
-| **GLSL PostFX Pipeline**  | Dual-pass Gaussian blur, screen shake, smoothstep mask transitions.       |
-| **Time Machine Rollback** | 128-step state snapshot stack. Rewind narrative AND presentation.         |
+| Feature | What it actually means |
+|---|---|
+| **Zero-GC C++17 Core** | No `shared_ptr` in hot paths. RAII everywhere. Sub-100ms cold start. |
+| **~48 MB Runtime** | Fits in a browser tab's budget. Fits on a Raspberry Pi. |
+| **Pure Native Vector UI** | No Dear ImGui. No Qt. No webview. Just SFML primitives and math. |
+| **Generic LRU Cache** | Textures and audio buffers recycled by a template-based eviction policy. |
+| **XOR-Encrypted VFS** | `data.pak` archives with `O(1)` offset lookups. No external asset loader. |
+| **GLSL PostFX Pipeline** | Dual-pass Gaussian blur, screen shake, smoothstep mask transitions. |
+| **Time Machine Rollback** | 128-step state snapshot stack. Rewind narrative AND presentation. |
+| **Nine-Slice UI System** | Data-driven nine-slice rendering for any UI element. Zero hardcoding. |
+| **FontManager Singleton** | Dynamic font loading with graceful fallback. Missing fonts never crash. |
 
 ### For Writers
 
-
-| Feature                   | What it actually means                                                                     |
-| ------------------------- | ------------------------------------------------------------------------------------------ |
-| **`.gality` DSL**         | Write dialogue like a screenplay. Compile to JSON AST. Ship.                               |
-| **Rich Inline Tags**      | `<color=#FFB7C5>`, `<shake>`, `<speed=0.05>`, `<w=1.2>` — expressive without markup hell. |
-| **CJK Kinsoku Shori**     | 避頭尾禁則字元 — punctuation never lands in the wrong place.                              |
-| **Typewriter Audio**      | Every character clicks. Every pause breathes.                                              |
-| **Multi-Slot Characters** | Left / Center / Right staging with auto-focus dimming and spatial voice panning.           |
-| **Weather System**        | Sakura, rain, snow — because mood is a particle system.                                   |
-| **VSCode Extension**      | Syntax highlighting, linting, go-to-definition, IntelliSense. Included.                    |
+| Feature | What it actually means |
+|---|---|
+| **`.gality` DSL** | Write dialogue like a screenplay. Compile to JSON AST. Ship. |
+| **Rich Inline Tags** | `<color>`, `<shake>`, `<wave>`, `<rainbow>`, `<glitch>`, `<speed>`, `<w>` |
+| **Forced Read System** | `no_skip: true` + `wait: N` — dramatic moments that players **must** experience. |
+| **CJK Kinsoku Shori** | 避頭尾禁則字元 — punctuation never lands in the wrong place. |
+| **Typewriter Audio** | Every character clicks. Every pause breathes. |
+| **Multi-Slot Characters** | Left / Center / Right staging with auto-focus dimming and spatial voice panning. |
+| **Data-Driven Theme** | Colors, fonts, scaling, shadows — all in `ui_theme.json`. Hot-reloadable. |
+| **Weather System** | Sakura, rain, snow — because mood is a particle system. |
+| **VSCode Extension** | Syntax highlighting, linting, go-to-definition, IntelliSense. Included. |
 
 ### For Players
 
@@ -67,6 +68,30 @@ And then, somewhere along the way, that engine became the story itself.
 - **History backlog** with `Tab` or `H`
 - **Native debug overlay** (`F1`) and **DAG tree viewer** (`F2`) — yes, players can see the story graph
 - **Ten endings.** None of them truly happy. All of them earned.
+
+---
+
+## 🆕 What's New in v0.3.0
+
+- **Text Effects System**
+  - `<wave>` — vertical sine wave animation
+  - `<rainbow>` — HSV color cycling
+  - `<glitch>` — RGB chromatic aberration
+  - Text shadow (configurable)
+  - Text outline (8-direction, optional)
+  - `FontManager` with dynamic font loading
+
+- **Forced Read System**
+  - `no_skip: true` prevents skipping during typewriter
+  - `wait: N` mandates delay after typewriter
+  - Skip auto-stops on forced read nodes
+
+- **Nine-Slice UI**
+  - `NineSliceSprite` class
+  - Data-driven nine-slice in `ui_theme.json`
+  - Applied to choice buttons
+
+See [CHANGELOG.md](CHANGELOG.md) for the full history.
 
 ---
 
@@ -82,11 +107,11 @@ And then, somewhere along the way, that engine became the story itself.
 ### Install Dependencies
 
 **Windows (vcpkg):**
-
-```powershell
+```bash
 vcpkg install sfml nlohmann-json
-**macOS (Homebrew):**
+```
 
+**macOS (Homebrew):**
 ```bash
 brew install cmake sfml nlohmann-json
 ```
@@ -112,7 +137,7 @@ cmake --build build --config Release
 
 ### One-Click Release (Windows)
 
-```powershell
+```bash
 .\build_game.bat
 ```
 
@@ -162,21 +187,38 @@ $ favorability += -5
 
 [node_route_selector]
 IF san_loss >= 60 THEN node_r_abyss_start ELSE node_route_selector_2
-
-[node_route_selector_2]
-IF junior_favor >= 40 THEN node_r_junior_start ELSE node_route_selector_3
-
-[node_route_selector_3]
-IF favorability >= 100 THEN node_r_senior_start ELSE node_r_tech_start
 ```
+
+### 🎭 Horror Atmosphere Recipe
+
+Combine `<glitch>` + `<speed>` + `no_skip` to force players to experience terror:
+
+```gality
+[node_horror_01]
+bg: assets/bg/hallway.jpg
+bgm: assets/audio/bgm_horror.ogg
+shake: 0.3
+no_skip: true
+wait: 1.0
+幽靈: <glitch><speed=0.5>你... 終於... 打開了...</speed></glitch>
+-> node_horror_02
+```
+
+**Effect stack**:
+- Typewriter at 0.5s per char → forces slow reading
+- `<glitch>` → RGB splitting + jitter on every char
+- `no_skip` → player cannot escape
+- `wait: 1.0` → final silence before advancing
+- `shake: 0.3` → subtle screen tremble
 
 ### What you get
 
 - **Directives**: `@start`, `[node_id]`, `->`, `IF/THEN/ELSE`
 - **Blackboard mutations**: `$ var += val`
-- **Rich text**: `<color>`, `<shake>`, `<speed>`, `<w>`
+- **Rich text**: `<color>`, `<shake>`, `<wave>`, `<rainbow>`, `<glitch>`, `<speed>`, `<w>`
 - **Transitions**: `diamond`, `wipe_left`, `clock`, `dissolve`
 - **Weather**: `sakura`, `rain`, `snow`, `none`
+- **Forced read**: `no_skip: true`, `wait: N`
 
 The compiler will flag:
 
@@ -188,19 +230,37 @@ Before you ever run the game.
 
 ---
 
+## 📚 Documentation
+
+| Document | Description |
+|---|---|
+| [Getting Started](docs/getting_started.md) | First steps with Gality |
+| [Script Language](docs/script_language.md) | Complete `.gality` DSL reference |
+| [UI Guide](docs/ui_guide.md) | Customize `ui_theme.json` |
+| [Character Guide](docs/character_guide.md) | Multi-slot character rendering |
+| [Assets Guide](docs/assets.md) | Asset pipeline and packing |
+| [Architecture](docs/architecture.md) | Engine internals |
+| [Performance Tuning](docs/performance_tuning.md) | Optimization guide |
+| [Examples](docs/example.md) | Sample projects |
+| [CHANGELOG](CHANGELOG.md) | Version history |
+| [Contributing](CONTRIBUTING.md) | How to contribute |
+| [Code of Conduct](CODE_OF_CONDUCT.md) | Community guidelines |
+
+---
+
 ## 🎮 Controls
 
-
-| Input                          | Action                                              |
-| ------------------------------ | --------------------------------------------------- |
-| **Left Click / Enter / Space** | Advance dialogue / Confirm choice                   |
-| **Mouse Wheel Up / Backspace** | Rollback (Time Machine)                             |
-| **Tab / H**                    | Toggle History Backlog                              |
-| **Escape**                     | Settings / Close modal                              |
-| **F1 / `~`**                   | DebugOverlay (Blackboard, Node Jumper, Diagnostics) |
-| **F2**                         | NodeGraphViewer (DAG tree + live inspector)         |
-| **F5 / F9**                    | Quick Save / Quick Load                             |
-| **K**                          | Test screen shake                                   |
+| Input | Action |
+|---|---|
+| **Left Click / Enter / Space** | Advance dialogue / Confirm choice |
+| **Mouse Wheel Up / Backspace** | Rollback (Time Machine) |
+| **Tab / H** | Toggle History Backlog |
+| **Escape** | Settings / Close modal |
+| **F1 / `~`** | DebugOverlay (Blackboard, Node Jumper, Diagnostics) |
+| **F2** | NodeGraphViewer (DAG tree + live inspector) |
+| **F5 / F9** | Quick Save / Quick Load |
+| **K** | Test screen shake |
+| **F12** | Screenshot |
 
 ---
 
@@ -237,16 +297,27 @@ gality/
 │   ├── fonts/              # TTF fonts (CJK-compatible)
 │   ├── masks/              # Transition masks (grayscale)
 │   ├── scripts/            # .gality source + compiled JSON
-│   └── shaders/            # blur.frag, transition.frag
-├── devtools/scripts/
-│   ├── gality_compiler.py  # DSL → JSON AST compiler
-│   └── gality_packer.py    # XOR-encrypted asset packer
+│   ├── shaders/            # blur.frag, transition.frag
+│   └── ui/                 # Nine-slice UI textures
+├── devtools/
+│   ├── scripts/
+│   │   ├── gality_compiler.py  # DSL → JSON AST compiler
+│   │   └── gality_packer.py    # XOR-encrypted asset packer
+│   └── private/                # Developer-only tools
+├── docs/                   # Documentation
 ├── src/
-│   ├── core/               # AssetPack, AudioManager, Blackboard, LRUCache, SaveManager
-│   ├── render/             # LayerRenderer, PostFX, WeatherSystem, all UI
+│   ├── core/               # AssetPack, AudioManager, Blackboard, LRUCache, SaveManager, FontManager
+│   ├── render/             # LayerRenderer, PostFX, WeatherSystem, NineSliceSprite, all UI
 │   └── story/              # StoryExecutor, ScriptLoader, StoryNode
-├── build_game.bat          # One-click release (Windows)
+├── build_dev.bat           # Dev build (Windows)
+├── build_prod.bat          # Product build (Windows)
+├── build_game.sh           # Build script (macOS/Linux)
 ├── CMakeLists.txt
+├── CHANGELOG.md
+├── CONTRIBUTING.md
+├── CODE_OF_CONDUCT.md
+├── LICENSE
+├── README.md
 └── gality-language-support-1.0.0.vsix
 ```
 
@@ -293,33 +364,70 @@ The repository ships with a **~3000 node demo story** that exercises every featu
 - 10 distinct endings
 - Hidden rooms (library, infirmary, rooftop, data stream)
 - Sanity loss tracking
-- Ghost dialogue via `???` speaker
+- Ghost dialogue via `幽靈` speaker
 - Multi-slot character staging
 - Full CJK text rendering
+- **Text effects showcase** (`test_fx.gality`)
 
 Run it:
 
-```powershell
+```bash
 .\build_game.bat
 .\dist\Gality.exe
 ```
 
-And try not to fall in love with the副社長.
+And try not to fall in love with the 副社長.
 
 ---
 
 ## 🗺️ Roadmap
 
-- [X]  C++17 core, SFML 3.x rendering
-- [X]  `.gality` DSL + compiler
-- [X]  Multi-slot character pipeline
-- [X]  Weather + PostFX + transitions
-- [X]  Encrypted `data.pak` VFS
-- [X]  Debug overlay + DAG viewer
-- [X]  VSCode language extension
-- [ ]  WebAssembly build (pending SFML Emscripten support)
-- [ ]  Cross-platform CI/CD
-- [ ]  Steam release of demo story
+### ✅ v0.1.0 — Initial Release (2026-09-14)
+- [x] C++17 core, SFML 3.x rendering
+- [x] `.gality` DSL + compiler
+- [x] Multi-slot character pipeline
+- [x] Weather + PostFX + transitions
+- [x] Encrypted `data.pak` VFS
+- [x] Debug overlay + DAG viewer
+- [x] VSCode language extension
+
+### ✅ v0.2.0 — Tooling & Polish (2026-09-15)
+- [x] 16:9 aspect ratio support
+- [x] Data-driven UI theme (`ui_theme.json`)
+- [x] Save/Load system
+- [x] Rollback (Time Machine)
+- [x] Backlog UI
+- [x] Settings UI
+- [x] Hot reload (dev build)
+- [x] One-click build scripts
+
+### ✅ v0.3.0 — Text Effects & Nine-Slice (2026-09-17)
+- [x] Nine-slice UI system
+- [x] FontManager singleton
+- [x] Text shadow
+- [x] Text outline (optional)
+- [x] `<wave>`, `<rainbow>`, `<glitch>` animations
+- [x] `<speed>`, `<w>` control tags
+- [x] Forced read system (`no_skip`, `wait`)
+- [x] Custom UI image system
+
+### 🚧 v0.4.0 — Month 2 (In Progress)
+- [ ] CG System (gallery, viewer, unlock tracking)
+- [ ] Character layered parts (blink, mouth, expression)
+- [ ] AI toolchain (translation, TTS, image generation)
+- [ ] itch.io release
+
+### 🔮 v0.5.0 — Month 3-6
+- [ ] WebAssembly build (pending SFML Emscripten support)
+- [ ] Cross-platform CI/CD
+- [ ] Plugin system
+- [ ] Steam release of demo story
+
+### 🌟 v1.0.0 — Year 1
+- [ ] Stable API
+- [ ] Comprehensive docs
+- [ ] Commercial license
+- [ ] Community showcase
 
 ---
 
@@ -333,20 +441,27 @@ Contributions are welcome — but keep the aesthetic:
 
 If your patch adds a new dependency, explain why in the PR description.
 
+See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
+
 ---
 
 ## 📜 License
 
-MIT. See `LICENSE` for details.
+MIT. See [LICENSE](LICENSE) for details.
 
 ---
 
-<div align="center">
+## 🙏 Acknowledgments
+
+Built with:
+- [SFML 3.x](https://www.sfml-dev.org/) — Simple and Fast Multimedia Library
+- [nlohmann/json](https://github.com/nlohmann/json) — JSON for Modern C++
+- [vcpkg](https://vcpkg.io/) — C++ package manager
+
+---
 
 **Gality Engine**
 
-*Built because the story deserved a real engine.*
+_Built because the story deserved a real engine._
 
-*And the engine deserved a real story.*
-
-</div>
+_And the engine deserved a real story._

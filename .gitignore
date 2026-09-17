@@ -21,6 +21,7 @@ devtools/*
 build-test/
 build_test.bat
 dist-test/
+demo_long.json
 test.gality
 
 !devtools/scripts/
