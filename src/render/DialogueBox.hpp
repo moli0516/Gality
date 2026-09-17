@@ -11,6 +11,7 @@
 #include <cmath>
 #include <cstdlib>
 #include "UITheme.hpp"
+#include "NineSliceSprite.hpp"
 #include "../core/ConfigManager.hpp"
 #include "../core/AssetPack.hpp"
 
@@ -49,10 +50,17 @@ public:
     };
 
 private:
+    // ===== 對話框本體 =====
     sf::RectangleShape boxShape;
     sf::RectangleShape nameBoxShape;
     sf::Font font;
     sf::Text nameText;
+
+    // ⚠️ 九宮格
+    NineSliceSprite boxNineSlice;
+    NineSliceSprite nameBoxNineSlice;
+    std::shared_ptr<sf::Texture> boxTexture;
+    std::shared_ptr<sf::Texture> nameBoxTexture;
 
     std::vector<std::uint8_t> fontDataBuffer;
     std::vector<std::uint8_t> soundDataBuffer;
@@ -107,7 +115,27 @@ private:
     std::function<void()> onAdvanceCallback;
 
     // ------------------------------------------------------------------------
-    // CJK Kinsoku Shori
+    // 載入紋理輔助
+    // ------------------------------------------------------------------------
+    std::shared_ptr<sf::Texture> loadTexture(const std::string& path) {
+        auto tex = std::make_shared<sf::Texture>();
+        std::vector<std::uint8_t> bytes;
+        if (AssetPack::readFileFromPak(path, bytes, "data.pak") && !bytes.empty()) {
+            if (tex->loadFromMemory(bytes.data(), bytes.size())) {
+                tex->setSmooth(true);
+                return tex;
+            }
+        }
+        if (tex->loadFromFile(path)) {
+            tex->setSmooth(true);
+            return tex;
+        }
+        std::cerr << "[DialogueBox] Failed to load texture: " << path << std::endl;
+        return nullptr;
+    }
+
+    // ------------------------------------------------------------------------
+    // CJK Kinsoku Shori (避頭尾禁則)
     // ------------------------------------------------------------------------
     static bool isProhibitedAtLineStart(char32_t cp) {
         static const std::unordered_set<char32_t> prohibited = {
@@ -265,6 +293,13 @@ private:
         float maxX = boxShape.getPosition().x + boxShape.getSize().x - padding;
         float lineHeight = style.dialogueFontSize * 1.4f;
 
+        // 若使用九宮格，從 style 取位置
+        if (style.backgroundImage.enabled) {
+            startX = style.posX + padding;
+            startY = style.posY + padding;
+            maxX = style.posX + style.width - padding;
+        }
+
         float currX = startX;
         float currY = startY;
 
@@ -407,6 +442,9 @@ private:
 public:
     DialogueBox() : nameText(font) {}
 
+    // ========================================================================
+    // 載入字型
+    // ========================================================================
     bool loadFont(const std::string& fontPath) {
         fontDataBuffer.clear();
         if (AssetPack::readFileFromPak(fontPath, fontDataBuffer, "data.pak") && !fontDataBuffer.empty()) {
@@ -438,25 +476,70 @@ public:
         }
     }
 
+    // ========================================================================
+    // 套用主題
+    // ========================================================================
     void applyTheme(const DialogueBoxStyle& st, const DialogueButtonsStyle& btnStyle) {
         style = st;
         buttonsStyle = btnStyle;
         buttonsEnabled = btnStyle.enabled;
 
-        // 從樣式讀取 skipInterval
         skipInterval = btnStyle.skipInterval;
         if (skipInterval <= 0.0f) skipInterval = 0.05f;
 
-        boxShape.setSize(sf::Vector2f(style.width, style.height));
-        boxShape.setFillColor(style.bgColor);
-        boxShape.setOutlineThickness(2.f);
-        boxShape.setOutlineColor(style.borderColor);
-        boxShape.setPosition(sf::Vector2f(style.posX, style.posY));
+        // ===== 對話框本體 =====
+        if (style.backgroundImage.enabled) {
+            boxTexture = loadTexture(style.backgroundImage.texturePath);
+            if (boxTexture) {
+                boxNineSlice.setTexture(
+                    boxTexture,
+                    style.backgroundImage.left,
+                    style.backgroundImage.right,
+                    style.backgroundImage.top,
+                    style.backgroundImage.bottom
+                );
+                boxNineSlice.setSize(sf::Vector2f(style.width, style.height));
+                boxNineSlice.setPosition(sf::Vector2f(style.posX, style.posY));
+                std::cout << "[DialogueBox] Nine-slice box loaded" << std::endl;
+            } else {
+                std::cerr << "[DialogueBox] Failed to load box image, falling back to color" << std::endl;
+                style.backgroundImage.enabled = false;
+            }
+        }
 
-        nameBoxShape.setSize(sf::Vector2f(style.nameBoxWidth, style.nameBoxHeight));
-        nameBoxShape.setFillColor(style.nameBoxBgColor);
-        nameBoxShape.setPosition(sf::Vector2f(style.nameBoxPosX, style.nameBoxPosY));
+        if (!style.backgroundImage.enabled) {
+            boxShape.setSize(sf::Vector2f(style.width, style.height));
+            boxShape.setFillColor(style.bgColor);
+            boxShape.setOutlineThickness(2.f);
+            boxShape.setOutlineColor(style.borderColor);
+            boxShape.setPosition(sf::Vector2f(style.posX, style.posY));
+        }
 
+        // ===== 名字框 =====
+        if (style.nameBoxImage.enabled) {
+            nameBoxTexture = loadTexture(style.nameBoxImage.texturePath);
+            if (nameBoxTexture) {
+                nameBoxNineSlice.setTexture(
+                    nameBoxTexture,
+                    style.nameBoxImage.left,
+                    style.nameBoxImage.right,
+                    style.nameBoxImage.top,
+                    style.nameBoxImage.bottom
+                );
+                nameBoxNineSlice.setSize(sf::Vector2f(style.nameBoxWidth, style.nameBoxHeight));
+                nameBoxNineSlice.setPosition(sf::Vector2f(style.nameBoxPosX, style.nameBoxPosY));
+            } else {
+                style.nameBoxImage.enabled = false;
+            }
+        }
+
+        if (!style.nameBoxImage.enabled) {
+            nameBoxShape.setSize(sf::Vector2f(style.nameBoxWidth, style.nameBoxHeight));
+            nameBoxShape.setFillColor(style.nameBoxBgColor);
+            nameBoxShape.setPosition(sf::Vector2f(style.nameBoxPosX, style.nameBoxPosY));
+        }
+
+        // ===== 名字文字 =====
         nameText.setCharacterSize(style.nameFontSize);
         nameText.setFillColor(style.nameTextColor);
         nameText.setPosition(sf::Vector2f(style.nameBoxPosX + 15.f, style.nameBoxPosY + 8.f));
@@ -464,11 +547,15 @@ public:
         buildFunctionButtons();
     }
 
+    // 向後相容：舊的 applyTheme
     void applyTheme(const DialogueBoxStyle& st) {
         DialogueButtonsStyle defaultBtnStyle;
         applyTheme(st, defaultBtnStyle);
     }
 
+    // ========================================================================
+    // 設定文字
+    // ========================================================================
     void setText(const std::string& speaker, const std::string& text) {
         nameText.setString(sf::String::fromUtf8(speaker.begin(), speaker.end()));
 
@@ -488,17 +575,14 @@ public:
             float dt = timer.getElapsedTime().asSeconds();
             timer.restart();
 
-            // 立即顯示全部文字
             visibleCharCount = totalCharCount;
             isCompleted = true;
 
-            // 暖機階段（避免誤觸）
             skipWarmup += dt;
             if (skipWarmup < skipWarmupDuration) {
                 return;
             }
 
-            // 暖機完成，開始快速推進
             skipTimer += dt;
             if (skipTimer >= skipInterval) {
                 skipTimer = 0.0f;
@@ -562,7 +646,6 @@ public:
     }
 
     bool onInteract() {
-        // 按住 Skip 時，忽略一般點擊
         if (skipHeld) return false;
 
         if (hiddenMode) {
@@ -589,7 +672,6 @@ public:
         }
     }
 
-    // 按下
     bool handleButtonPress(sf::Vector2f mousePosF) {
         if (!buttonsEnabled || hiddenMode) return false;
 
@@ -603,7 +685,6 @@ public:
                         break;
 
                     case ButtonAction::Skip:
-                        // ⚠️ 開始按住快進
                         skipHeld = true;
                         skipWarmup = 0.0f;
                         skipTimer = 0.0f;
@@ -639,7 +720,6 @@ public:
         return false;
     }
 
-    // 放開
     void handleButtonRelease() {
         if (skipHeld) {
             skipHeld = false;
@@ -669,6 +749,7 @@ public:
     bool isAutoMode() const { return autoMode; }
     bool isSkipHeld() const { return skipHeld; }
     bool isHiddenMode() const { return hiddenMode; }
+    bool isTyping() const { return !isCompleted; }
 
     void setAutoMode(bool enabled) { autoMode = enabled; }
     void setHiddenMode(bool enabled) { hiddenMode = enabled; }
@@ -706,12 +787,24 @@ public:
     void draw(sf::RenderTarget& target) {
         if (hiddenMode) return;
 
-        target.draw(boxShape);
+        // ===== 對話框 =====
+        if (style.backgroundImage.enabled && boxNineSlice.isInitialized()) {
+            boxNineSlice.draw(target);
+        } else {
+            target.draw(boxShape);
+        }
+
+        // ===== 名字框 =====
         if (!nameText.getString().isEmpty()) {
-            target.draw(nameBoxShape);
+            if (style.nameBoxImage.enabled && nameBoxNineSlice.isInitialized()) {
+                nameBoxNineSlice.draw(target);
+            } else {
+                target.draw(nameBoxShape);
+            }
             target.draw(nameText);
         }
 
+        // ===== 文字 =====
         size_t charsToRender = std::min(visibleCharCount, totalCharCount);
         float time = glitchClock.getElapsedTime().asSeconds();
 
@@ -757,6 +850,7 @@ public:
             target.draw(charText);
         }
 
+        // ===== 功能按鈕 =====
         drawFunctionButtons(target);
     }
 
@@ -779,4 +873,4 @@ public:
             if (btn.text) target.draw(*btn.text);
         }
     }
-};  
+};

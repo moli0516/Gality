@@ -11,6 +11,18 @@
 using json = nlohmann::json;
 
 // ============================================================================
+// 九宮格配置
+// ============================================================================
+struct NineSliceConfig {
+    bool enabled = false;
+    std::string texturePath = "";
+    float left = 0.0f;
+    float right = 0.0f;
+    float top = 0.0f;
+    float bottom = 0.0f;
+};
+
+// ============================================================================
 // 對話按鈕設定
 // ============================================================================
 struct DialogueButtonConfig {
@@ -43,21 +55,21 @@ struct DialogueButtonsStyle {
 // ============================================================================
 struct CharacterScalingStyle {
     float single = 0.85f;
-    float doubleSlot = 0.75f;
-    float triple = 0.65f;
-    float bottomOffset = 15.0f;
+    float doubleSlot = 0.78f;
+    float triple = 0.70f;
+    float bottomOffset = 0.0f;
 };
 
 // ============================================================================
 // 對話框 / 選項樣式
 // ============================================================================
 struct DialogueBoxStyle {
-    float posX = 80.f, posY = 620.f;
+    float posX = 80.f, posY = 720.f;
     float width = 1760.f, height = 280.f;
     sf::Color bgColor{0, 0, 0, 215};
     sf::Color borderColor{255, 255, 255, 100};
 
-    float nameBoxPosX = 80.f, nameBoxPosY = 550.f;
+    float nameBoxPosX = 80.f, nameBoxPosY = 660.f;
     float nameBoxWidth = 320.f, nameBoxHeight = 60.f;
     sf::Color nameBoxBgColor{40, 40, 90, 235};
 
@@ -65,6 +77,10 @@ struct DialogueBoxStyle {
     sf::Color dialogueTextColor{255, 255, 255, 255};
     unsigned int nameFontSize = 28;
     unsigned int dialogueFontSize = 32;
+
+    // ⚠️ 九宮格圖片
+    NineSliceConfig backgroundImage;
+    NineSliceConfig nameBoxImage;
 };
 
 struct ChoiceUIStyle {
@@ -79,6 +95,10 @@ struct ChoiceUIStyle {
     sf::Color normalOutlineColor{100, 100, 180, 255};
     sf::Color hoverOutlineColor{255, 215, 0, 255};
     sf::Color textColor{255, 255, 255, 255};
+
+    // ⚠️ 九宮格圖片
+    NineSliceConfig normalImage;
+    NineSliceConfig hoverImage;
 };
 
 // ============================================================================
@@ -103,6 +123,17 @@ private:
             );
         }
         return sf::Color::White;
+    }
+
+    static NineSliceConfig parseNineSlice(const json& j, const NineSliceConfig& def) {
+        NineSliceConfig cfg = def;
+        cfg.enabled = j.value("enabled", def.enabled);
+        cfg.texturePath = j.value("texturePath", def.texturePath);
+        cfg.left = j.value("left", def.left);
+        cfg.right = j.value("right", def.right);
+        cfg.top = j.value("top", def.top);
+        cfg.bottom = j.value("bottom", def.bottom);
+        return cfg;
     }
 
     void parseDialogueButtons(const json& j) {
@@ -153,9 +184,9 @@ private:
 
         const auto& cs = j["characterScaling"];
         characterScaling.single = cs.value("single", 0.85f);
-        characterScaling.doubleSlot = cs.value("double", 0.75f);
-        characterScaling.triple = cs.value("triple", 0.65f);
-        characterScaling.bottomOffset = cs.value("bottomOffset", 15.0f);
+        characterScaling.doubleSlot = cs.value("double", 0.78f);
+        characterScaling.triple = cs.value("triple", 0.70f);
+        characterScaling.bottomOffset = cs.value("bottomOffset", 0.0f);
     }
 
 public:
@@ -185,14 +216,14 @@ public:
             if (j.contains("dialogueBox")) {
                 const auto& db = j["dialogueBox"];
                 dialogueStyle.posX = db.value("posX", 80.f);
-                dialogueStyle.posY = db.value("posY", 620.f);
+                dialogueStyle.posY = db.value("posY", 720.f);
                 dialogueStyle.width = db.value("width", 1760.f);
                 dialogueStyle.height = db.value("height", 280.f);
                 if (db.contains("bgColor")) dialogueStyle.bgColor = parseColor(db["bgColor"]);
                 if (db.contains("borderColor")) dialogueStyle.borderColor = parseColor(db["borderColor"]);
 
                 dialogueStyle.nameBoxPosX = db.value("nameBoxPosX", 80.f);
-                dialogueStyle.nameBoxPosY = db.value("nameBoxPosY", 550.f);
+                dialogueStyle.nameBoxPosY = db.value("nameBoxPosY", 660.f);
                 dialogueStyle.nameBoxWidth = db.value("nameBoxWidth", 320.f);
                 dialogueStyle.nameBoxHeight = db.value("nameBoxHeight", 60.f);
                 if (db.contains("nameBoxBgColor")) dialogueStyle.nameBoxBgColor = parseColor(db["nameBoxBgColor"]);
@@ -201,6 +232,16 @@ public:
                 if (db.contains("dialogueTextColor")) dialogueStyle.dialogueTextColor = parseColor(db["dialogueTextColor"]);
                 dialogueStyle.nameFontSize = db.value("nameFontSize", 28);
                 dialogueStyle.dialogueFontSize = db.value("dialogueFontSize", 32);
+
+                // ⚠️ 解析九宮格
+                if (db.contains("backgroundImage")) {
+                    dialogueStyle.backgroundImage = parseNineSlice(
+                        db["backgroundImage"], dialogueStyle.backgroundImage);
+                }
+                if (db.contains("nameBoxImage")) {
+                    dialogueStyle.nameBoxImage = parseNineSlice(
+                        db["nameBoxImage"], dialogueStyle.nameBoxImage);
+                }
             }
 
             if (j.contains("choiceUI")) {
@@ -216,6 +257,16 @@ public:
                 if (c.contains("normalOutlineColor")) choiceStyle.normalOutlineColor = parseColor(c["normalOutlineColor"]);
                 if (c.contains("hoverOutlineColor")) choiceStyle.hoverOutlineColor = parseColor(c["hoverOutlineColor"]);
                 if (c.contains("textColor")) choiceStyle.textColor = parseColor(c["textColor"]);
+
+                // ⚠️ 解析九宮格
+                if (c.contains("normalImage")) {
+                    choiceStyle.normalImage = parseNineSlice(
+                        c["normalImage"], choiceStyle.normalImage);
+                }
+                if (c.contains("hoverImage")) {
+                    choiceStyle.hoverImage = parseNineSlice(
+                        c["hoverImage"], choiceStyle.hoverImage);
+                }
             }
 
             parseDialogueButtons(j);

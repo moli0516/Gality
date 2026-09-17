@@ -1,20 +1,36 @@
 {
   "dialogueBox": {
     "posX": 80.0,
-    "posY": 720.0,
+    "posY": 700.0,
     "width": 1760.0,
-    "height": 280.0,
+    "height": 300.0,
     "bgColor": [0, 0, 0, 215],
     "borderColor": [255, 255, 255, 100],
-    "nameBoxPosX": 80.0,
-    "nameBoxPosY": 640.0,
-    "nameBoxWidth": 320.0,
-    "nameBoxHeight": 60.0,
+    "nameBoxPosX": 100.0,
+    "nameBoxPosY": 600.0,
+    "nameBoxWidth": 160.0,
+    "nameBoxHeight": 70.0,
     "nameBoxBgColor": [40, 40, 90, 235],
     "nameTextColor": [255, 220, 0, 255],
     "dialogueTextColor": [255, 255, 255, 255],
     "nameFontSize": 28,
-    "dialogueFontSize": 32
+    "dialogueFontSize": 32,
+    "backgroundImage": {
+      "enabled": false,
+      "texturePath": "assets/ui/dialogue_box.png",
+      "left": 70,
+      "right": 70,
+      "top": 70,
+      "bottom": 70
+    },
+    "nameBoxImage": {
+      "enabled": false,
+      "texturePath": "assets/ui/name_box.png",
+      "left": 20,
+      "right": 20,
+      "top": 20,
+      "bottom": 20
+    }
   },
   "characterScaling": {
     "single": 0.85,
@@ -48,14 +64,30 @@
   },
   "choiceUI": {
     "width": 1100.0,
-    "height": 70.0,
+    "height": 90.0,
     "spacing": 25.0,
-    "startY": 220.0,
+    "startY": 200.0,
     "fontSize": 28,
     "normalBgColor": [30, 30, 50, 240],
     "hoverBgColor": [70, 70, 130, 255],
     "normalOutlineColor": [100, 100, 180, 255],
     "hoverOutlineColor": [255, 215, 0, 255],
-    "textColor": [255, 255, 255, 255]
+    "textColor": [255, 255, 255, 255],
+    "normalImage": {
+      "enabled": true,
+      "texturePath": "assets/ui/choice_normal.png",
+      "left": 40,
+      "right": 40,
+      "top": 15,
+      "bottom": 15
+    },
+    "hoverImage": {
+      "enabled": true,
+      "texturePath": "assets/ui/choice_hover.png",
+      "left": 50,
+      "right": 50,
+      "top": 15,
+      "bottom": 15
+    }
   }
 }
