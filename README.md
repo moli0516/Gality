@@ -1,7 +1,10 @@
 
 # 🌸 Gality Engine
 
-**A narrative engine built by engineers, for engineers.**
+**A narrative engine with maximum freedom.**
+
+_Write in `.gality`. Customize in JSON. Extend in C++._
+_All three layers are yours._
 
 _C++17 · SFML 3.x · Zero GC · 48 MB footprint · Pure native vector UI_
 
@@ -11,6 +14,7 @@ _「有些東西會永遠留在原始碼裡。」_
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![C++](https://img.shields.io/badge/C%2B%2B-17-blue.svg)](https://en.cppreference.com/w/cpp/17)
 [![SFML](https://img.shields.io/badge/SFML-3.x-green.svg)](https://www.sfml-dev.org/)
+[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS-blue.svg)](#-platform-support)
 
 ---
 
@@ -32,33 +36,44 @@ And then, somewhere along the way, that engine became the story itself.
 
 ## ✨ Why Gality?
 
-### For Engineers
+### For Creators Who Want Control
 
-| Feature | What it actually means |
+Most visual novel engines fall into two camps:
+
+1. **GUI-first editors** (Unity + Naninovel, Godot + Dialogic, RouteVN)
+2. **GUI-first launchers** (Ren'Py Launcher, VNU)
+
+Gality rejects both.
+
+**Gality is for creators who want to use the tools they already know.**
+
+| Your Tool | What Gality Uses |
 |---|---|
-| **Zero-GC C++17 Core** | No `shared_ptr` in hot paths. RAII everywhere. Sub-100ms cold start. |
-| **~48 MB Runtime** | Fits in a browser tab's budget. Fits on a Raspberry Pi. |
-| **Pure Native Vector UI** | No Dear ImGui. No Qt. No webview. Just SFML primitives and math. |
-| **Generic LRU Cache** | Textures and audio buffers recycled by a template-based eviction policy. |
-| **XOR-Encrypted VFS** | `data.pak` archives with `O(1)` offset lookups. No external asset loader. |
-| **GLSL PostFX Pipeline** | Dual-pass Gaussian blur, screen shake, smoothstep mask transitions. |
-| **Time Machine Rollback** | 128-step state snapshot stack. Rewind narrative AND presentation. |
-| **Nine-Slice UI System** | Data-driven nine-slice rendering for any UI element. Zero hardcoding. |
-| **FontManager Singleton** | Dynamic font loading with graceful fallback. Missing fonts never crash. |
+| **Editor** | VS Code (not a custom IDE) |
+| **Language** | `.gality` DSL (not drag-and-drop) |
+| **Debugger** | F1 / F2 (runtime tools, not GUI panels) |
+| **Version control** | Git (works because everything is text) |
 
 ### For Writers
 
-| Feature | What it actually means |
-|---|---|
-| **`.gality` DSL** | Write dialogue like a screenplay. Compile to JSON AST. Ship. |
-| **Rich Inline Tags** | `<color>`, `<shake>`, `<wave>`, `<rainbow>`, `<glitch>`, `<speed>`, `<w>` |
-| **Forced Read System** | `no_skip: true` + `wait: N` — dramatic moments that players **must** experience. |
-| **CJK Kinsoku Shori** | 避頭尾禁則字元 — punctuation never lands in the wrong place. |
-| **Typewriter Audio** | Every character clicks. Every pause breathes. |
-| **Multi-Slot Characters** | Left / Center / Right staging with auto-focus dimming and spatial voice panning. |
-| **Data-Driven Theme** | Colors, fonts, scaling, shadows — all in `ui_theme.json`. Hot-reloadable. |
-| **Weather System** | Sakura, rain, snow — because mood is a particle system. |
-| **VSCode Extension** | Syntax highlighting, linting, go-to-definition, IntelliSense. Included. |
+- **`.gality` DSL** — Write dialogue like a screenplay
+- **Rich inline tags** — `<color>`, `<shake>`, `<wave>`, `<rainbow>`, `<glitch>`, `<speed>`, `<w>`
+- **Forced read system** — `no_skip` + `wait` for dramatic moments players **must** experience
+- **CJK Kinsoku Shori** — 避頭尾禁則字元, automatic
+- **Multi-slot characters** — Left / Center / Right staging with auto-dimming
+- **Data-driven theme** — All styling in `ui_theme.json`, hot-reloadable
+- **Weather system** — Sakura, rain, snow
+
+### For Engineers
+
+- **Zero-GC C++17 core** — No `shared_ptr` in hot paths, RAII everywhere
+- **~48 MB runtime** — Fits on a Raspberry Pi
+- **Pure native vector UI** — No Dear ImGui, no Qt, no webview
+- **Generic LRU cache** — Textures and audio recycled by eviction policy
+- **XOR-encrypted VFS** — `data.pak` with O(1) offset lookups
+- **GLSL PostFX pipeline** — Blur, screen shake, mask transitions
+- **Time Machine rollback** — 128-step state snapshot stack
+- **Nine-slice UI system** — Data-driven, zero hardcoding
 
 ### For Players
 
@@ -66,32 +81,126 @@ And then, somewhere along the way, that engine became the story itself.
 - **Instant save/load** via slot UI (`F5` / `F9`)
 - **Rollback** with mouse wheel or `Backspace`
 - **History backlog** with `Tab` or `H`
-- **Native debug overlay** (`F1`) and **DAG tree viewer** (`F2`) — yes, players can see the story graph
+- **Native debug overlay** (`F1`) and **DAG tree viewer** (`F2`)
 - **Ten endings.** None of them truly happy. All of them earned.
 
 ---
 
 ## 🆕 What's New in v0.3.0
 
-- **Text Effects System**
-  - `<wave>` — vertical sine wave animation
-  - `<rainbow>` — HSV color cycling
-  - `<glitch>` — RGB chromatic aberration
-  - Text shadow (configurable)
-  - Text outline (8-direction, optional)
-  - `FontManager` with dynamic font loading
+### Text Effects System
+- `<wave>` — vertical sine wave animation
+- `<rainbow>` — HSV color cycling
+- `<glitch>` — RGB chromatic aberration
+- `<speed=N>` — per-character typewriter speed
+- `<w=N>` — mid-text pause
+- Text shadow (configurable)
+- Text outline (8-direction, optional)
+- `FontManager` with dynamic font loading
 
-- **Forced Read System**
-  - `no_skip: true` prevents skipping during typewriter
-  - `wait: N` mandates delay after typewriter
-  - Skip auto-stops on forced read nodes
+### Forced Read System
+- `no_skip: true` prevents skipping during typewriter
+- `wait: N` mandates delay after typewriter
+- Skip auto-stops on forced read nodes
 
-- **Nine-Slice UI**
-  - `NineSliceSprite` class
-  - Data-driven nine-slice in `ui_theme.json`
-  - Applied to choice buttons
+### Nine-Slice UI
+- `NineSliceSprite` class (SFML 3.x compatible)
+- Data-driven nine-slice in `ui_theme.json`
+- Applied to choice buttons
+
+### Horror Atmosphere Recipe
+
+Combine `<glitch>` + `<speed>` + `no_skip` to force players to experience terror:
+
+```gality
+[node_horror_01]
+bg: assets/bg/hallway.jpg
+bgm: assets/audio/bgm_horror.ogg
+shake: 0.3
+no_skip: true
+wait: 1.0
+幽靈: <glitch><speed=0.5>你... 終於... 打開了...</speed></glitch>
+-> node_horror_02
+```
+
+**Effect stack**:
+- Typewriter at 0.5s per char → forces slow reading
+- `<glitch>` → RGB splitting + jitter on every char
+- `no_skip` → player cannot escape
+- `wait: 1.0` → final silence before advancing
+- `shake: 0.3` → subtle screen tremble
 
 See [CHANGELOG.md](CHANGELOG.md) for the full history.
+
+---
+
+## 💡 Design Philosophy
+
+### Decoupling is the Architecture
+
+Gality is built on a principle: **every subsystem is independent**.
+
+- **Engine core** doesn't know about your story
+- **Your story** doesn't know about the engine
+- **UI theme** is pure data, not code
+- **FX** are pluggable C++ modules
+- **Tools** are separate Python scripts
+
+This means you can:
+- Replace any subsystem with your own
+- Test any module in isolation
+- Extend without forking
+- Understand one part at a time
+
+### No GUI. No Black Boxes.
+
+Gality rejects GUI-first design. Instead:
+
+- **`.gality` DSL** replaces node editors
+- **`ui_theme.json`** replaces property panels
+- **VS Code extension** replaces drag-and-drop IDEs
+- **Python tools** replace build buttons
+
+**Why?**
+
+- **Transparency**: You can read everything
+- **Version control**: Git works the way it's supposed to
+- **Freedom**: No feature locked behind a GUI button
+- **Longevity**: Text files outlive GUIs
+
+If you want drag-and-drop, there are other engines. If you want control, Gality is for you.
+
+### Is Gality Reinventing the Wheel?
+
+**No.** Gality uses proven libraries at every layer:
+
+| Layer | Tool |
+|---|---|
+| Graphics / Audio | [SFML 3.x](https://www.sfml-dev.org/) |
+| JSON Parsing | [nlohmann/json](https://github.com/nlohmann/json) |
+| Font Rendering | [FreeType](https://freetype.org/) |
+| Dependency Management | [vcpkg](https://vcpkg.io/) |
+| Version Control | [Git](https://git-scm.com/) |
+| Editor | [VS Code](https://code.visualstudio.com/) |
+
+What Gality builds on top:
+
+- `.gality` DSL — because Ink / Ren'Py don't fit our C++ engine
+- C++ story executor — because we need zero GC
+- JSON UI theme — because we want pure text workflow
+- C++ FX system — because it doesn't exist anywhere
+
+**We're not reinventing. We're building the layer that doesn't exist.**
+
+### Freedom at Every Layer
+
+| Layer | Who | What They Do |
+|---|---|---|
+| **Layer 1: Write** | Creators | `.gality` DSL + `ui_theme.json` (no C++) |
+| **Layer 2: Configure** | Advanced creators | Python tools (`gality_compiler.py`, `gality_packer.py`) |
+| **Layer 3: Extend** | Engine developers | Fully open C++17 core |
+
+**Everyone chooses their own depth.**
 
 ---
 
@@ -135,18 +244,34 @@ cmake --build build --config Release
 ./build/Gality
 ```
 
-### One-Click Release (Windows)
+### One-Click Build (Windows)
 
 ```bash
-.\build_game.bat
+.\build_dev.bat    # Develop build (debug tools enabled)
+.\build_prod.bat   # Product build (debug tools disabled)
 ```
 
-This will:
+The Dev build will:
 
 1. Compile `.gality` → JSON AST
 2. Pack `assets/` → encrypted `data.pak`
-3. Build `Gality.exe` (Release)
-4. Assemble standalone bundle in `.\dist\`
+3. Build `Gality.exe` (RelWithDebInfo)
+4. Assemble standalone bundle in `.\dist-dev\`
+
+---
+
+## 🖥️ Platform Support
+
+| Platform | Status | Notes |
+|---|---|---|
+| **Windows 10/11** | ✅ Tested | MSVC 2022, vcpkg |
+| **macOS (Apple Silicon)** | ✅ Tested | Homebrew SFML 3.x |
+| **macOS (Intel)** | ⚠️ Untested | Should work, no test report |
+| **Linux (Ubuntu 22.04+)** | ⚠️ Untested | `build_game.sh` provided |
+| **WebAssembly** | 🚧 Planned | Awaiting SFML Emscripten support |
+| **iOS / Android** | ❌ Not planned | Desktop-first engine |
+
+**Want to help?** If you successfully build on an untested platform, please open a PR to update this table.
 
 ---
 
@@ -189,29 +314,7 @@ $ favorability += -5
 IF san_loss >= 60 THEN node_r_abyss_start ELSE node_route_selector_2
 ```
 
-### 🎭 Horror Atmosphere Recipe
-
-Combine `<glitch>` + `<speed>` + `no_skip` to force players to experience terror:
-
-```gality
-[node_horror_01]
-bg: assets/bg/hallway.jpg
-bgm: assets/audio/bgm_horror.ogg
-shake: 0.3
-no_skip: true
-wait: 1.0
-幽靈: <glitch><speed=0.5>你... 終於... 打開了...</speed></glitch>
--> node_horror_02
-```
-
-**Effect stack**:
-- Typewriter at 0.5s per char → forces slow reading
-- `<glitch>` → RGB splitting + jitter on every char
-- `no_skip` → player cannot escape
-- `wait: 1.0` → final silence before advancing
-- `shake: 0.3` → subtle screen tremble
-
-### What you get
+### What You Get
 
 - **Directives**: `@start`, `[node_id]`, `->`, `IF/THEN/ELSE`
 - **Blackboard mutations**: `$ var += val`
@@ -220,31 +323,77 @@ wait: 1.0
 - **Weather**: `sakura`, `rain`, `snow`, `none`
 - **Forced read**: `no_skip: true`, `wait: N`
 
-The compiler will flag:
+The compiler will flag dangling pointers, duplicate node IDs, and mismatched rich text tags **before you ever run the game**.
 
-- Dangling `-> node_999` pointers
-- Duplicate node IDs
-- Mismatched rich text tags
+---
 
-Before you ever run the game.
+## 🛠️ Development Workflow
+
+**Gality does not ship with a GUI editor. You don't need one.**
+
+Your IDE is **VS Code** with the official `gality-language-support` extension.
+
+| Task | Tool |
+|---|---|
+| Write story | VS Code + `.gality` DSL |
+| Configure UI | VS Code + `ui_theme.json` |
+| Build & run | `build_dev.bat` |
+| Debug variables | **F1** DebugOverlay |
+| Inspect story graph | **F2** NodeGraphViewer |
+| Version control | Git (VS Code built-in) |
+
+### Why No Built-in Editor?
+
+Because we'd rather not build one. Building an editor means:
+
+- Years of engineering
+- Constant maintenance
+- Users learning yet another tool
+- Losing the VS Code ecosystem
+
+Instead, we extend VS Code and expose runtime debugging tools.
+
+**Result**: You get a professional IDE without us shipping one.
 
 ---
 
 ## 📚 Documentation
 
+**Full documentation index**: [docs/README.md](docs/README.md)
+
+### Getting Started
+
 | Document | Description |
 |---|---|
-| [Getting Started](docs/getting_started.md) | First steps with Gality |
-| [Script Language](docs/script_language.md) | Complete `.gality` DSL reference |
-| [UI Guide](docs/ui_guide.md) | Customize `ui_theme.json` |
-| [Character Guide](docs/character_guide.md) | Multi-slot character rendering |
-| [Assets Guide](docs/assets.md) | Asset pipeline and packing |
-| [Architecture](docs/architecture.md) | Engine internals |
-| [Performance Tuning](docs/performance_tuning.md) | Optimization guide |
-| [Examples](docs/example.md) | Sample projects |
-| [CHANGELOG](CHANGELOG.md) | Version history |
-| [Contributing](CONTRIBUTING.md) | How to contribute |
-| [Code of Conduct](CODE_OF_CONDUCT.md) | Community guidelines |
+| **[Getting Started](docs/getting_started.md)** | Install Gality, write first scene (30 min) |
+| **[Examples](docs/example.md)** | 9 complete runnable examples |
+
+### For Creators
+
+| Document | Description |
+|---|---|
+| **[Script Language](docs/script_language.md)** | Complete `.gality` DSL reference |
+| **[UI Guide](docs/ui_guide.md)** | Customize `ui_theme.json` |
+| **[Character Guide](docs/character_guide.md)** | Multi-slot character rendering |
+| **[Assets Guide](docs/assets.md)** | Prepare images, audio, fonts |
+
+### For Engine Developers
+
+| Document | Description |
+|---|---|
+| **[Architecture](docs/architecture.md)** | Engine internals |
+| **[Performance Tuning](docs/performance_tuning.md)** | Optimization tips |
+
+### Project Information
+
+| Document | Description |
+|---|---|
+| **[Roadmap](docs/roadmap.md)** | Release history and future plans |
+| **[FAQ](docs/faq.md)** | 100+ common questions |
+| **[CHANGELOG](CHANGELOG.md)** | Version history |
+| **[Contributing](CONTRIBUTING.md)** | How to contribute |
+| **[Code of Conduct](CODE_OF_CONDUCT.md)** | Community guidelines |
+| **[Security](SECURITY.md)** | Security policy |
 
 ---
 
@@ -318,6 +467,7 @@ gality/
 ├── CODE_OF_CONDUCT.md
 ├── LICENSE
 ├── README.md
+├── SECURITY.md
 └── gality-language-support-1.0.0.vsix
 ```
 
@@ -372,8 +522,8 @@ The repository ships with a **~3000 node demo story** that exercises every featu
 Run it:
 
 ```bash
-.\build_game.bat
-.\dist\Gality.exe
+.\build_dev.bat
+.\dist-dev\Gality.exe
 ```
 
 And try not to fall in love with the 副社長.
@@ -382,52 +532,32 @@ And try not to fall in love with the 副社長.
 
 ## 🗺️ Roadmap
 
-### ✅ v0.1.0 — Initial Release (2026-09-14)
-- [x] C++17 core, SFML 3.x rendering
-- [x] `.gality` DSL + compiler
-- [x] Multi-slot character pipeline
-- [x] Weather + PostFX + transitions
-- [x] Encrypted `data.pak` VFS
-- [x] Debug overlay + DAG viewer
-- [x] VSCode language extension
+**Full roadmap**: [docs/roadmap.md](docs/roadmap.md)
 
-### ✅ v0.2.0 — Tooling & Polish (2026-09-15)
-- [x] 16:9 aspect ratio support
-- [x] Data-driven UI theme (`ui_theme.json`)
-- [x] Save/Load system
-- [x] Rollback (Time Machine)
-- [x] Backlog UI
-- [x] Settings UI
-- [x] Hot reload (dev build)
-- [x] One-click build scripts
+### ✅ Released
 
-### ✅ v0.3.0 — Text Effects & Nine-Slice (2026-09-17)
-- [x] Nine-slice UI system
-- [x] FontManager singleton
-- [x] Text shadow
-- [x] Text outline (optional)
-- [x] `<wave>`, `<rainbow>`, `<glitch>` animations
-- [x] `<speed>`, `<w>` control tags
-- [x] Forced read system (`no_skip`, `wait`)
-- [x] Custom UI image system
+- **v0.1.0** (2026-09-14) — Initial release
+- **v0.2.0** (2026-09-15) — Tooling & polish
+- **v0.3.0** (2026-09-17) — Text effects & nine-slice
 
-### 🚧 v0.4.0 — Month 2 (In Progress)
-- [ ] CG System (gallery, viewer, unlock tracking)
-- [ ] Character layered parts (blink, mouth, expression)
-- [ ] AI toolchain (translation, TTS, image generation)
-- [ ] itch.io release
+### 🚧 In Progress
 
-### 🔮 v0.5.0 — Month 3-6
-- [ ] WebAssembly build (pending SFML Emscripten support)
-- [ ] Cross-platform CI/CD
-- [ ] Plugin system
-- [ ] Steam release of demo story
+- **v0.4.0** (Month 2) — CG system, layered characters, AI toolchain
 
-### 🌟 v1.0.0 — Year 1
-- [ ] Stable API
-- [ ] Comprehensive docs
-- [ ] Commercial license
-- [ ] Community showcase
+### 🔮 Planned
+
+- **v0.5.0** (Month 3-6) — WebAssembly, CI/CD, FX registry
+- **v1.0.0** (Year 1) — Stable API, comprehensive docs
+
+### ❌ Not Planned
+
+- Mobile (iOS / Android)
+- GUI editor
+- 3D rendering
+- Physics engine
+- Multiplayer
+
+See [Roadmap](docs/roadmap.md) for details.
 
 ---
 
@@ -454,14 +584,20 @@ MIT. See [LICENSE](LICENSE) for details.
 ## 🙏 Acknowledgments
 
 Built with:
+
 - [SFML 3.x](https://www.sfml-dev.org/) — Simple and Fast Multimedia Library
 - [nlohmann/json](https://github.com/nlohmann/json) — JSON for Modern C++
 - [vcpkg](https://vcpkg.io/) — C++ package manager
+- [FreeType](https://freetype.org/) — Font rendering
 
 ---
+
+<div align="center">
 
 **Gality Engine**
 
 _Built because the story deserved a real engine._
 
 _And the engine deserved a real story._
+
+</div>

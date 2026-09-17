@@ -1,32 +1,65 @@
 
-# 🌸 Gality Engine — Script & Asset Authoring Manual
+# Asset Guide
 
-> **Version 1.0**
-> *Written for writers, artists, and the occasional engineer who wandered in.*
+**How to prepare images, audio, and fonts for Gality Engine.**
 
-This manual covers everything you need to author content for Gality Engine — from folder layout to `.gality` DSL to UI theming. No C++ required. No JSON for writers. Just text, images, and a compiler that does the rest.
+This guide focuses on **asset preparation**. For scripting, see
+[Script Language](script_language.md). For UI configuration, see
+[UI Guide](ui_guide.md).
 
 ---
 
-## 1. Project Directory Structure
+## Table of Contents
 
-Before you write a single line of dialogue, place your assets in the right folders. The compiler **will not** find them otherwise.
+1. [Directory Structure](#1-directory-structure)
+2. [Naming Conventions](#2-naming-conventions)
+3. [Background Images](#3-background-images)
+4. [Character Sprites](#4-character-sprites)
+5. [UI Images (Nine-Slice)](#5-ui-images-nine-slice)
+6. [Transition Masks](#6-transition-masks)
+7. [Audio](#7-audio)
+8. [Fonts](#8-fonts)
+9. [Shaders](#9-shaders)
+10. [Asset Pipeline](#10-asset-pipeline)
+11. [AI-Assisted Generation](#11-ai-assisted-generation)
+12. [Optimization](#12-optimization)
+13. [Troubleshooting](#13-troubleshooting)
+
+---
+
+## 1. Directory Structure
+
+Gality expects assets in a fixed folder layout. The packer and engine
+**will not find them otherwise**.
 
 ```
 assets/
-├── scripts/          ← Your .gality narrative source files
+├── scripts/          ← .gality narrative source + compiled JSON
 ├── bg/               ← Background images (.jpg / .png)
-├── characters/       ← Character sprites (.png, transparent bg)
-├── audio/            ← BGM (.ogg) + voice/SFX (.ogg / .wav)
+├── characters/       ← Character sprites (.png, transparent)
+├── audio/            ← BGM, voice, SFX (.ogg / .wav)
 ├── fonts/            ← font.ttf (CJK-compatible recommended)
 ├── masks/            ← Transition masks (.png, grayscale)
-├── shaders/          ← GLSL fragment shaders (advanced)
+├── shaders/          ← GLSL fragment shaders (.frag)
+├── ui/               ← Nine-slice UI images (.png, transparent)
 └── config/
     ├── ui_theme.json ← UI layout & styling
     └── settings.json ← Runtime preferences
 ```
 
-### Naming Conventions (Recommended)
+### Rules
+
+- **Case-sensitive** on macOS/Linux. Use lowercase folder names.
+- **No spaces** in folder names or file names.
+- **Relative paths** — always reference assets as `assets/bg/classroom.jpg`
+  from scripts.
+- **Do not rename folders** — the engine hardcodes these paths.
+
+---
+
+## 2. Naming Conventions
+
+Gality doesn't enforce naming, but consistency saves hours.
 
 | Type | Convention | Example |
 |---|---|---|
@@ -34,419 +67,1024 @@ assets/
 | Character sprites | `character_emotion.png` | `senior_happy.png`, `junior_pout.png` |
 | BGM | `bgm_mood.ogg` | `bgm_daily.ogg`, `bgm_horror.ogg` |
 | Voice lines | `cv_character_XX.ogg` | `cv_01.ogg`, `cv_jun_15.ogg` |
-| SFX | `sfx_name.wav` | `typewriter.wav` |
+| SFX | `sfx_name.wav` | `typewriter.wav`, `door_close.wav` |
+| UI images | `ui_element.png` | `dialogue_box.png`, `choice_hover.png` |
+| Masks | `mask_name.png` | `diamond.png`, `wipe_left.png` |
 
-**Consistency saves hours later.** Pick a scheme and stick to it.
+### Why This Matters
 
----
+- **Script references stay readable**: `bg: assets/bg/classroom_day.jpg`
+  is clearer than `bg: assets/bg/IMG_20230912.jpg`
+- **Bulk operations work**: `rm assets/bg/classroom_*.jpg` deletes all
+  classroom variants
+- **AI generation works**: `generate_assets.py` uses these conventions
 
-## 2. The `.gality` Scripting Guide
+### Avoid
 
-`.gality` is a **declarative DSL** designed to feel like writing a screenplay. Each `[node_id]` is a scene beat. Each `->` is a transition. Each `$` is a state mutation.
-
-The compiler (`gality_compiler.py`) converts your script into a JSON AST that the engine reads at runtime. **You never touch the JSON.**
-
----
-
-### 2.1 Entry Point & Node Declaration
-
-Every script must declare **exactly one** entry point with `@start`. Nodes are declared with `[bracketed_ids]`.
-
-```gality
-@start node_01
-
-[node_01]
-bg: assets/bg/classroom.jpg
-bgm: assets/audio/bgm_daily.ogg
-weather: sakura
-旁白: 放學後的陽光透過窗戶灑在課桌上。
--> node_02
-```
-
-**Rules:**
-- `@start` must be the **first non-comment line**.
-- Node IDs must be **unique** within a script. Duplicates will be flagged by the compiler.
-- Every `->` target must resolve to an existing `[node_id]`. Dangling pointers are compile errors.
+- ❌ Spaces: `classroom day.jpg` → use `classroom_day.jpg`
+- ❌ Uppercase: `ClassRoom.jpg` → use `classroom.jpg`
+- ❌ Non-ASCII: `教室.jpg` → use `classroom.jpg` (Chinese in script, not filenames)
+- ❌ Version numbers: `classroom_v2.jpg` → overwrite the original instead
 
 ---
 
-### 2.2 Dialogue & Character Staging
+## 3. Background Images
 
-#### Dialogue Format
+### Format
 
-```
-SpeakerName: Dialogue text goes here.
-```
-
-- **With speaker:** `學姐: 你終於來了！`
-- **Narrator (no speaker):** `旁白: 四月的春風掠過校園。`
-- **Bare narration:** Just write the line without a colon.
-
-#### Character Sprites
-
-Use `char:` to stage a character sprite. For multi-character scenes, use slot-specific directives:
-
-| Directive | Slot | Screen Position |
-|---|---|---|
-| `char_left:` | Left | X = 25% |
-| `char_center:` or `char:` | Center | X = 50% |
-| `char_right:` | Right | X = 75% |
-
-```gality
-[node_02]
-bg: assets/bg/clubroom.jpg
-char_left: assets/characters/senior_normal.png
-char_right: assets/characters/junior_smug.png
-active_char: right
-cv: assets/audio/cv_jun_03.ogg
-學妹: 哼，算你識相。但沒有角色多槽位立繪，畫面空曠得像個未完成品！
--> node_03
-```
-
-**`active_char:`** dims non-speaking characters automatically. Values: `left`, `center`, `right`.
-
-#### Voice-Overs
-
-Use `cv:` to trigger a voice clip on the current line.
-
-```gality
-[node_03]
-char_center: assets/characters/senior_happy.png
-cv: assets/audio/cv_01.ogg
-學姐: 你終於準備好了嗎？我們的<color=#FF5555>遊戲開發計劃</color>今天必須確定下來。
--> node_04
-```
-
-**Audio panning:** Voice is automatically panned left/right based on `active_char`.
-
----
-
-### 2.3 Rich Text Formatting
-
-Gality supports inline tags for expressive dialogue without markdown hell.
-
-| Tag | Effect | Example |
-|---|---|---|
-| `<color=#HEX>` | Text color | `<color=#FFB7C5>櫻花</color>` |
-| `<shake>` | Per-character shake | `<shake>糟了！</shake>` |
-| `<speed=X>` | Override typewriter speed | `<speed=0.05>輕聲細語</speed>` |
-| `<w=X>` | Insert pause (seconds) | `等等<w=1.5>...你說什麼？` |
-
-**Nesting works.** Combine freely:
-
-```gality
-學姐: 你終於來了！我們提報的<color=#FF5555><shake>自製 2D 遊戲引擎計畫</shake></color>，今天必須敲定架構方向。
-```
-
-**CJK Line-Breaking:** Gality implements *Kinsoku Shori* (避頭尾禁則). Punctuation like `，。！？` never lands at line start. Opening brackets never land at line end. **You don't have to think about it.**
-
----
-
-### 2.4 Presentation & Visual FX Directives
-
-#### Weather Particles
-
-```gality
-weather: sakura | rain | snow | none
-```
-
-Persistent until changed or the node is overridden.
-
-#### Screen Shake
-
-```gality
-shake: 0.3    # subtle
-shake: 0.6    # dramatic
-```
-
-Scalar from `0.0` (no shake) to `1.0` (violent).
-
-#### Transitions
-
-```gality
-trans: diamond | wipe_left | clock | dissolve
-duration: 1.5    # seconds
-```
-
-| Mask | Effect |
+| Property | Recommendation |
 |---|---|
-| `diamond` | Radial diamond wipe (classic VN) |
-| `wipe_left` | Horizontal slide |
-| `clock` | Rotational sweep |
-| `dissolve` | Crossfade |
+| **Format** | JPG (smaller) or PNG (if transparency needed) |
+| **Size** | **1920×1080** (matches logical canvas) |
+| **Aspect ratio** | 16:9 |
+| **Color space** | sRGB |
+| **File size** | < 500 KB per image |
+| **Quality** | JPG at 85-95% |
 
-```gality
-[node_weather_demo]
-bg: assets/bg/sunset.jpg
-trans: dissolve
-duration: 1.5
-weather: rain
-shake: 0.5
-旁白: 突然一陣狂風暴雨襲來！
--> node_next
-```
+### Why 1920×1080?
 
----
+Gality uses a **1920×1080 logical coordinate space**. Images larger than this:
 
-### 2.5 Branching Choices
+- Waste memory
+- Slow down loading
+- Get downscaled anyway
 
-Choices are declared with `? [Option Text] -> TargetNode`:
+Images smaller than this:
 
-```gality
-[choice_01]
-? [包在我身上吧！今晚就能搞定！] -> act_favor_up
-? [感覺好麻煩啊... 可以交給別人嗎？] -> act_favor_down
-```
+- Get upscaled (blurry)
+- Look worse than native
 
-**Every choice becomes a clickable button.** No configuration needed.
+**Always resize to 1920×1080 before adding to `assets/bg/`.**
 
-**Tip:** Keep option text under ~40 CJK characters for best readability.
+### Creating Backgrounds
 
----
+**From photos**:
+1. Crop to 16:9
+2. Resize to 1920×1080
+3. Apply anime/cel-shading filter (if desired)
+4. Save as JPG (quality 90)
 
-### 2.6 State Flags & Conditional Logic
+**From scratch**:
+1. Create a 1920×1080 canvas
+2. Paint or composite
+3. Save as JPG
 
-Gality uses a global **Blackboard** — a key-value store of integers.
+**From AI**:
+- Use a 16:9 aspect ratio
+- Prompt for "visual novel background"
+- Post-process to remove artifacts
+- See [Section 11](#11-ai-assisted-generation)
 
-#### Variable Mutation
+### Tools
 
-```gality
-[act_favor_up]
-$ favorability += 10
-$ san_loss += 5
--> node_04_a
-```
+| Tool | Platform | Cost |
+|---|---|---|
+| Photoshop | Win/Mac | Paid |
+| GIMP | Win/Mac/Linux | Free |
+| Krita | Win/Mac/Linux | Free |
+| Aseprite | Win/Mac/Linux | Paid ($20) |
+| Clip Studio Paint | Win/Mac | Paid |
 
-Supported operators: `+=`, `-=`, `=`.
+### Checklist
 
-#### Conditional Jumps
-
-```gality
-[cond_check_ending]
-IF favorability >= 10 THEN node_good_ending ELSE node_normal_ending
-```
-
-**Supported operators:** `>=`, `<=`, `>`, `<`, `==`
-
-**⚠️ Important:** The compiler requires both `THEN` and `ELSE`. For multi-condition chains, use sequential nodes:
-
-```gality
-[node_route_selector]
-IF san_loss >= 60 THEN node_abyss ELSE node_route_selector_2
-
-[node_route_selector_2]
-IF junior_favor >= 40 THEN node_junior ELSE node_route_selector_3
-
-[node_route_selector_3]
-IF favorability >= 100 THEN node_senior ELSE node_tech
-```
-
-This is the **priority chain pattern**. The first matching condition wins.
+- [ ] 1920×1080 resolution
+- [ ] 16:9 aspect ratio
+- [ ] Under 500 KB (JPG q=90)
+- [ ] No watermarks
+- [ ] Named per convention
 
 ---
 
-## 3. UI Customization
+## 4. Character Sprites
 
-Skin the entire UI without recompiling the engine. Edit `assets/config/ui_theme.json`:
+### Format
+
+| Property | Recommendation |
+|---|---|
+| **Format** | PNG with alpha (RGBA) |
+| **Size** | 800×1200 to 1200×1800 |
+| **Aspect ratio** | 2:3 or 3:4 |
+| **Background** | **Transparent** |
+| **File size** | < 1 MB per sprite |
+
+### Why Transparent Background?
+
+Character sprites are overlaid on backgrounds. If the PNG has a solid
+background, it will render as an **opaque rectangle**, hiding the background.
+
+**Always use transparent PNG.**
+
+### Recommended Sprite Dimensions
+
+Gality displays characters at:
+
+- **Single**: 85% of screen height → ~918 pixels
+- **Double**: 78% → ~842 pixels
+- **Triple**: 70% → ~756 pixels
+
+**Recommended**: Create sprites at **1200×1800** (for single-character
+closeups). They will be scaled down as needed.
+
+**Minimum**: 800×1200. Smaller sprites will look blurry when scaled up.
+
+### Making Sprites
+
+**From AI**:
+1. Generate with green screen background
+2. Use `rembg` to remove background
+3. Post-process to remove green spill
+4. Save as PNG
+
+**From hand-drawing**:
+1. Draw character
+2. Remove background (magic wand, alpha channel)
+3. Save as PNG with transparency
+
+**From existing art**:
+1. Open in Photoshop/GIMP
+2. Use magic wand or select subject
+3. Refine edges
+4. Save as PNG
+
+### Green Screen Removal
+
+If you generate sprites with AI using green backgrounds:
+
+```bash
+pip install rembg pillow
+```
+
+```python
+from PIL import Image
+from rembg import remove
+
+input_image = Image.open("sprite_green.png")
+output = remove(
+    input_image,
+    alpha_matting=True,
+    alpha_matting_foreground_threshold=240,
+    alpha_matting_background_threshold=15,
+    alpha_matting_erode_size=10,
+)
+output.save("sprite.png", "PNG")
+```
+
+**Green spill removal** (if edges are tinted green):
+
+```python
+import numpy as np
+from PIL import Image
+
+img = Image.open("sprite.png").convert("RGBA")
+arr = np.array(img).astype(np.float32)
+r, g, b, a = arr[..., 0], arr[..., 1], arr[..., 2], arr[..., 3]
+
+rb_avg = (r + b) * 0.5
+green_excess = np.maximum(0, g - rb_avg)
+g_new = np.clip(g - green_excess * 0.8 * (a > 10), 0, 255)
+
+arr[..., 1] = g_new
+Image.fromarray(arr.astype(np.uint8)).save("sprite_clean.png")
+```
+
+See `generate_assets.py` for a complete implementation.
+
+### Expression Variants
+
+For a character with N expressions, create N separate PNGs:
+
+```
+senior_normal.png
+senior_smile.png
+senior_happy.png
+senior_surprised.png
+senior_pout.png
+senior_fear.png
+senior_corrupt.png
+```
+
+**Tip**: Generate all expressions in the same session for consistent style.
+
+### Checklist
+
+- [ ] PNG with alpha
+- [ ] Transparent background
+- [ ] 800×1200 minimum size
+- [ ] No green spill
+- [ ] Clean edges (no halo)
+- [ ] Named `character_emotion.png`
+
+---
+
+## 5. UI Images (Nine-Slice)
+
+UI elements like the dialogue box and choice buttons can use **nine-slice**
+images for decorative borders.
+
+### Format
+
+| Property | Recommendation |
+|---|---|
+| **Format** | PNG with alpha |
+| **Size** | 256×256 to 1024×1024 |
+| **Background** | Transparent |
+| **Corners** | Decorative, within `left/right/top/bottom` boundaries |
+| **Center** | Simple (solid or subtle gradient) |
+
+### Nine-Slice Rules
+
+```
+┌─────────┬─────────────────┬─────────┐
+│ Corner  │     Edge        │ Corner  │  ← top
+├─────────┼─────────────────┼─────────┤
+│         │                 │         │
+│  Edge   │     Center      │  Edge   │  ← middle
+│         │                 │         │
+├─────────┼─────────────────┼─────────┤
+│ Corner  │     Edge        │ Corner  │  ← bottom
+└─────────┴─────────────────┴─────────┘
+  ↑                              ↑
+ left                          right
+```
+
+| Region | Behavior | Design Constraint |
+|---|---|---|
+| **Corners** | Never stretched | Decoration must fit entirely |
+| **Edges** | Stretched along one axis | Only horizontal OR vertical patterns |
+| **Center** | Stretched both ways | Must be solid or gradient |
+
+### Design Guidelines
+
+**Corners**:
+- ✅ Decorative (frames, ornaments, circuits)
+- ✅ Must fit within `left/right/top/bottom` boundaries
+- ❌ No content extending into edges
+
+**Edges**:
+- ✅ Solid color
+- ✅ Horizontal gradient (top/bottom edges)
+- ✅ Vertical gradient (left/right edges)
+- ❌ Diagonal patterns
+- ❌ Complex textures
+- ❌ Text
+
+**Center**:
+- ✅ Solid color
+- ✅ Subtle gradient
+- ✅ Uniform pattern
+- ❌ Text
+- ❌ Complex patterns
+
+### Sizing
+
+The image must be **larger than the target rendering size in the corner regions**.
+
+For a dialogue box that renders at 1760×300 with `left=70, right=70, top=70, bottom=70`:
+
+- Image must be at least 140px wide (70 + 70)
+- Image must be at least 140px tall (70 + 70)
+- **Recommended**: 512×512 or larger
+
+### Measuring Boundaries
+
+Use the helper script:
+
+```bash
+python devtools/private/measure_bounds.py assets/ui/dialogue_box.png
+```
+
+Output:
+```
+assets/ui/dialogue_box.png
+  Image size: 943 x 933
+  Suggested bounds:
+    "left":   20,
+    "right":  20,
+    "top":    20,
+    "bottom": 20
+```
+
+**This is a starting point.** Manually verify that the boundaries fully
+enclose the corner decorations.
+
+See [UI Guide § 7](ui_guide.md#7-nine-slice-images) for configuration.
+
+### Common Mistake: Boundaries Too Small
+
+If your corner decoration extends 80 pixels inward but you set `left=40`:
+
+- Corner decoration will be **stretched**
+- Visible distortion in the final render
+
+**Fix**: Increase `left/right/top/bottom` to fully cover the decoration.
+
+### Common Mistake: Non-Simple Center
+
+If the center region has a complex pattern (e.g., text, intricate design):
+
+- Pattern will be **stretched**
+- Looks broken at different sizes
+
+**Fix**: Keep the center simple (solid or gradient).
+
+### Checklist
+
+- [ ] PNG with alpha
+- [ ] Transparent background
+- [ ] Corner decorations fully within boundaries
+- [ ] Center is solid or gradient
+- [ ] Edges only vary along one axis
+- [ ] Size ≥ 2× `left + right` and `2× top + bottom`
+- [ ] Tested at multiple target sizes
+
+---
+
+## 6. Transition Masks
+
+Transition masks control how the background changes between scenes.
+
+### Format
+
+| Property | Recommendation |
+|---|---|
+| **Format** | PNG, grayscale |
+| **Size** | 1920×1080 |
+| **Color space** | Grayscale (single channel) |
+| **Values** | Black (0) = hidden, White (255) = revealed |
+
+### How It Works
+
+The transition shader uses the mask to determine reveal order:
+
+1. **Start of transition**: `mask_value > threshold` → old scene
+2. **End of transition**: `mask_value > threshold` → new scene
+3. **Threshold animates** from 0 to 255 over `duration` seconds
+
+### Built-in Masks
+
+Gality ships with 4 masks in `assets/masks/`:
+
+| Mask | Shape |
+|---|---|
+| `diamond.png` | Radial diamond from center |
+| `wipe_left.png` | Horizontal wipe from left |
+| `clock.png` | Clock-style circular sweep |
+| `dissolve.png` | Uniform fade (uses solid mid-gray) |
+
+### Creating Custom Masks
+
+**Diamond mask** (built-in): A white diamond on black background.
+
+**Wipe mask**: A linear gradient from black (left) to white (right).
+
+**Radial mask**: A radial gradient from white (center) to black (edges).
+
+**Custom pattern**: Any grayscale gradient will work.
+
+### Example: Radial Mask
+
+```python
+from PIL import Image, ImageDraw
+import numpy as np
+
+W, H = 1920, 1080
+cx, cy = W // 2, H // 2
+
+# Create radial gradient
+y, x = np.ogrid[:H, :W]
+dist = np.sqrt((x - cx) ** 2 + (y - cy) ** 2)
+max_dist = np.sqrt(cx ** 2 + cy ** 2)
+mask = np.clip(255 * (1 - dist / max_dist), 0, 255).astype(np.uint8)
+
+Image.fromarray(mask, mode="L").save("assets/masks/radial.png")
+```
+
+### Using a Mask
+
+In a script:
+
+```gality
+[node]
+bg: assets/bg/rooftop.jpg
+trans: radial
+duration: 2.0
+旁白: 場景以放射狀切換。
+-> next
+```
+
+The engine looks for `assets/masks/radial.png`.
+
+### Checklist
+
+- [ ] 1920×1080
+- [ ] Grayscale (or convertible to grayscale)
+- [ ] Black = hidden, white = revealed
+- [ ] Smooth gradients (avoid hard edges unless intended)
+- [ ] Named `mask_name.png`
+
+---
+
+## 7. Audio
+
+Gality supports three audio types: **BGM**, **voice (CV)**, and **SFX**.
+
+### BGM (Background Music)
+
+| Property | Recommendation |
+|---|---|
+| **Format** | OGG Vorbis (`.ogg`) |
+| **Bitrate** | 128-192 kbps |
+| **Length** | 1-3 minutes |
+| **Looping** | Must loop cleanly |
+| **Channels** | Stereo |
+
+**Why OGG?**
+- Smaller than WAV (10-20x compression)
+- Better quality than MP3 at same bitrate
+- No licensing issues (unlike MP3 in some contexts)
+- Streaming-friendly (Gality streams from memory)
+
+**Looping**: Ensure the end of the track matches the start for seamless loops.
+
+**Recommended tools**:
+- Audacity (free)
+- FL Studio (paid)
+- Ableton Live (paid)
+- LMMS (free)
+
+### Voice Lines (CV)
+
+| Property | Recommendation |
+|---|---|
+| **Format** | OGG (`.ogg`) or WAV (`.wav`) |
+| **Bitrate** | 128-192 kbps (OGG) |
+| **Sample rate** | 44.1 kHz |
+| **Length** | 1-10 seconds per line |
+| **Channels** | Mono or stereo |
+
+**Why OGG for voice?**
+- Smaller files
+- Fine for short clips
+- Audio panning works with both formats
+
+**Naming**: `cv_character_XX.ogg`
+
+Examples:
+- `cv_01.ogg` (first line)
+- `cv_jun_15.ogg` (junior, line 15)
+- `cv_senior_happy.ogg` (senior, "happy" variant)
+
+**Normalization**: Normalize all voice lines to the same loudness (e.g., -16 LUFS).
+
+**Recommended tools**:
+- Audacity (free)
+- Adobe Audition (paid)
+- Reaper (free trial)
+
+### SFX (Sound Effects)
+
+| Property | Recommendation |
+|---|---|
+| **Format** | WAV (`.wav`) |
+| **Sample rate** | 44.1 kHz |
+| **Bit depth** | 16-bit |
+| **Length** | < 1 second (mostly) |
+| **Channels** | Mono or stereo |
+
+**Why WAV for SFX?**
+- Minimal latency
+- No compression artifacts
+- Usually short files (size not an issue)
+
+**Common SFX**:
+- `typewriter.wav` — for the typewriter effect
+- `click.wav` — for UI buttons
+- `door_close.wav` — for scene transitions
+
+### Using Audio in Scripts
+
+```gality
+[node]
+bgm: assets/audio/bgm_daily.ogg
+cv: assets/audio/cv_01.ogg
+旁白: 背景音樂和配音同時播放。
+-> next
+```
+
+See [Script Language § 9](script_language.md#9-node-attributes) for details.
+
+### Stopping Audio
+
+```gality
+[node]
+bgm: 
+旁白: 停止 BGM。
+-> next
+```
+
+An empty value stops the current track.
+
+### Audio Checklist
+
+- [ ] BGM: OGG, loops cleanly
+- [ ] Voice: OGG or WAV, normalized loudness
+- [ ] SFX: WAV, short duration
+- [ ] Named per convention
+- [ ] Placed in `assets/audio/`
+
+---
+
+## 8. Fonts
+
+Gality uses FreeType to render TrueType and OpenType fonts.
+
+### Format
+
+| Property | Recommendation |
+|---|---|
+| **Format** | TTF or OTF |
+| **Size** | Any (FreeType handles rasterization) |
+| **CJK support** | Required for CJK content |
+
+### CJK Fonts
+
+For Chinese, Japanese, or Korean content, use a **CJK-compatible font**.
+
+**Recommended**:
+
+| Font | License | Coverage |
+|---|---|---|
+| **NaikaiFont** | OFL | Full CJK |
+| **Noto Sans CJK** | OFL | Full CJK (JP/KR/SC/TC) |
+| **Source Han Sans** | OFL | Full CJK |
+| **Taipei Sans TC** | OFL | Traditional Chinese |
+
+**Non-CJK fonts** (Arial, Helvetica, etc.) **cannot render CJK glyphs**.
+They will show boxes or nothing.
+
+### File Location
+
+Place fonts in `assets/fonts/`:
+
+```
+assets/fonts/
+├── font.ttf           ← Default (referenced by ui_theme.json)
+├── font_bold.ttf      ← Optional
+└── font_italic.ttf    ← Optional
+```
+
+### Registering Fonts
+
+Add to `assets/config/ui_theme.json`:
 
 ```json
-{
-  "dialogueBox": {
-    "posX": 80.0,
-    "posY": 740.0,
-    "width": 1760.0,
-    "height": 280.0,
-    "bgColor": [0, 0, 0, 215],
-    "borderColor": [255, 255, 255, 100],
-    "nameBoxPosX": 80.0,
-    "nameBoxPosY": 670.0,
-    "nameBoxWidth": 320.0,
-    "nameBoxHeight": 60.0,
-    "nameBoxBgColor": [40, 40, 90, 235],
-    "nameTextColor": [255, 220, 0, 255],
-    "dialogueTextColor": [255, 255, 255, 255],
-    "nameFontSize": 28,
-    "dialogueFontSize": 32
-  },
-  "choiceUI": {
-    "width": 1100.0,
-    "height": 70.0,
-    "spacing": 25.0,
-    "startY": 340.0,
-    "fontSize": 28,
-    "normalBgColor": [30, 30, 50, 220],
-    "hoverBgColor": [70, 70, 130, 240],
-    "normalOutlineColor": [100, 100, 180, 255],
-    "hoverOutlineColor": [255, 215, 0, 255],
-    "textColor": [255, 255, 255, 255]
+"fonts": {
+  "default": "regular",
+  "available": {
+    "regular": "assets/fonts/font.ttf",
+    "bold": "assets/fonts/font_bold.ttf"
   }
 }
 ```
 
-**Coordinates are in 1920×1080 logical space.** The engine letterboxes automatically on other aspect ratios.
+See [UI Guide § 3](ui_guide.md#3-fonts) for details.
 
-**Colors are RGBA** `[0-255, 0-255, 0-255, 0-255]`.
+### Verifying Font Support
 
----
+To test if a font supports CJK:
 
-## 4. Debug Shortcuts & Runtime Diagnostics
+```python
+from PIL import ImageFont
 
-Gality ships with **built-in dev tools**. No external debugger needed.
-
-| Key | Action |
-|---|---|
-| **F1** or **`** (Tilde) | Toggle DebugOverlay (Blackboard editor, Node Jumper, Diagnostics) |
-| **F2** | Toggle NodeGraphViewer (DAG tree + live property inspector) |
-| **Tab** or **H** | Open/Close History Backlog |
-| **Mouse Wheel Up** | Rollback one dialogue step (Time Machine) |
-| **Backspace** | Rollback (alternative) |
-| **F5 / F9** | Quick Save / Quick Load |
-| **K** | Trigger test screen shake |
-| **Escape** | Settings / Close modal |
-
-### DebugOverlay Tabs
-
-- **Blackboard**: Inspect and edit every integer variable live
-- **Node Jumper**: Search and jump to any node ID
-- **Diagnostics**: FPS, frame time, memory
-- **Console**: Logs from the engine
-
-**Use these constantly.** They will save you hours.
-
----
-
-## 5. Building & Distribution
-
-### During Development
-
-Use **hot-reload** — the engine watches `demo_long.json` and reloads the AST without restarting.
-
-Workflow:
-
-1. Edit `.gality`
-2. Run `python devtools/scripts/gality_compiler.py assets/scripts/main_story_multi.gality assets/scripts/demo_long.json`
-3. Switch to running game — it reloads automatically
-
-### One-Click Release
-
-When you're ready to ship, run:
-
-```powershell
-.\build_game.bat
+font = ImageFont.truetype("assets/fonts/font.ttf", 32)
+# Check if CJK glyph exists
+has_cjk = font.getmask("繁").getbbox() is not None
+print("Supports CJK:", has_cjk)
 ```
 
-This will:
+### Licensing
 
-1. Compile `.gality` → JSON AST
-2. Pack `assets/` → encrypted `data.pak`
-3. Build `Gality.exe` (Release)
-4. Assemble standalone bundle in `.\dist\`
+**Always check font licenses before distributing.**
 
-**The `dist/` folder is fully self-contained.** Zip it and ship it.
+- **OFL** (SIL Open Font License) — Free to use, modify, redistribute
+- **Apache 2.0** — Free with attribution
+- **Commercial** — May require purchase for commercial use
+- **Bundled** — Some fonts come with restrictions
 
-### Manual Build Steps
+Gality does not bundle fonts except the demo's default.
 
-If you want control over each step:
+### Tools
+
+- **FontForge** — Free, edit fonts
+- **Glyphs** — Paid, Mac only
+- **FontLab** — Paid, pro tool
+
+### Checklist
+
+- [ ] TTF or OTF format
+- [ ] CJK support (if content is CJK)
+- [ ] Licensed for distribution
+- [ ] Placed in `assets/fonts/`
+- [ ] Registered in `ui_theme.json`
+
+---
+
+## 9. Shaders
+
+Gality uses GLSL fragment shaders for post-processing.
+
+### Format
+
+| Property | Recommendation |
+|---|---|
+| **Language** | GLSL 1.20 (OpenGL 2.1) |
+| **File extension** | `.frag` |
+| **Uniforms** | Declared at top |
+
+### Built-in Shaders
+
+| Shader | Purpose |
+|---|---|
+| `blur.frag` | Gaussian blur (used by PostFX) |
+| `transition.frag` | Mask-based scene transitions |
+
+**These are loaded from `data.pak`.** If missing, the engine falls back
+gracefully.
+
+### Custom Shaders
+
+To add custom shaders:
+
+1. Place `.frag` file in `assets/shaders/`
+2. The engine loads all shaders on startup
+3. Reference in C++ code (requires engine modification)
+
+**Note**: Adding new shaders **requires modifying the engine's C++ code**.
+Unlike scripts, shaders are not data-driven.
+
+### Writing GLSL 1.20
+
+```glsl
+#version 120
+
+uniform sampler2D texture;
+uniform vec2 resolution;
+
+void main() {
+    vec2 uv = gl_TexCoord[0].xy;
+    vec4 color = texture2D(texture, uv);
+    gl_FragColor = color;
+}
+```
+
+**Note**: GLSL 1.20 uses `texture2D`, `gl_FragColor`, `gl_TexCoord`.
+
+### Tools
+
+- **RenderDoc** — Debug shaders (Windows)
+- **ShaderToy** — Test shaders online
+- **VS Code extension**: `slevesque.shader` for syntax highlighting
+
+### Checklist
+
+- [ ] GLSL 1.20 syntax
+- [ ] `#version 120` at top
+- [ ] Uniforms declared
+- [ ] Placed in `assets/shaders/`
+
+---
+
+## 10. Asset Pipeline
+
+### Full Pipeline
+
+```
+1. Create asset (image / audio / font)
+       ↓
+2. Place in correct folder (assets/bg/, assets/audio/, etc.)
+       ↓
+3. Run packer: python -m devtools.scripts.gality_packer assets data.pak
+       ↓
+4. Run engine: build_dev.bat or dist-dev/Gality.exe
+       ↓
+5. Engine reads data.pak
+```
+
+### When to Repack
+
+**Every time you change an asset in `assets/`**, you must re-run the packer:
 
 ```bash
-# 1. Compile DSL
-python devtools/scripts/gality_compiler.py \
+python -m devtools.scripts.gality_packer assets data.pak
+```
+
+**Why?** The engine reads from `data.pak`, not from `assets/` directly.
+
+**Exception**: In dev builds, some assets (like scripts) support hot reload.
+But images and audio always require repacking.
+
+### Script Compilation
+
+For `.gality` scripts, you need an extra step:
+
+```bash
+python -m devtools.scripts.gality_compiler \
     assets/scripts/main_story_multi.gality \
     assets/scripts/demo_long.json
-
-# 2. Pack assets
-python devtools/scripts/gality_packer.py assets data.pak
-
-# 3. Build engine
-cmake -B build -DCMAKE_BUILD_TYPE=Release
-cmake --build build --config Release
-
-# 4. Launch
-.\build\Release\Gality.exe
 ```
+
+This converts `.gality` → JSON AST, which is then packed.
+
+### Full Build (Windows)
+
+```bash
+build_dev.bat
+```
+
+This runs:
+1. Compiler
+2. Packer
+3. CMake + build
+4. Package assembly
+
+### Incremental Build
+
+For asset-only changes:
+
+```bash
+# Just repack
+python -m devtools.scripts.gality_packer assets data.pak
+
+# No need to rebuild the engine
+```
+
+### Manifest
+
+The packer generates an internal index mapping paths to byte offsets.
+You don't need to maintain a manifest manually.
 
 ---
 
-## 6. Common Pitfalls
+## 11. AI-Assisted Generation
 
-### ❌ Dangling Node Pointers
+Gality supports AI-generated assets via `generate_assets.py`.
 
-```gality
-[node_01]
-旁白: Hello
--> node_999    # ❌ node_999 doesn't exist
+### What It Generates
+
+| Type | Model | Post-processing |
+|---|---|---|
+| Backgrounds | Grok Imagine | Direct save (JPG) |
+| Character sprites | Grok Imagine | `rembg` + green spill removal |
+| UI images | Grok Imagine | `rembg` + green spill removal |
+
+### Configuration
+
+Edit the prompt dictionaries in `generate_assets.py`:
+
+```python
+CHARACTER_PROMPTS = {
+    "assets/characters/senior_normal.png": {
+        "prompt": "masterpiece, anime visual novel character sprite, ...",
+        "aspect_ratio": "3:4"
+    },
+    # ...
+}
 ```
 
-**Compiler will flag this.** Always verify targets exist.
+### Running
 
-### ❌ Missing `ELSE` in Conditionals
-
-```gality
-[cond_check]
-IF favorability >= 10 THEN node_good    # ❌ Missing ELSE
+```bash
+export XAI_API_KEY="xai-your-key-here"
+python generate_assets.py
 ```
 
-**The compiler requires both branches.** Use the sequential pattern for multi-condition logic.
+### Features
 
-### ❌ Character Sprite Without Alpha
+- **Retry with exponential backoff** (2s, 4s, 8s)
+- **Structured logging** (writes to `logs/asset_pipeline_*.log`)
+- **Skip existing files** (avoid regenerating)
+- **Failure tracking** (JSON summary in `logs/last_run_summary.json`)
 
-If your character PNG has a solid background, it will render as a rectangle. **Always use transparent PNG.**
+### Prompt Tips
 
-**Tip:** Use `rembg` for AI-powered background removal, then post-process to remove green edges.
+**Backgrounds**:
+- Always specify `16:9` aspect ratio
+- Include `visual novel background`
+- Include `anime art style`
+- Include `no characters`
 
-### ❌ Oversized Background Images
+**Character sprites**:
+- Specify `3:4` aspect ratio
+- Include `character sprite`
+- Include `upper body, centered`
+- Include `solid plain chroma key green background`
 
-Backgrounds larger than 1920×1080 waste memory. Resize before adding to `assets/bg/`.
+**UI elements**:
+- Specify `1:1` aspect ratio
+- Include `9-slice compatible`
+- Include `center area plain and empty`
+- Include `solid plain chroma key green background`
 
-### ❌ Rich Text Tag Mismatch
+### Customization
 
-```gality
-學姐: <color=#FF5555>紅色文字    # ❌ Missing </color>
-```
+You can extend `generate_assets.py` to:
 
-**The compiler will flag mismatched tags.**
+- Use a different AI provider (Stable Diffusion, Midjourney)
+- Add custom post-processing
+- Generate different asset types
+
+See the script for examples.
+
+### Limitations
+
+- AI-generated assets may have **inconsistent styles** across generations
+- Character sprites may have **subtle differences** between expressions
+- Post-processing is **required** for character sprites (rembg)
+- Some generations **fail** (retry logic handles this)
+
+### Verification
+
+After generation, verify:
+
+- [ ] Images are the correct aspect ratio
+- [ ] Characters have transparent backgrounds
+- [ ] No visible green edges
+- [ ] Consistent style across variants
+- [ ] Files are in correct folders
 
 ---
 
-## 7. Quick Reference Card
+## 12. Optimization
 
+### Image Optimization
+
+**Backgrounds**:
+- JPG quality: 85-95%
+- Target size: < 500 KB
+- Use `jpegoptim` or `mozjpeg` for lossless re-compression
+
+```bash
+jpegoptim --max=90 assets/bg/*.jpg
 ```
-ENTRY POINT:      @start node_01
 
-NODE DECLARATION: [node_id]
+**Character sprites**:
+- PNG optimize with `pngquant` or `optipng`
 
-DIALOGUE:         Speaker: Text
-NARRATION:        旁白: Text
-
-TRANSITIONS:      -> node_next
-CHOICES:          ? [Text] -> node_next
-CONDITIONALS:     IF var OP val THEN node_a ELSE node_b
-MUTATIONS:        $ var += val
-
-STAGING:          char_left / char_center / char_right
-                  active_char: left | center | right
-                  cv: assets/audio/cv_XX.ogg
-
-VISUAL FX:        trans: diamond | wipe_left | clock | dissolve
-                  duration: 1.5
-                  weather: sakura | rain | snow | none
-                  shake: 0.5
-
-RICH TEXT:        <color=#HEX>...</color>
-                  <shake>...</shake>
-                  <speed=0.05>...</speed>
-                  <w=1.5>
-
-DEBUG:            F1 (overlay) | F2 (graph) | Tab (backlog)
-                  F5 (save) | F9 (load) | K (shake test)
+```bash
+pngquant --quality=80-95 assets/characters/*.png
 ```
+
+**UI images**:
+- Same as character sprites
+- Consider reducing resolution if not needed
+
+### Audio Optimization
+
+**BGM**:
+- OGG quality: 5-7 (equivalent to ~128-192 kbps)
+
+```bash
+oggenc -q 6 input.wav -o output.ogg
+```
+
+**Voice**:
+- OGG quality: 4-6
+- Remove silence at start/end
+
+```bash
+# Trim silence with sox
+sox input.wav output.wav silence 1 0.1 1% reverse silence 1 0.1 1% reverse
+```
+
+**SFX**:
+- Keep WAV (short files)
+- Downsample if < 22 kHz is acceptable
+
+### Font Optimization
+
+- Subset fonts to include only used glyphs
+- Use `pyftsubset` (from fonttools)
+
+```bash
+pyftsubset font.ttf --text-file=used_chars.txt --output-file=font_subset.ttf
+```
+
+**Note**: For CJK, subsetting is tricky (thousands of glyphs). Consider
+keeping the full font if size is acceptable.
+
+### Total Budget
+
+| Category | Target |
+|---|---|
+| **Backgrounds** | < 500 KB each |
+| **Character sprites** | < 1 MB each |
+| **UI images** | < 500 KB each |
+| **Audio (BGM)** | < 5 MB each |
+| **Audio (voice)** | < 100 KB each |
+| **Fonts** | < 20 MB total |
+| **Total `data.pak`** | **< 500 MB** |
+
+For comparison, typical visual novels are 500 MB - 5 GB. Gality's ~48 MB
+runtime leaves plenty of budget for content.
 
 ---
 
-<div align="center">
+## 13. Troubleshooting
 
-*Written for the people who make stories real.*
+### "Missing asset: assets/bg/classroom.jpg"
 
-**Gality Engine — Authoring Manual v1.0**
+**Cause**: Asset doesn't exist, or `data.pak` wasn't rebuilt.
 
-</div>
+**Fix**:
+1. Check that the file exists: `ls assets/bg/classroom.jpg`
+2. Rebuild the pack: `python -m devtools.scripts.gality_packer assets data.pak`
+3. Restart the game.
+
+### "Character sprite has white/green background"
+
+**Cause**: PNG wasn't properly removed of background.
+
+**Fix**:
+- Use `rembg` (see [Section 4](#4-character-sprites))
+- Manually remove background in Photoshop/GIMP
+- Apply green spill removal
+
+### "Background image looks pixelated"
+
+**Cause**: Image is smaller than 1920×1080.
+
+**Fix**: Upscale or regenerate at 1920×1080.
+
+### "Font renders as boxes (CJK)"
+
+**Cause**: Font doesn't include CJK glyphs.
+
+**Fix**: Use a CJK-compatible font (see [Section 8](#8-fonts)).
+
+### "Audio doesn't play"
+
+**Cause**: File format not supported, or file is corrupted.
+
+**Fix**:
+- Check format: `.ogg` for BGM/voice, `.wav` for SFX
+- Test file in a media player
+- Re-encode with `oggenc` or `ffmpeg`
+
+### "UI image looks stretched / distorted"
+
+**Cause**: Nine-slice boundaries too small (see [Section 5](#5-ui-images-nine-slice)).
+
+**Fix**: Increase `left/right/top/bottom` in `ui_theme.json`.
+
+### "Assets not found after repacking"
+
+**Cause**: Path typo, or file in wrong folder.
+
+**Fix**:
+1. Check file location: `ls assets/bg/`
+2. Check script reference: `bg: assets/bg/classroom.jpg`
+3. Re-run packer
+4. Check packer output for warnings
+
+### "Large file size in dist/"
+
+**Cause**: Unoptimized assets.
+
+**Fix**:
+- Compress JPGs (`jpegoptim`)
+- Compress PNGs (`pngquant`)
+- Encode audio at lower bitrate
+- Remove unused assets
+
+---
+
+## Appendix: Tools Summary
+
+| Task | Tool | Cost |
+|---|---|---|
+| **Image editing** | Photoshop | Paid |
+| | GIMP | Free |
+| | Krita | Free |
+| **Background removal** | rembg | Free |
+| | Photoshop | Paid |
+| **Audio editing** | Audacity | Free |
+| | Reaper | Free trial |
+| **Font editing** | FontForge | Free |
+| **Image optimization** | jpegoptim | Free |
+| | pngquant | Free |
+| **Audio encoding** | oggenc | Free |
+| | ffmpeg | Free |
+| **AI generation** | generate_assets.py | Free (API cost) |
+
+---
+
+## Related Documentation
+
+- **[Script Language](script_language.md)** — Using assets in scripts
+- **[UI Guide](ui_guide.md)** — Configuring UI assets
+- **[Character Guide](character_guide.md)** — Character sprite details
+- **[Getting Started](getting_started.md)** — Installation and setup
+
+---
+
+**Last updated**: 2026-09-17
