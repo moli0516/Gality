@@ -15,13 +15,28 @@
 #include "../story/StoryNode.hpp"
 
 class DebugOverlay {
+public:
+    struct CacheStats {
+        std::string name;
+        size_t size = 0;
+        size_t capacity = 0;
+        size_t hitCount = 0;
+        size_t missCount = 0;
+        size_t evictionCount = 0;
+        float hitRate = 0.0f;
+        size_t estimatedBytes = 0;
+    };
+
 private:
     bool isVisible = false;
     sf::Font font;
     bool hasFont = false;
 
-    // 持久保存字體二進位緩衝區，杜絕 FreeType 野指標光柵化失敗
     std::vector<std::uint8_t> fontDataBuffer;
+
+    // ⚠️ 離屏緩衝區（用於 Diagnostics 文字裁剪）
+    sf::RenderTexture diagBuffer;
+    bool diagBufferReady = false;
 
     enum class ActiveTab {
         Blackboard,
@@ -45,7 +60,8 @@ private:
     };
     std::vector<TabButton> tabButtons;
 
-    // --- Node Jumper State ---
+    std::vector<CacheStats> cacheStats;
+
     struct NodeEntry {
         std::string id;
         std::string typeDesc;
@@ -60,7 +76,6 @@ private:
     sf::FloatRect scrollbarThumbBounds;
     sf::FloatRect scrollbarTrackBounds;
 
-    // --- Blackboard Interactive Input State ---
     std::string editingVarKey = "";
     std::string inputBuffer = "";
     bool isInputActive = false;
@@ -115,6 +130,25 @@ private:
         if (scrollOffset > maxScrollOffset) scrollOffset = maxScrollOffset;
     }
 
+    void drawTabButtons(sf::RenderTarget& target) {
+        for (const auto& btn : tabButtons) {
+            sf::RectangleShape tabShape(btn.bounds.size);
+            tabShape.setPosition(btn.bounds.position);
+            bool isActive = (btn.tab == currentTab);
+            tabShape.setFillColor(isActive ? sf::Color(45, 52, 70) : sf::Color(24, 27, 34));
+            tabShape.setOutlineThickness(1.0f);
+            tabShape.setOutlineColor(isActive ? sf::Color(100, 149, 237) : sf::Color(60, 65, 80));
+            target.draw(tabShape);
+
+            sf::Text tabText(font);
+            tabText.setString(sf::String::fromUtf8(btn.name.begin(), btn.name.end()));
+            tabText.setCharacterSize(14);
+            tabText.setFillColor(isActive ? sf::Color::White : sf::Color(180, 185, 200));
+            tabText.setPosition(sf::Vector2f(btn.bounds.position.x + 12.0f, btn.bounds.position.y + 6.0f));
+            target.draw(tabText);
+        }
+    }
+
 public:
     DebugOverlay() = default;
 
@@ -153,6 +187,10 @@ public:
         }
     }
 
+    void setCacheStats(const std::vector<CacheStats>& stats) {
+        cacheStats = stats;
+    }
+
     void handleScroll(float delta) {
         if (!isVisible) return;
         scrollOffset -= delta * 35.0f;
@@ -162,17 +200,17 @@ public:
     void handleTextEntered(char32_t unicode, Blackboard& blackboard) {
         if (!isVisible || !isInputActive || currentTab != ActiveTab::Blackboard) return;
 
-        if (unicode == 13) { 
+        if (unicode == 13) {
             commitInputValue(blackboard);
             return;
         }
-        if (unicode == 8) { 
+        if (unicode == 8) {
             if (!inputBuffer.empty()) {
                 inputBuffer.pop_back();
             }
             return;
         }
-        if (unicode == 27) { 
+        if (unicode == 27) {
             isInputActive = false;
             return;
         }
@@ -184,10 +222,10 @@ public:
         }
     }
 
-    bool handleKeyPressed(sf::Keyboard::Key key, StoryExecutor& executor, 
+    bool handleKeyPressed(sf::Keyboard::Key key, StoryExecutor& executor,
                           const std::unordered_map<std::string, std::shared_ptr<StoryNode>>& nodeIndexMap,
                           std::function<void()> onNodeJumped,
-                          Blackboard& blackboard) 
+                          Blackboard& blackboard)
     {
         if (!isVisible) return false;
 
@@ -229,7 +267,7 @@ public:
 
     bool handleMouseClick(const sf::Vector2i& mousePos, StoryExecutor& executor,
                           Blackboard& blackboard,
-                          std::function<void()> onNodeJumped) 
+                          std::function<void()> onNodeJumped)
     {
         if (!isVisible) return false;
         sf::Vector2f mPos(static_cast<float>(mousePos.x), static_cast<float>(mousePos.y));
@@ -339,35 +377,29 @@ private:
 public:
     void draw(sf::RenderTarget& target, Blackboard& blackboard, StoryExecutor& executor,
               const std::unordered_map<std::string, std::shared_ptr<StoryNode>>& nodeIndexMap,
-              float fps) 
+              float fps)
     {
         if (!isVisible || !hasFont) return;
 
+        // ===== 面板背景與邊框 =====
         target.draw(panelBg);
         target.draw(panelBorder);
 
-        for (const auto& btn : tabButtons) {
-            sf::RectangleShape tabShape(btn.bounds.size);
-            tabShape.setPosition(btn.bounds.position);
-            bool isActive = (btn.tab == currentTab);
-            tabShape.setFillColor(isActive ? sf::Color(45, 52, 70) : sf::Color(24, 27, 34));
-            tabShape.setOutlineThickness(1.0f);
-            tabShape.setOutlineColor(isActive ? sf::Color(100, 149, 237) : sf::Color(60, 65, 80));
-            target.draw(tabShape);
+        // ===== Tab 按鈕 =====
+        drawTabButtons(target);
 
-            sf::Text tabText(font);
-            tabText.setString(sf::String::fromUtf8(btn.name.begin(), btn.name.end()));
-            tabText.setCharacterSize(14);
-            tabText.setFillColor(isActive ? sf::Color::White : sf::Color(180, 185, 200));
-            tabText.setPosition(sf::Vector2f(btn.bounds.position.x + 12.0f, btn.bounds.position.y + 6.0f));
-            target.draw(tabText);
-        }
-
+        // ===== 座標系統 =====
         float contentX = panelBg.getPosition().x + 25.0f;
         float contentY = 78.0f;
         float contentW = panelBg.getSize().x - 60.0f;
         float viewH = panelBg.getSize().y - 100.0f;
 
+        float panelTop    = panelBg.getPosition().y;
+        float panelBottom = panelBg.getPosition().y + panelBg.getSize().y;
+
+        // ============================================================================
+        // Blackboard 分頁
+        // ============================================================================
         if (currentTab == ActiveTab::Blackboard) {
             cachedBbRows.clear();
             const auto& intFlags = blackboard.getAllInts();
@@ -424,11 +456,12 @@ public:
             float rowH = 22.0f;
             float totalHeight = (listStartY - contentY) + static_cast<float>(intFlags.size()) * rowH;
             maxScrollOffset = std::max(0.0f, totalHeight - viewH);
+            clampScroll();
 
             float cursorY = rowY - scrollOffset;
 
             for (const auto& [key, val] : intFlags) {
-                if (cursorY + rowH >= listStartY && cursorY <= panelBg.getPosition().y + panelBg.getSize().y - 15.0f) {
+                if (cursorY + rowH >= listStartY && cursorY <= panelBottom - 15.0f) {
                     sf::FloatRect rBounds(sf::Vector2f(contentX, cursorY), sf::Vector2f(contentW, rowH));
                     cachedBbRows.push_back({key, val, rBounds});
 
@@ -450,7 +483,10 @@ public:
                 }
                 cursorY += rowH;
             }
-        } 
+        }
+        // ============================================================================
+        // Node Jumper 分頁
+        // ============================================================================
         else if (currentTab == ActiveTab::NodeJumper) {
             cachedNodeEntries.clear();
             auto currentNode = executor.getCurrentNode();
@@ -475,6 +511,7 @@ public:
             float rowHeight = 24.0f;
             float totalHeight = static_cast<float>(sortedNodes.size()) * rowHeight;
             maxScrollOffset = std::max(0.0f, totalHeight - (viewH - 30.0f));
+            clampScroll();
 
             float cursorY = rowStartY - scrollOffset;
             int idx = 0;
@@ -483,7 +520,7 @@ public:
                 sf::FloatRect bounds(sf::Vector2f(contentX, cursorY), sf::Vector2f(contentW - 20.0f, rowHeight));
                 cachedNodeEntries.push_back({id, "", nodePtr, bounds});
 
-                if (cursorY + rowHeight >= rowStartY && cursorY <= panelBg.getPosition().y + panelBg.getSize().y - 15.0f) {
+                if (cursorY + rowHeight >= rowStartY && cursorY <= panelBottom - 15.0f) {
                     bool isCursor = (idx == selectedNodeIndex);
                     bool isPlaying = (id == currentId);
 
@@ -502,9 +539,9 @@ public:
                     else if (isCursor) rowText.setFillColor(sf::Color(255, 255, 255));
                     else rowText.setFillColor(sf::Color(190, 195, 210));
 
-                    std::string label = (isPlaying ? " [*] " : "     ") + id + " [" + 
-                        (nodePtr->type == NodeType::Dialogue ? "Dialogue" : 
-                         nodePtr->type == NodeType::Choice   ? "Choice" : 
+                    std::string label = (isPlaying ? " [*] " : "     ") + id + " [" +
+                        (nodePtr->type == NodeType::Dialogue ? "Dialogue" :
+                         nodePtr->type == NodeType::Choice   ? "Choice" :
                          nodePtr->type == NodeType::Condition ? "Condition" : "Action") + "]";
                     rowText.setString(sf::String::fromUtf8(label.begin(), label.end()));
                     rowText.setPosition(sf::Vector2f(contentX, cursorY + 2.0f));
@@ -513,38 +550,135 @@ public:
                 cursorY += rowHeight;
                 idx++;
             }
-        } 
+        }
+        // ============================================================================
+        // Diagnostics 分頁（使用 sf::RenderTexture 離屏裁剪）
+        // ============================================================================
         else if (currentTab == ActiveTab::Diagnostics) {
-            maxScrollOffset = 0.0f;
             std::ostringstream ss;
+
             ss << "Engine Runtime Diagnostics:\n\n"
                << "  Target Refresh Rate : 60.0 FPS\n"
                << "  Current Framerate   : " << std::fixed << std::setprecision(1) << fps << " FPS\n"
                << "  Frame Latency       : " << std::setprecision(3) << (fps > 0.0f ? 1000.0f / fps : 0.0f) << " ms\n"
-               << "  Viewport Dimensions : 1280 x 720 (Window Fixed)\n"
+               << "  Viewport Dimensions : 1920 x 1080 (Logical)\n\n"
                << "  Rendering Pipeline  :\n"
                << "    - Dual-Buffer Offscreen Compositor\n"
                << "    - Easing Grayscale Transition Masking\n"
                << "    - PostFX Multi-Pass Fragment Shaders\n"
                << "    - Rollback State Snapshot Memory Stack\n"
-               << "    - Native Pure Vector Subsystem";
+               << "    - Native Pure Vector Subsystem\n\n";
+
+            if (!cacheStats.empty()) {
+                ss << "  Cache Statistics:\n";
+                size_t totalBytes = 0;
+
+                for (const auto& cs : cacheStats) {
+                    ss << "    [" << cs.name << "]\n"
+                       << "      Size      : " << cs.size << " / " << cs.capacity << "\n"
+                       << "      Hit Rate  : " << std::fixed << std::setprecision(1)
+                       << (cs.hitRate * 100.0f) << "% ("
+                       << cs.hitCount << " hit / " << cs.missCount << " miss)\n"
+                       << "      Evictions : " << cs.evictionCount << "\n";
+
+                    if (cs.estimatedBytes > 0) {
+                        ss << "      Memory    : "
+                           << std::fixed << std::setprecision(2)
+                           << (cs.estimatedBytes / 1024.0 / 1024.0) << " MB\n";
+                        totalBytes += cs.estimatedBytes;
+                    }
+                    ss << "\n";
+                }
+
+                if (totalBytes > 0) {
+                    ss << "  Total Cache Memory  : "
+                       << std::fixed << std::setprecision(2)
+                       << (totalBytes / 1024.0 / 1024.0) << " MB\n\n";
+                }
+            } else {
+                ss << "  (No cache statistics available)\n\n";
+            }
+
+            ss << "  System Info:\n"
+               << "    - Textures are evicted via LRU policy\n"
+               << "    - Audio buffers are cached separately\n"
+               << "    - Fonts are loaded once at startup\n"
+               << "    - Rollback stack holds up to 128 states\n";
 
             std::string diagStr = ss.str();
-            sf::Text text(font);
-            text.setCharacterSize(14);
-            text.setFillColor(sf::Color(220, 225, 235));
-            text.setString(sf::String::fromUtf8(diagStr.begin(), diagStr.end()));
-            text.setPosition(sf::Vector2f(contentX, contentY + 10.0f));
-            target.draw(text);
-        } 
+
+            // ⚠️ 可視區域（在面板座標系中）
+            float textAreaX = panelBg.getPosition().x + 10.0f;
+            float textAreaY = contentY;
+            float textAreaW = panelBg.getSize().x - 30.0f;   // 留給滾動條空間
+            float textAreaH = (panelBottom - 20.0f) - textAreaY;
+
+            // ⚠️ 建立離屏緩衝區（只在大小變化時重建）
+            sf::Vector2u neededSize(
+                static_cast<unsigned>(textAreaW),
+                static_cast<unsigned>(textAreaH)
+            );
+
+            if (diagBuffer.getSize() != neededSize) {
+                if (!diagBuffer.resize(neededSize)) {
+                    std::cerr << "[DebugOverlay] Failed to resize diagBuffer!" << std::endl;
+                    return;
+                }
+                diagBufferReady = true;
+            }
+
+            // ⚠️ 準備文字
+            sf::Text diagText(font);
+            diagText.setCharacterSize(14);
+            diagText.setFillColor(sf::Color(220, 225, 235));
+            diagText.setString(sf::String::fromUtf8(diagStr.begin(), diagStr.end()));
+
+            sf::FloatRect textBounds = diagText.getLocalBounds();
+            maxScrollOffset = std::max(0.0f, textBounds.size.y - textAreaH + 20.0f);
+            clampScroll();
+
+            // ⚠️ 在離屏緩衝區繪製文字
+            // 注意：這裡的座標是「相對於緩衝區左上角」
+            diagBuffer.clear(sf::Color::Transparent);
+
+            // 文字位置：緩衝區內的 (15, 8 - scrollOffset)
+            diagText.setPosition(sf::Vector2f(15.0f, 8.0f - scrollOffset));
+            diagBuffer.draw(diagText);
+
+            diagBuffer.display();
+
+            // ⚠️ 把緩衝區貼到主畫面
+            sf::Sprite diagSprite(diagBuffer.getTexture());
+            diagSprite.setPosition(sf::Vector2f(textAreaX, textAreaY));
+            target.draw(diagSprite);
+
+            // ⚠️ 底部漸層提示
+            if (maxScrollOffset > 0.0f && scrollOffset < maxScrollOffset - 1.0f) {
+                float fadeHeight = 25.0f;
+                sf::RectangleShape fade(sf::Vector2f(textAreaW, fadeHeight));
+                fade.setPosition(sf::Vector2f(
+                    textAreaX,
+                    textAreaY + textAreaH - fadeHeight
+                ));
+                fade.setFillColor(sf::Color(15, 17, 22, 180));
+                target.draw(fade);
+            }
+
+            // 重新繪製面板邊框
+            target.draw(panelBorder);
+        }
+        // ============================================================================
+        // Console 分頁
+        // ============================================================================
         else if (currentTab == ActiveTab::Console) {
             float rowY = contentY + 10.0f;
             float totalHeight = static_cast<float>(logHistory.size()) * 22.0f;
             maxScrollOffset = std::max(0.0f, totalHeight - viewH);
+            clampScroll();
 
             float cursorY = rowY - scrollOffset;
             for (const auto& logMsg : logHistory) {
-                if (cursorY + 22.0f >= rowY && cursorY <= panelBg.getPosition().y + panelBg.getSize().y - 15.0f) {
+                if (cursorY + 22.0f >= rowY && cursorY <= panelBottom - 15.0f) {
                     sf::Text text(font);
                     text.setCharacterSize(13);
                     text.setFillColor(sf::Color(160, 205, 245));
@@ -556,6 +690,9 @@ public:
             }
         }
 
+        // ============================================================================
+        // 滾動條
+        // ============================================================================
         if (maxScrollOffset > 0.0f) {
             sf::RectangleShape track(scrollbarTrackBounds.size);
             track.setPosition(scrollbarTrackBounds.position);
@@ -567,7 +704,7 @@ public:
             float thumbH = std::max(25.0f, (trackH / totalContentH) * trackH);
             float thumbY = scrollbarTrackBounds.position.y + (scrollOffset / maxScrollOffset) * (trackH - thumbH);
 
-            scrollbarThumbBounds = sf::FloatRect(sf::Vector2f(scrollbarTrackBounds.position.x, thumbY), 
+            scrollbarThumbBounds = sf::FloatRect(sf::Vector2f(scrollbarTrackBounds.position.x, thumbY),
                                                  sf::Vector2f(scrollbarTrackBounds.size.x, thumbH));
 
             sf::RectangleShape thumb(scrollbarThumbBounds.size);

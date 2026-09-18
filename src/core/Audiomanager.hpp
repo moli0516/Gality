@@ -4,6 +4,7 @@
 #include <memory>
 #include <optional>
 #include <iostream>
+#include <cstdint>     
 #include <vector>
 #include "LRUCache.hpp"
 #include "Easing.hpp"
@@ -22,6 +23,7 @@ private:
     std::vector<std::uint8_t> activeBgmBytes;
     std::vector<std::uint8_t> fadingBgmBytes;
 
+    // ⚠️ Voice Cache：從 20 提高到 500
     LRUCache<std::string, std::shared_ptr<sf::SoundBuffer>> voiceCache;
 
     bool isCrossfading = false;
@@ -47,7 +49,21 @@ private:
     }
 
 public:
-    AudioManager() : voiceCache(20) {}
+    AudioManager() : voiceCache(500) {
+        // ⚠️ 設定 Voice Cache 的記憶體估算器
+        voiceCache.setSizeEstimator([](const std::shared_ptr<sf::SoundBuffer>& buf) -> size_t {
+            if (!buf) return 0;
+            // SFML SoundBuffer: sampleCount × channelCount × 2 bytes (Int16)
+            return static_cast<size_t>(buf->getSampleCount()) *
+                   static_cast<size_t>(buf->getChannelCount()) *
+                   sizeof(std::int16_t);
+        });
+    }
+
+    // ⚠️ 供 DebugOverlay 讀取 Voice Cache 統計
+    const LRUCache<std::string, std::shared_ptr<sf::SoundBuffer>>& getVoiceCache() const {
+        return voiceCache;
+    }
 
     void update(float deltaTime) {
         // 智慧 Ducking
