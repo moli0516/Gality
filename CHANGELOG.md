@@ -5,19 +5,130 @@ All notable changes to Gality Engine will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]https://github.com/moli0516/Gality/compare/v0.3.0...HEAD
+## [Unreleased]
 
 ### Planned
 
-- CG System (gallery, viewer, unlock tracking)
-- Character layered parts (blink, mouth, expression controllers)
-- AI toolchain integration (translation, TTS, image generation)
-- WebAssembly build (pending SFML Emscripten support)
-- Cross-platform CI/CD pipeline
-- itch.io release of demo story
-- Steam release preparation
+- **CG System** — gallery, viewer, unlock tracking
+- **Character layered parts** — blink, mouth, expression controllers
+- **AI toolchain integration** — translation (DeepL), TTS (Azure), image (SD), dialogue (GPT-4)
+- **WebAssembly build** — pending SFML Emscripten support
+- **Cross-platform CI/CD pipeline** — GitHub Actions for Windows / macOS / Linux
+- **itch.io release** — demo story distribution
+- **Steam release preparation** — SDK integration, achievements, cloud saves
+- **FX registry** — user-defined C++ `.hpp` modules
 
-## [0.3.0]https://github.com/moli0516/Gality/compare/v0.2.0...v0.3.0 - 2026-09-17
+## [0.3.1] - 2026-09-19
+
+### Added — Performance & Diagnostics
+
+- **LRU Cache statistics** — hit / miss / eviction counters
+  - `getHitCount()` / `getMissCount()` / `getEvictionCount()`
+  - `getHitRate()` — computed hit rate
+  - `getTotalAccesses()` — total access count
+- **`estimateMemoryBytes()`** — sum of cached item sizes via user-provided estimator
+- **`setCapacity()`** — runtime capacity adjustment with eviction
+- **`forEach()`** — iterate all cached entries (for statistics)
+- **`resetStats()`** — clear counters for testing
+- **`setSizeEstimator()`** — custom size function for memory tracking
+- **DebugOverlay Diagnostics tab** — cache statistics display
+  - Size / capacity per cache
+  - Hit rate (percentage)
+  - Hit / miss / eviction counts
+  - Estimated memory (MB)
+  - Total cache memory across all caches
+
+### Added — Build & Validation
+
+- **`devtools/scripts/validate_script.py`** — static analysis tool
+  - **Reachability analysis** — detect unreachable nodes / islands
+  - **Dangling reference detection** — `-> node_X` where target doesn't exist
+  - **Ending detection** — by naming convention (`*ending*`, `end_*`, `*_end`)
+  - **Dead-end detection** — nodes with no outgoing transitions
+  - **Missing resource detection** — `bg`, `bgm`, `cv`, `char_*` files
+  - CLI flags:
+    - `--ignore-unreachable` — comma-separated list of expected unreachable nodes
+    - `--no-config` — skip loading config file
+    - `--quiet` — only print errors (CI mode)
+  - Exit codes: `0` = pass, `1` = issues found
+  - Auto-loads `devtools/config/validate_ignore.json`
+- **`devtools/config/validate_ignore.json`** — project-specific ignore rules
+  - `unreachable` — list of intentional backup nodes
+  - `missing_resources` — list of known-missing resources
+- **Build pipeline integration** — script validation runs after `.gality` compilation
+  - `build_dev.bat`: `[2/7] Validate compiled script`
+  - `build_prod.bat`: `[2/7] Validate compiled script`
+  - `build_game.sh`: `[2/5] Validate compiled script`
+  - Build aborts (exit code 1) on validation failure
+  - Prevents shipping builds with dangling references or missing resources
+
+### Added — Shaders
+
+- **`assets/shaders/code_rain.frag`** — Matrix-style falling code effect
+  - GLSL 1.20 fragment shader
+  - 48 columns × 32 rows grid
+  - Per-column independent fall speed
+  - Leading edge bright + trail decay
+  - Configurable base color via `u_color` uniform
+  - Optional horizontal glow bleed
+  - Used in title menu
+
+### Changed
+
+- **Voice cache capacity**: 20 → **500**
+  - Fixes continuous CV eviction during Skip mode
+  - Console no longer floods with `[LRU Cache] Evicted` messages
+- **Texture cache capacity**: 50 → **100**
+  - Reduced eviction pressure for multi-slot character scenes
+- **DebugOverlay Diagnostics tab** restructured with cache statistics
+  - Uses `sf::RenderTexture` for reliable text clipping
+  - Text no longer overflows panel boundary
+  - Tab buttons remain visible during scroll
+
+### Fixed
+
+- **`sf::Int16` → `std::int16_t`** — SFML 3.x removed fixed-width typedefs
+- **Voice cache overflow** — during Skip mode, every new CV evicted the oldest one (hit rate ~0%)
+- **DebugOverlay text overflow** — switched from mask rectangles to `sf::RenderTexture` for guaranteed clipping
+- **`code_rain.frag` missing file** — title menu was logging `Failed to load code rain shader` on startup
+
+### Performance
+
+- **Performance baseline established** via automated benchmark
+
+  - 9 scenarios tested (baseline, character counts, effects, weather, long text)
+  - All scenarios: **59+ FPS** with VSync disabled
+  - Peak memory: **25.45 MB**
+  - No cache evictions during normal play
+- **Benchmark results** (Windows 11, MSVC 2022, Release, VSync OFF):
+
+  | # | Test               | Avg FPS | Min FPS | P99 (ms) | Memory (MB) |
+  | - | ------------------ | ------- | ------- | -------- | ----------- |
+  | 1 | `baseline_static`  | 59.89   | 55.50   | 18.09    | 3.52        |
+  | 2 | `single_character` | 59.54   | 57.85   | 17.40    | 7.31        |
+  | 3 | `double_character` | 59.56   | 55.67   | 17.60    | 14.62       |
+  | 4 | `triple_character` | 59.71   | 58.97   | 17.57    | 18.42       |
+  | 5 | `glitch_effect`    | 59.87   | 59.26   | 17.38    | 21.94       |
+  | 6 | `wave_rainbow`     | 59.76   | 59.10   | 17.58    | 21.94       |
+  | 7 | `weather_sakura`   | 59.42   | 58.79   | 17.71    | 25.45       |
+  | 8 | `weather_rain`     | 59.41   | 58.96   | 17.31    | 25.45       |
+  | 9 | `long_text`        | 59.54   | 58.79   | 17.58    | 25.45       |
+
+- **Bottleneck analysis**:
+  - Weather system: ~0.5 FPS cost (particle updates + draws)
+  - Cold start: `baseline_static` Min FPS 55.50 (first frame after shader compile)
+  - No CPU or GPU bottleneck in normal gameplay
+
+### Documentation
+
+- **DEVLOG.md** updated with Day 5 (performance) and Day 6 (stability) entries
+  - LRU cache enhancement details
+  - Voice cache fix rationale
+  - Full benchmark methodology
+  - Test suite descriptions
+  - Week 1 summary section
+
+## [0.3.0] - 2026-09-17
 
 ### Added — Text Effects System
 
@@ -39,15 +150,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added — Nine-Slice UI System
 
 - **`NineSliceSprite`** class with SFML 3.x compatibility
+  - Uses `std::vector` instead of `std::array` to avoid default construction
+  - Corner decorations, edge stretching, center scaling
+  - Color and alpha control
 - **Data-driven UI theme** (`ui_theme.json`) now supports nine-slice configuration
+  - `backgroundImage` / `nameBoxImage` for dialogue box
+  - `normalImage` / `hoverImage` for choice buttons
 - Applied nine-slice to choice buttons in demo
 - Dialogue box supports nine-slice (with AI-generated blue circuit board frame)
 
 ### Added — Custom UI Image System
 
 - Extended `UITheme` to support per-element image configuration
-- `backgroundImage` / `nameBoxImage` for dialogue box
-- `normalImage` / `hoverImage` for choice buttons
+- `NineSliceConfig` with `enabled`, `texturePath`, `left`, `right`, `top`, `bottom`
 - Fallback to solid color when image fails to load
 
 ### Added — Tooling
@@ -92,7 +207,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Architecture documentation
 - Performance tuning guide
 
-## [0.2.0]https://github.com/moli0516/Gality/compare/v0.1.0...v0.2.0 - 2026-09-15
+## [0.2.0] - 2026-09-15
 
 ### Added — Core Engine
 
@@ -130,7 +245,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Multiple `AudioManager` crossfade fixes
 - Configuration persistence
 
-## [0.1.0]https://github.com/moli0516/Gality/releases/tag/v0.1.0 - 2026-09-14
+## [0.1.0] - 2026-09-14
 
 ### Added — Initial Release
 
@@ -154,8 +269,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CMake 3.20+ build configuration
 - GitHub repository initialized
 
-[Unreleased]: https://github.com/moli0516/Gality/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/moli0516/Gality/compare/v0.3.1...HEAD
+[0.3.1]: https://github.com/moli0516/Gality/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/moli0516/Gality/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/moli0516/Gality/compare/v0.1.0...v0.2.0
-
 [0.1.0]: https://github.com/moli0516/Gality/releases/tag/v0.1.0

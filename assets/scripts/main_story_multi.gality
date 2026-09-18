@@ -3203,7 +3203,7 @@ bg: assets/bg/classroom.jpg
 
 [node_r_tech_05]
 bg: assets/bg/classroom.jpg
-char_center: assets/characters/president_surprised.png
+char_center: assets/characters/president_smile.png
 cv: assets/audio/cv_pres_14.ogg
 社長: 這位是... 矽谷創投的技術合夥人？
 -> node_r_tech_06
@@ -3559,7 +3559,6 @@ duration: 2.0
 bgm: assets/audio/bgm_daily.ogg
 weather: sakura
 shake: 0.4
-cv: assets/audio/cv_true_end.ogg
 系統通知: <color=#FFD700>【結局 1/10 - Legendary Studio & Soulmate Ending】</color>
 -> node_true_01
 
@@ -3728,7 +3727,6 @@ trans: wipe_left
 duration: 1.5
 bgm: assets/audio/bgm_daily.ogg
 char_center: assets/characters/president_smile.png
-cv: assets/audio/cv_pres_end.ogg
 shake: 0.3
 系統通知: <color=#FFD700>【結局 2/10 - Enterprise Tech Venture Ending】</color>
 -> node_comm_01
@@ -3837,7 +3835,6 @@ weather: rain
 char_left: assets/characters/junior_happy.png
 char_right: assets/characters/senior_smile.png
 active_char: left
-cv: assets/audio/cv_jun_open_source.ogg
 系統通知: <color=#55FF55>【結局 3/10 - Global Open-Source Legend Ending】</color>
 -> node_indie_01
 

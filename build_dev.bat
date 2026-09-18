@@ -33,7 +33,7 @@ echo.
 :: ===================================================
 :: Step 1: Compile .gality DSL to JSON
 :: ===================================================
-echo [1/6] Compiling .gality DSL script...
+echo [1/7] Compiling .gality DSL script...
 python -m devtools.scripts.gality_compiler ^
     assets/scripts/main_story_multi.gality ^
     assets/scripts/demo_long.json
@@ -47,9 +47,25 @@ echo   OK
 echo.
 
 :: ===================================================
-:: Step 2: Pack assets into data.pak
+:: Step 2: Validate compiled script
 :: ===================================================
-echo [2/6] Packing assets into data.pak...
+echo [2/7] Validating compiled script...
+python -m devtools.scripts.validate_script assets/scripts/demo_long.json
+if %ERRORLEVEL% NEQ 0 (
+    echo.
+    echo [ERROR] Script validation failed!
+    echo         Fix the issues above before building.
+    powershell -c "[console]::beep(300,500)" 2>nul
+    pause
+    exit /b %ERRORLEVEL%
+)
+echo   OK
+echo.
+
+:: ===================================================
+:: Step 3: Pack assets into data.pak
+:: ===================================================
+echo [3/7] Packing assets into data.pak...
 python -m devtools.scripts.gality_packer assets data.pak
 if %ERRORLEVEL% NEQ 0 (
     echo [ERROR] Failed to pack assets!
@@ -61,9 +77,9 @@ echo   OK
 echo.
 
 :: ===================================================
-:: Step 3: Install vcpkg dependencies
+:: Step 4: Install vcpkg dependencies
 :: ===================================================
-echo [3/6] Installing vcpkg dependencies...
+echo [4/7] Installing vcpkg dependencies...
 if not exist "vcpkg\vcpkg.exe" (
     echo [WARN] vcpkg.exe not found, bootstrapping...
     if not exist "vcpkg" (
@@ -82,9 +98,9 @@ echo   OK
 echo.
 
 :: ===================================================
-:: Step 4: CMake configure
+:: Step 5: CMake configure
 :: ===================================================
-echo [4/6] Configuring CMake (%BUILD_TYPE%)...
+echo [5/7] Configuring CMake (%BUILD_TYPE%)...
 cmake -B %BUILD_DIR% ^
     -DCMAKE_BUILD_TYPE=%BUILD_TYPE% ^
     -DGALITY_DEV_BUILD=%DEV_FLAG% ^
@@ -99,9 +115,9 @@ echo   OK
 echo.
 
 :: ===================================================
-:: Step 5: Build C++ engine
+:: Step 6: Build C++ engine
 :: ===================================================
-echo [5/6] Building C++ Engine (%BUILD_TYPE%)...
+echo [6/7] Building C++ Engine (%BUILD_TYPE%)...
 cmake --build %BUILD_DIR% --config %BUILD_TYPE% --parallel
 if %ERRORLEVEL% NEQ 0 (
     echo [ERROR] C++ build failed!
@@ -113,9 +129,9 @@ echo   OK
 echo.
 
 :: ===================================================
-:: Step 6: Assemble distribution package
+:: Step 7: Assemble distribution package
 :: ===================================================
-echo [6/6] Generating DEVELOP package in .\%DIST_DIR%\...
+echo [7/7] Generating DEVELOP package in .\%DIST_DIR%\...
 if not exist %DIST_DIR% mkdir %DIST_DIR%
 
 :: 清理舊檔案

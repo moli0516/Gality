@@ -580,6 +580,12 @@ struct GalityApp {
         snapshot.intFlags = blackboard.getAllInts();
         SaveManager::saveGame(filePath, snapshot);
         std::cout << "[Save] Slot " << slotIndex << std::endl;
+#ifdef GALITY_DEV_BUILD
+            std::cout << "[Save] intFlags count: " << snapshot.intFlags.size() << std::endl;
+            for (const auto& [k, v] : snapshot.intFlags) {
+                std::cout << "  " << k << " = " << v << std::endl;
+            }
+#endif
 #endif
     }
 
